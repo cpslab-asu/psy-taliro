@@ -6,7 +6,7 @@ from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification
 from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
 from tltk_mtl import Predicate
 
-from .parser import parse, stlSpecification
+from .parser import parse, StlSpecification
 
 
 class Subsystem(Enum):
@@ -39,7 +39,7 @@ class Specification:
         self._spec = spec
         self._subsystem = subsystem
         self._data = data
-        self._tltk_cache: Optional[stlSpecification] = None
+        self._tltk_cache: Optional[StlSpecification] = None
 
     def data_keys(self) -> List[str]:
         return list(self._data.keys())
