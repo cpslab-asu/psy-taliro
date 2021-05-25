@@ -1,0 +1,11 @@
+# Tooling files
+.vscode/
+.idea/
+
+# Generated python files
+**/*.egg-info/
+**/*.pyc
+
+# Build artifacts
+/build/
+/dist/

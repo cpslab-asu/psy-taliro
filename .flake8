@@ -1,0 +1,61 @@
+[flake8]
+select =
+    # Default Flake8 error codes
+    E,F,W,C90,
+    # List comprehension plugin
+    C4,
+    # Stub file plugin
+    Y0,
+    # Return value plugin
+    R5,
+    # Quotes plugin
+    Q0,
+    # Variable name plugin
+    VNE002, VNE003
+    # PEP8 naming plugin
+    N8,
+    # F-string plugin
+    FS,
+    # Annotation plugin
+    # ANN0, ANN2, ANN3,
+    # Annotation complexity plugin
+    TAE,
+    # Import order plugin
+    I1, I2,
+    # TODO plugin
+    T000
+
+exclude =
+    .git,
+    # Ignore ANTLR grammar files
+    *.g4,
+    # Ignore ANTLR generated python modules
+    src/staliro/parser/stlLexer.py,
+    src/staliro/parser/stlParser.py,
+    src/staliro/parser/stlParserListener.py,
+    src/staliro/parser/stlParserVisitor.py,
+    docs/conf.py
+
+# D203: 1 blank line required before class docstring
+ignore = D203
+
+max-line-length = 99
+
+inline_quotes = double
+docstring_quotes = double
+
+per-file-ignores =
+    # F401: Imported but unused
+    __init__.py: F401
+    # E704: Multiple statements on one line
+    # N8: PEP8 naming conventions
+    *.pyi: E704, N8, E301, E302, E305, E701
+    # W605: Invalid escape sequence
+    examples/*.py: W605
+    # W605: Invalid escape sequence
+    test_*.py: W605
+
+import-order-style = pep8
+
+max-annotations-complexity = 3
+
