@@ -17,7 +17,6 @@ scipy = "^1.6.2"
 tltk-mtl = "^0.0.27"
 pydantic = "^1.8.2"
 typing-extensions = {version = "^3.7.4", python = "<3.8"}
-rtamt = {git = "https://github.com/andersonjwan/rtamt", branch="master"}
 Sphinx = {version = "^3.5.3", optional = true}
 sphinx-autodocgen = {version = "^1.2", optional = true}
 pandas = {version = "^1.2.3", optional = true}
