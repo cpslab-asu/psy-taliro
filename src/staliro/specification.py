@@ -2,8 +2,6 @@ from enum import Enum
 from typing import Dict, Optional, Union, List
 
 from numpy import ndarray
-from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification
-from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
 from tltk_mtl import Predicate
 
 from .parser import parse, StlSpecification
@@ -98,6 +96,13 @@ class Specification:
         The _rtamt_discrete_evaluate function evaluates the robustness value
         utilizing the RTAMT discrete-time offline monitor.
         """
+        try:
+            from rtamt import STLDiscreteTimeSpecification
+            from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "RTAMT library must be installed to use RTAMT discrete time backend"
+            )
 
         phi = STLDiscreteTimeSpecification()
         phi.name = "RTAMT Discrete-Time Offline Monitor"
@@ -138,6 +143,11 @@ class Specification:
         The _rtamt_dense_evaluate function evaluates the robustness value
         utilizing the RTAMT dense-time offline monitor.
         """
+        try:
+            from rtamt import STLDenseTimeSpecification
+            from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
+        except ModuleNotFoundError:
+            raise RuntimeError("RTAMT library must be installed to use RTAMT dense time backend")
 
         phi = STLDenseTimeSpecification()
         phi.name = "RTAMT Dense-Time Offline Monitor"
