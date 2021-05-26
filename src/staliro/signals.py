@@ -25,7 +25,9 @@ class SignalInterpolator(Protocol):
         ...
 
     @overload
-    def interpolate(self, __value: Union[Sequence[float], ndarray]) -> ndarray:
+    def interpolate(
+        self, __value: Union[Sequence[float], ndarray]
+    ) -> Union[Sequence[float], ndarray]:
         ...
 
 
