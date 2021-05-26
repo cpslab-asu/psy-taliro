@@ -58,8 +58,7 @@ def staliro(
     provided specification represented by the formula phi and the predicates.
 
     Args:
-        phi: The specification written as an STL formula
-        preds: The predicates for the formula
+        specification: The requirement for the system
         model: The model of the system being tested
         options: General options to manipulate the behavior of the search
         optimizer: The optimizer to use to search the sample space
