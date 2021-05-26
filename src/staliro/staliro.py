@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, TypeVar, Tuple
 
-from numpy import ndarray, float32
+from numpy import ndarray, float32, float64
 
 from .models import Model, ModelResult
 from .options import StaliroOptions
@@ -23,7 +23,7 @@ def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
     elif trajectories.shape[0] != timestamps.size:
         raise ValueError("first dimension of trajectories must equal size of timestamps")
 
-    return trajectories, timestamps.astype(float32)
+    return trajectories.astype(float64), timestamps.astype(float32)
 
 
 def _extract_traces(spec: Specification, trajectories: ndarray) -> Dict[str, ndarray]:
