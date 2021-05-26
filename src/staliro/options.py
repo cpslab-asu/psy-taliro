@@ -108,6 +108,10 @@ class Behavior(IntEnum):
     MINIMIZATION = auto()
 
 
+def _static_parameter_converter(obj: Any) -> List[Interval]:
+    return [Interval(elem) for elem in obj]
+
+
 @attrs
 class StaliroOptions:
     """General options for controlling falsification behavior.
@@ -129,8 +133,8 @@ class StaliroOptions:
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
     sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
-    static_parameters: Sequence[Interval] = attrib(factory=list)
-    signals: Sequence[SignalOptions] = attrib(factory=list)
+    static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
+    signals: List[SignalOptions] = attrib(factory=list, converter=list)
     seed: Optional[int] = attrib(default=None, converter=optional(int))
     verbose: bool = False
 
@@ -143,6 +147,14 @@ class StaliroOptions:
     def _validate_sampling_interval(self, attr: Attribute[float], value: float) -> None:
         if value < 0:
             raise ValueError("sampling interval must be greater than zero")
+
+    @signals.validator
+    def _validate_signals(
+        self, attr: Attribute[List[SignalOptions]], signals: List[SignalOptions]
+    ) -> None:
+        for signal in signals:
+            if not isinstance(signal, SignalOptions):
+                raise ValueError("can only provide SignalOptions objects to signals attribute")
 
     @property
     def bounds(self) -> List[Interval]:
