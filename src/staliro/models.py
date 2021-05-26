@@ -28,7 +28,7 @@ def _signal_interpolators(values: ndarray, options: StaliroOptions) -> List[Sign
     return interpolators
 
 
-def _signal_trace(interpolator: SignalInterpolator, times: Sequence[float]) -> ndarray:
+def _signal_trace(interpolator: SignalInterpolator, times: ndarray) -> ndarray:
     return array(interpolator.interpolate(times))
 
 
@@ -66,8 +66,8 @@ class Blackbox(Model):
         static_params = _static_parameters(values, options)
         interpolators = _signal_interpolators(values, options)
         signal_times = linspace(
-            start=interval.lower, stop=interval.upper, num=point_count, endpoint=True
-        )  # type: ignore
+            start=interval.lower, stop=interval.upper, num=int(point_count), endpoint=True
+        )
         signal_traces = [
             _signal_trace(interpolator, signal_times) for interpolator in interpolators
         ]
