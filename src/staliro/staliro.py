@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from functools import partial
-from typing import Dict, Optional, Sequence, TypeVar, Tuple
+from typing import Dict, Optional, TypeVar, Tuple
 
 from numpy import ndarray, float32
 
 from .models import Model, ModelResult
 from .options import StaliroOptions
-from .optimizers import Optimizer
+from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
 from .specification import Specification
 
 
-def _validate_results(result: ModelResult) -> Tuple[ndarray, ndarray]:
+def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
     """Ensure that the results conform to the expected dimensions."""
     trajectories, timestamps = result
 
@@ -27,18 +26,19 @@ def _validate_results(result: ModelResult) -> Tuple[ndarray, ndarray]:
     return trajectories, timestamps.astype(float32)
 
 
-def _compute_robustness(
-    spec: Specification,
-    pred_names: Sequence[str],
-    model: Model,
-    options: StaliroOptions,
-    values: ndarray,
-) -> float:
-    results = model.simulate(values, options)
-    trajectories, timestamps = _validate_results(results)
-    traces: Dict[str, ndarray] = {pred_name: trajectories.T for pred_name in pred_names}
+def _extract_traces(spec: Specification, trajectories: ndarray) -> Dict[str, ndarray]:
+    return {pred_name: trajectories for pred_name in spec.data_keys()}
 
-    return spec.evaluate(traces, timestamps)
+
+def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
+    def obj_fn(values: ndarray) -> float:
+        result = model.simulate(values, options)
+        trajectories, timestamps = _validate_result(result)
+        traces = _extract_traces(spec, trajectories)
+
+        return spec.evaluate(traces, timestamps)
+
+    return obj_fn
 
 
 _T = TypeVar("_T", bound=StaliroResult)
@@ -69,9 +69,7 @@ def staliro(
         results: A list of result objects corresponding to each run from the optimizer
     """
 
-    objective_fn = partial(
-        _compute_robustness, specification, specification.data_keys(), model, options
-    )
+    objective_fn = _make_obj_fn(specification, model, options)
 
     if optimizer_options is None:
         return optimizer.optimize(objective_fn, options)
