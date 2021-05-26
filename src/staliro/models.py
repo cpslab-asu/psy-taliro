@@ -43,10 +43,12 @@ class Model(ABC):
 StaticParameters = ndarray
 SignalTimes = ndarray
 SignalValues = ndarray
+
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
 BlackboxResult = Tuple[Trajectories, Timestamps]
-BlackboxFunc = Callable[[StaticParameters, Timestamps, SignalValues], BlackboxResult]
+
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 InterpolatorBlackboxFunc = Callable[
     [StaticParameters, Sequence[SignalInterpolator]], BlackboxResult
 ]
