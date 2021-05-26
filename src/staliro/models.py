@@ -3,17 +3,11 @@ from __future__ import annotations
 from abc import ABC
 from typing import Callable, List, Literal, overload, Sequence, Type, Tuple, Union
 
-from numpy import float32, linspace, ndarray
+from numpy import float32, linspace, ndarray, array
 from scipy import integrate
 
 from .options import StaliroOptions
 from .signals import SignalInterpolator
-
-Trajectories = Union[ndarray, Sequence[Sequence[float]]]
-Timestamps = Union[Sequence[float], ndarray]
-SimulationResult = Tuple[Trajectories, Timestamps]
-StaticParameters = Union[Sequence[float], ndarray]
-SignalValues = Union[Sequence[float], ndarray]
 
 
 def _static_parameters(values: ndarray, options: StaliroOptions) -> ndarray:
@@ -34,23 +28,35 @@ def _signal_interpolators(values: ndarray, options: StaliroOptions) -> List[Sign
     return interpolators
 
 
-def _signal_trace(interpolator: SignalInterpolator, times: Sequence[float]) -> List[float]:
-    return [interpolator.interpolate(time) for time in times]
+def _signal_trace(interpolator: SignalInterpolator, times: Sequence[float]) -> ndarray:
+    return array(interpolator.interpolate(times))
+
+
+ModelResult = Tuple[ndarray, ndarray]
 
 
 class Model(ABC):
-    def simulate(self, values: ndarray, options: StaliroOptions) -> SimulationResult:
+    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
         raise NotImplementedError()
 
 
-BlackboxFunc = Callable[[StaticParameters, Timestamps, Sequence[SignalValues]], SimulationResult]
+StaticParameters = ndarray
+SignalTimes = ndarray
+SignalValues = ndarray
+Timestamps = Union[ndarray, Sequence[float]]
+Trajectories = Union[ndarray, Sequence[Sequence[float]]]
+BlackboxResult = Tuple[Trajectories, Timestamps]
+BlackboxFunc = Callable[[StaticParameters, Timestamps, SignalValues], BlackboxResult]
+InterpolatorBlackboxFunc = Callable[
+    [StaticParameters, Sequence[SignalInterpolator]], BlackboxResult
+]
 
 
 class Blackbox(Model):
     def __init__(self, func: BlackboxFunc):
         self.func = func
 
-    def simulate(self, values: ndarray, options: StaliroOptions) -> SimulationResult:
+    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
         interval = options.interval
         duration = interval.upper - interval.lower
         point_count = duration / options.sampling_interval
@@ -63,41 +69,42 @@ class Blackbox(Model):
         signal_traces = [
             _signal_trace(interpolator, signal_times) for interpolator in interpolators
         ]
+        trajectories, timestamps = self.func(static_params, signal_times, array(signal_traces))
 
-        return self.func(static_params, signal_times, signal_traces)
-
-
-InterpolatorBlackboxFunc = Callable[
-    [StaticParameters, Sequence[SignalInterpolator]], SimulationResult
-]
+        return array(trajectories), array(timestamps)
 
 
 class InterpolatorBlackbox(Model):
     def __init__(self, func: InterpolatorBlackboxFunc):
         self.func = func
 
-    def simulate(self, values: ndarray, options: StaliroOptions) -> SimulationResult:
+    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
         static_params = _static_parameters(values, options)
         interpolators = _signal_interpolators(values, options)
+        trajectories, timestamps = self.func(static_params, interpolators)
 
-        return self.func(static_params, interpolators)
+        return array(trajectories), array(timestamps)
 
 
-State = Sequence[float]
-ODEFunc = Callable[[float, State, SignalValues], State]
+Time = float
+State = ndarray
+ODEResult = Union[ndarray, Sequence[float]]
+ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
 
 
 class ODE(Model):
     def __init__(self, func: ODEFunc):
         self.func = func
 
-    def simulate(self, values: ndarray, options: StaliroOptions) -> SimulationResult:
+    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
         static_params = _static_parameters(values, options)
         interpolators = _signal_interpolators(values, options)
 
-        def integration_fn(time: float, state: ndarray) -> Sequence[float]:
+        def integration_fn(time: float, state: ndarray) -> ndarray:
             signal_values = [interpolator.interpolate(time) for interpolator in interpolators]
-            return self.func(time, tuple(state), signal_values)
+            new_state = self.func(time, state, array(signal_values))
+
+            return array(new_state)
 
         interval = options.interval.astuple()
         integration = integrate.solve_ivp(integration_fn, interval, static_params)
