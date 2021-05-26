@@ -3,17 +3,28 @@ from __future__ import annotations
 from functools import partial
 from typing import Dict, Optional, Sequence, TypeVar, Tuple
 
-from numpy import array, ndarray
+from numpy import ndarray, float32
 
-from .models import Model, SimulationResult
+from .models import Model, ModelResult
 from .options import StaliroOptions
 from .optimizers import Optimizer
 from .results import StaliroResult
 from .specification import Specification
 
 
-def _validate_results(result: SimulationResult) -> Tuple[ndarray, ndarray]:
-    return array(result[0]), array(result[1])
+def _validate_results(result: ModelResult) -> Tuple[ndarray, ndarray]:
+    """Ensure that the results conform to the expected dimensions."""
+    trajectories, timestamps = result
+
+    if timestamps.ndim != 1:
+        raise ValueError("timestamps must be 1-dimensional")
+
+    if trajectories.ndim != 2:
+        raise ValueError("trajectories must be 2-dimensional")
+    elif trajectories.shape[0] != timestamps.size:
+        raise ValueError("first dimension of trajectories must equal size of timestamps")
+
+    return trajectories, timestamps.astype(float32)
 
 
 def _compute_robustness(
