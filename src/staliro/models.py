@@ -95,8 +95,8 @@ class ODE(Model):
 BlackboxFactory = Callable[[BlackboxFunc], Blackbox]
 
 
-def blackbox(*, interpolated: bool = True, sampling_interval: float = 0.1) -> BlackboxFactory:
-    return lambda x: Blackbox(x, sampling_interval)
+def blackbox(*, sampling_interval: float = 0.1) -> BlackboxFactory:
+    return lambda f: Blackbox(f, sampling_interval)
 
 
 def ode() -> Type[ODE]:
