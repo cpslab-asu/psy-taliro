@@ -63,3 +63,23 @@ class SpecificationTestCase(TestCase):
 
         # assert equivalence
         self.assertAlmostEqual(robustness, self._expected_robustness)
+
+    def test_rtamt_dense_specification(self) -> None:
+        # variables
+        predicates = {"x1": "float"}
+
+        # create specification with RTAMT (discrete) backend
+        specification = Specification(
+            self._rtamt_formula, predicates, Subsystem.RTAMT_DENSE
+        )
+
+        # filter data
+        # RTAMT does not support mult-dimensional variable matrices
+        timestamps = self._data["t"].to_numpy(dtype=np.float64)
+        traces = {"x1": self._data["x1"].to_numpy(dtype=np.float64)}
+
+        # calculate robustness
+        robustness = specification.evaluate(traces, timestamps)
+
+        # assert equivalence
+        self.assertAlmostEqual(robustness, self._expected_robustness)
