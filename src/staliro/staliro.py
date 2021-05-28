@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger, NullHandler
-from typing import Optional, TypeVar, Tuple
+from typing import Optional, TypeVar, Tuple, List
 
 from numpy import ndarray
 
@@ -10,6 +10,26 @@ from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
 from .specification import Specification
+from .signals import SignalInterpolator
+
+
+def _static_parameters(values: ndarray, options: StaliroOptions) -> ndarray:
+    stop = len(options.static_parameters)
+    return values[0:stop]  # type: ignore
+
+
+def _signal_interpolators(values: ndarray, options: StaliroOptions) -> List[SignalInterpolator]:
+    start = len(options.static_parameters)
+    interpolators: List[SignalInterpolator] = []
+
+    for signal in options.signals:
+        factory = signal.factory
+        end = start + signal.control_points
+        interpolators.append(factory.create(signal.interval.astuple(), values[start:end]))
+        start = end
+
+    return interpolators
+
 
 logger = getLogger("staliro")
 logger.addHandler(NullHandler())
@@ -34,16 +54,19 @@ def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
         return trajectories.T, timestamps
 
 
-def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
-    def obj_fn(values: ndarray) -> float:
-        result = model.simulate(values, options)
+def _make_objective_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
+    def objective_fn(values: ndarray) -> float:
+        static_params = _static_parameters(values, options)
+        interpolators = _signal_interpolators(values, options)
+
+        result = model.simulate(static_params, interpolators, options.interval)
         trajectories, timestamps = _validate_result(result)
         robustness = spec.evaluate(trajectories, timestamps)
 
         logger.debug(f"{values} -> {robustness}")
         return robustness
 
-    return obj_fn
+    return objective_fn
 
 
 _T = TypeVar("_T", bound=StaliroResult)
@@ -73,7 +96,7 @@ def staliro(
         results: A list of result objects corresponding to each run from the optimizer
     """
 
-    objective_fn = _make_obj_fn(specification, model, options)
+    objective_fn = _make_objective_fn(specification, model, options)
 
     if optimizer_options is None:
         return optimizer.optimize(objective_fn, options)
