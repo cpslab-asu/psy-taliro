@@ -62,7 +62,7 @@ class Specification:
         elif self._subsystem == Subsystem.RTAMT_DISCRETE:
             return self._rtamt_discrete_evaluate(traces, timestamps)
         elif self._subsystem == Subsystem.RTAMT_DENSE:
-            raise NotImplementedError()
+            return self._rtamt_dense_evaluate(traces, timestamps)
 
         raise ValueError("Selected subsystem unrecognized.")
 
