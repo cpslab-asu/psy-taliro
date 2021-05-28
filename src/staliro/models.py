@@ -61,8 +61,19 @@ class Blackbox(Model):
 
 Time = float
 State = ndarray
+IntegrationFn = Callable[[float, ndarray], ndarray]
 ODEResult = Union[ndarray, Sequence[float]]
 ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
+
+
+def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> IntegrationFn:
+    def integration_fn(time: float, state: ndarray) -> ndarray:
+        signal_values = [signal.interpolate(time) for signal in signals]
+        result = func(time, state, array(signal_values))
+
+        return array(result)
+
+    return integration_fn
 
 
 class ODE(Model):
@@ -75,11 +86,9 @@ class ODE(Model):
         interpolators: SignalInterpolators,
         interval: Interval,
     ) -> ModelResult:
-        def integration_fn(time: float, state: ndarray) -> ndarray:
-            signal_values = [interpolator.interpolate(time) for interpolator in interpolators]
-            return array(self.func(time, state, array(signal_values)))
-
+        integration_fn = _make_integration_fn(interpolators, self.func)
         integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
+
         return integration.y, integration.t.astype(float32)
 
 
