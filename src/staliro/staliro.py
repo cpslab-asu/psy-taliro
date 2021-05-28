@@ -95,6 +95,17 @@ def staliro(
     Returns:
         results: A list of result objects corresponding to each run from the optimizer
     """
+    if not isinstance(specification, Specification):
+        raise ValueError
+
+    if not isinstance(model, Model):
+        raise ValueError
+
+    if not isinstance(options, StaliroOptions):
+        raise ValueError
+
+    if not isinstance(optimizer, Optimizer):
+        raise ValueError
 
     objective_fn = _make_objective_fn(specification, model, options)
 
