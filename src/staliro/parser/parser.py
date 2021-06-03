@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from typing import Dict, Optional
+from importlib.util import find_spec
+from typing import Dict, Optional, TYPE_CHECKING
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
-from tltk_mtl import Predicate
 
-from .stlLexer import stlLexer as Lexer
-from .stlParser import stlParser as Parser
-from .stlParserVisitor import stlParserVisitor as Visitor
+if TYPE_CHECKING:
+    from tltk_mtl import Predicate
+
+    Predicates = Dict[str, Predicate]
+
 from .stlSpecification import StlSpecification
 
-Predicates = Dict[str, Predicate]
 
 # parse is used to translate a string MTL formula
 # into an MTL representation using the TLTk Python module developed
@@ -28,6 +29,13 @@ Predicates = Dict[str, Predicate]
 
 
 def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
+    if find_spec("tltk_mtl") is None:
+        raise RuntimeError("TLTK must be installed to use parser functionality")
+
+    from .stlLexer import stlLexer as Lexer
+    from .stlParser import stlParser as Parser
+    from .stlParserVisitor import stlParserVisitor as Visitor
+
     # convert string to ANTLRv4 InputStream
     input_stream = InputStream(formula)
 
