@@ -1,16 +1,19 @@
-from typing import Union
+import sys
+from typing import Dict
 
-import tltk_mtl as mtl
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
+
+from numpy import ndarray
 
 
-StlSpecification = Union[
-    mtl.And,
-    mtl.Finally,
-    mtl.Global,
-    mtl.Implication,
-    mtl.Next,
-    mtl.Not,
-    mtl.Or,
-    mtl.Predicate,
-    mtl.Until,
-]
+class StlSpecification(Protocol):
+    robustness: float
+
+    def reset(self) -> None:
+        ...
+
+    def eval_interval(self, __traces: Dict[str, ndarray], __time_stamps: ndarray) -> None:
+        ...

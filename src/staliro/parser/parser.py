@@ -11,9 +11,7 @@ from .stlParser import stlParser as Parser
 from .stlParserVisitor import stlParserVisitor as Visitor
 from .stlSpecification import StlSpecification
 
-
 Predicates = Dict[str, Predicate]
-
 
 # parse is used to translate a string MTL formula
 # into an MTL representation using the TLTk Python module developed
