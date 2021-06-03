@@ -107,6 +107,12 @@ class Specification:
                 "RTAMT library must be installed to use RTAMT discrete time backend"
             )
 
+        for predicate in self._data.values():
+            if not isinstance(predicate, str):
+                raise ValueError(
+                    "Provided predicates must be strings to evaluate with RTAMT backend"
+                )
+
         phi = STLDiscreteTimeSpecification()
         phi.name = "RTAMT Discrete-Time Offline Monitor"
         phi.semantics = Semantics.STANDARD
@@ -151,6 +157,12 @@ class Specification:
             from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT library must be installed to use RTAMT dense time backend")
+
+        for predicate in self._data.values():
+            if not isinstance(predicate, str):
+                raise ValueError(
+                    "Provided predicates must be strings to evaluate with RTAMT backend"
+                )
 
         phi = STLDenseTimeSpecification()
         phi.name = "RTAMT Dense-Time Offline Monitor"
