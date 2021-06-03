@@ -1,8 +1,7 @@
 from enum import Enum
-from typing import Dict, Optional, Union, List
+from typing import Dict, Optional, Any, List
 
 from numpy import ndarray
-from tltk_mtl import Predicate
 
 from .parser import parse, StlSpecification
 
@@ -26,7 +25,7 @@ class Specification:
     def __init__(
         self,
         spec: str,
-        data: Union[Dict[str, str], Dict[str, Predicate]],
+        data: Dict[str, Any],
         subsystem: Subsystem = Subsystem.TLTK,
     ) -> None:
         """
@@ -71,6 +70,10 @@ class Specification:
         The _tltk_evaluate function evaluates the robustness value
         utilizing the TLTK robustness evaluator.
         """
+        try:
+            from tltk_mtl import Predicate
+        except ModuleNotFoundError:
+            raise RuntimeError("TLTK extra must be specified during install to use TLTK backend")
 
         for predicate in self._data.values():
             if not isinstance(predicate, Predicate):
@@ -79,7 +82,7 @@ class Specification:
                 )
 
         if self._tltk_cache is None:
-            phi = parse(self._spec, self._data)  # type: ignore
+            phi = parse(self._spec, self._data)
 
             if phi is None:
                 raise RuntimeError("Could not parse STL formula into TLTK objects")
