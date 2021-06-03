@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Optional, TypeVar, Tuple
+from typing import Optional, TypeVar, Tuple
 
 from numpy import ndarray, float32, float64
 
@@ -20,23 +20,22 @@ def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
 
     if trajectories.ndim != 2:
         raise ValueError("trajectories must be 2-dimensional")
-    elif trajectories.shape[0] != timestamps.size:
-        raise ValueError("first dimension of trajectories must equal size of timestamps")
 
-    return trajectories.astype(float64), timestamps.astype(float32)
+    if trajectories.shape[0] != timestamps.size and trajectories.shape[1] != timestamps.size:
+        raise ValueError("one dimension of trajectories must equal size of timestamps")
 
-
-def _extract_traces(spec: Specification, trajectories: ndarray) -> Dict[str, ndarray]:
-    return {pred_name: trajectories for pred_name in spec.data_keys()}
+    if trajectories.shape[0] == timestamps.size:
+        return trajectories.astype(float64), timestamps.astype(float32)
+    else:
+        return trajectories.astype(float64).T, timestamps.astype(float32)
 
 
 def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
     def obj_fn(values: ndarray) -> float:
         result = model.simulate(values, options)
         trajectories, timestamps = _validate_result(result)
-        traces = _extract_traces(spec, trajectories)
 
-        return spec.evaluate(traces, timestamps)
+        return spec.evaluate(trajectories, timestamps)
 
     return obj_fn
 
