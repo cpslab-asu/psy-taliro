@@ -35,7 +35,7 @@ unittest:
   stage: test
   image: python:3.8
   script:
-    - poetry install --extras tests
+    - poetry install --extras tests --extras tltk
     - poetry run pip install git+https://github.com/andersonjwan/rtamt
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
