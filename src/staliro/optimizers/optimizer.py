@@ -1,27 +1,20 @@
 from __future__ import annotations
 
-import sys
-from typing import Callable, TypeVar
-
-if sys.version_info >= (3, 8):
-    from typing import Protocol, runtime_checkable
-else:
-    from typing_extensions import Protocol, runtime_checkable
+from abc import ABC
+from typing import Callable, TypeVar, Generic
 
 from numpy import ndarray
 
 from ..options import StaliroOptions
-from ..results import StaliroResult
+from ..results import Run
 
-
-_T = TypeVar("_T", bound=StaliroResult, covariant=True)
-_O = TypeVar("_O", contravariant=True)
 ObjectiveFn = Callable[[ndarray], float]
+_T = TypeVar("_T", bound=Run, covariant=True)
+_O = TypeVar("_O", contravariant=True)
 
 
-@runtime_checkable
-class Optimizer(Protocol[_O, _T]):
+class Optimizer(ABC, Generic[_O, _T]):
     def optimize(
-        self, __func: ObjectiveFn, __options: StaliroOptions, __optimizer_options: _O = ...
+        self, func: ObjectiveFn, options: StaliroOptions, optimizer_options: _O = ...
     ) -> _T:
-        ...
+        raise NotImplementedError()
