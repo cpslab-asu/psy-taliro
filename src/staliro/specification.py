@@ -1,9 +1,9 @@
 from enum import Enum
-from typing import Dict, Optional, Any, List
+from typing import Dict, Any, List, Optional
 
 from numpy import ndarray
 
-from .parser import parse, StlSpecification
+from .parser import StlSpecification
 
 
 class Subsystem(Enum):
@@ -36,7 +36,7 @@ class Specification:
         self._spec = spec
         self._subsystem = subsystem
         self._data = data
-        self._tltk_cache: Optional[StlSpecification] = None
+        self._tltk_obj: Optional[StlSpecification] = None
 
     def data_keys(self) -> List[str]:
         return list(self._data.keys())
@@ -72,27 +72,27 @@ class Specification:
         """
         try:
             from tltk_mtl import Predicate
+            from .parser import parse
         except ModuleNotFoundError:
             raise RuntimeError("TLTK extra must be specified during install to use TLTK backend")
 
-        for predicate in self._data.values():
-            if not isinstance(predicate, Predicate):
-                raise ValueError(
-                    "Provided predicates must be TLTK predicates to evaluate with TLTK backend"
-                )
+        if not all(isinstance(element, Predicate) for element in self._data.values()):
+            raise ValueError(
+                "Provided predicates must be TLTK predicates to evaluate with TLTK backend"
+            )
 
-        if self._tltk_cache is None:
+        if self._tltk_obj is None:
             phi = parse(self._spec, self._data)
 
             if phi is None:
                 raise RuntimeError("Could not parse STL formula into TLTK objects")
 
-            self._tltk_cache = phi
+            self._tltk_obj = phi
 
-        self._tltk_cache.reset()
-        self._tltk_cache.eval_interval(traces, timestamps)
+        self._tltk_obj.reset()
+        self._tltk_obj.eval_interval(traces, timestamps)
 
-        return self._tltk_cache.robustness
+        return self._tltk_obj.robustness
 
     def _rtamt_discrete_evaluate(self, traces: Dict[str, ndarray], timestamps: ndarray) -> float:
         """
