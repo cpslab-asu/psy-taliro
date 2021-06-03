@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 
 from numpy import ndarray
 
-from .parser import StlSpecification
+from .parser import parse, StlSpecification
 
 
 class Subsystem(Enum):
@@ -72,7 +72,6 @@ class Specification:
         """
         try:
             from tltk_mtl import Predicate
-            from .parser import parse
         except ModuleNotFoundError:
             raise RuntimeError("TLTK extra must be specified during install to use TLTK backend")
 
