@@ -6,6 +6,7 @@ _Traces = Dict[str, ndarray]
 
 class TLTKObject:
     robustness: float
+    variable_name: str
     def eval_interval(
         self, traces: _Traces, time_stamps: ndarray, param_names: Optional[Any] = ...
     ) -> None: ...
