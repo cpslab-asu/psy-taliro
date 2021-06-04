@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING, Union, Sequence
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
@@ -9,7 +9,8 @@ from antlr4.InputStream import InputStream
 if TYPE_CHECKING:
     from tltk_mtl import Predicate
 
-    Predicates = Dict[str, Predicate]
+    PredicateDict = Dict[str, Predicate]
+    Predicates = Union[Sequence[str], PredicateDict]
 
 from .stlSpecification import StlSpecification
 
