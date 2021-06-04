@@ -24,7 +24,7 @@ def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
     if trajectories.shape[0] != timestamps.size and trajectories.shape[1] != timestamps.size:
         raise ValueError("one dimension of trajectories must equal size of timestamps")
 
-    if trajectories.shape[0] == timestamps.size:
+    if trajectories.shape[1] == timestamps.size:
         return trajectories.astype(float64), timestamps.astype(float32)
     else:
         return trajectories.astype(float64).T, timestamps.astype(float32)
