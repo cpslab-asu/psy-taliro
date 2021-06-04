@@ -14,22 +14,15 @@ if TYPE_CHECKING:
 
 from .stlSpecification import StlSpecification
 
-
-# parse is used to translate a string MTL formula
-# into an MTL representation using the TLTk Python module developed
-# by Nogthar_ and Bardh Hoxha.
-#
-# @param formula:    A string representing the formula to be parsed. It
-#                    should be noted that predicate names should correspond
-#                    to the names in the predicates parameter.
-#
-# @param predicates: A dictionary of MTL.Predicate()'s.
-#
-# @param mode:       The specified computation mode to be used for MTL. The
-#                    default mode is 'cpu_threaded'
-
-
 def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
+    """TLTk parser parses a specification requirement into an equivalent TLTk structure
+
+    Attributes:
+        formula: The formal specification requirement
+        predicates: The set of Predicate(s) used in the requirement
+        mode: The TLTk computation mode
+    """
+
     if find_spec("tltk_mtl") is None:
         raise RuntimeError("TLTK must be installed to use parser functionality")
 
