@@ -1,190 +1,119 @@
-from enum import Enum
-from typing import Dict, Any, List, Optional
+from statistics import mean
+from typing import (
+    Dict,
+    Iterable,
+    Protocol,
+    Literal,
+    NamedTuple,
+    Sequence,
+    Union,
+    runtime_checkable,
+)
 
-from numpy import ndarray
+from numpy import ndarray, hstack
 
-from .parser import parse, StlSpecification
-
-
-class Subsystem(Enum):
-    TLTK = 1
-    RTAMT_DISCRETE = 2
-    RTAMT_DENSE = 3
+from .parser import parse
 
 
-class Specification:
-    """
-    The Specification class implements the facade pattern to enable the
-    use of multiple robustness evaluators as subsystems. The current
-    subsystems supported are:
+@runtime_checkable
+class Specification(Protocol):
+    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        ...
 
-    - TLTk: https://bitbucket.org/cps-research/tltk/src/master/
-    - RTAMT: https://github.com/nickovic/rtamt
-    """
 
-    def __init__(
-        self,
-        spec: str,
-        data: Dict[str, Any],
-        subsystem: Subsystem = Subsystem.TLTK,
-    ) -> None:
-        """
-        The Specification is initialized with the user-defined specification,
-        the selected subsystem, and the data required by selected subsystem.
-        """
+class Predicate(NamedTuple):
+    column: int
+    dtype: Literal["float", "int"] = "float"
 
-        self._spec = spec
-        self._subsystem = subsystem
-        self._data = data
-        self._tltk_obj: Optional[StlSpecification] = None
 
-    def data_keys(self) -> List[str]:
-        return list(self._data.keys())
+class TLTK(Specification):
+    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
+        if not all(isinstance(element, Predicate) for element in predicates):
+            raise ValueError("predicates must be dictionary of specification.Predicate objects")
 
-    def evaluate(self, traces: Dict[str, ndarray], timestamps: ndarray) -> float:
-        """
-        The evaluate function evaluates the robustness value based on the
-        supplied traces and timestamps data with the selected subsystem.
-        """
+        parsed = parse(phi, list(predicates.keys()))
 
-        if timestamps.ndim != 1:
-            raise ValueError("Timestamps is expected to be a 1-dimensional ndarray")
+        if parsed is None:
+            raise RuntimeError("Could not parse requirement")
 
-        for key, trace in traces.items():
-            if key not in self._data:
-                raise ValueError(f"Unknown trace {key}")
-            elif len(trace) != timestamps.size:
-                raise ValueError("Traces must be of same length as timestamp ndarray")
+        self.tltk_obj = parsed
+        self.predicates = predicates
 
-        if self._subsystem == Subsystem.TLTK:
-            return self._tltk_evaluate(traces, timestamps)
-        elif self._subsystem == Subsystem.RTAMT_DISCRETE:
-            return self._rtamt_discrete_evaluate(traces, timestamps)
-        elif self._subsystem == Subsystem.RTAMT_DENSE:
-            return self._rtamt_dense_evaluate(traces, timestamps)
+    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        pred_map = self.predicates.items()
+        traces = {name: trajectories[pred.column].astype(pred.dtype) for name, pred in pred_map}
 
-        raise ValueError("Selected subsystem unrecognized.")
+        self.tltk_obj.reset()
+        self.tltk_obj.eval_interval(traces, timestamps)
 
-    def _tltk_evaluate(self, traces: Dict[str, ndarray], timestamps: ndarray) -> float:
-        """
-        The _tltk_evaluate function evaluates the robustness value
-        utilizing the TLTK robustness evaluator.
-        """
-        try:
-            from tltk_mtl import Predicate
-        except ModuleNotFoundError:
-            raise RuntimeError("TLTK extra must be specified during install to use TLTK backend")
+        return self.tltk_obj.robustness
 
-        if not all(isinstance(element, Predicate) for element in self._data.values()):
-            raise ValueError(
-                "Provided predicates must be TLTK predicates to evaluate with TLTK backend"
-            )
 
-        if self._tltk_obj is None:
-            phi = parse(self._spec, self._data)
+def _step_widths(times: Union[Sequence[float], ndarray]) -> Iterable[float]:
+    """Compute the distance between adjacent elements."""
 
-            if phi is None:
-                raise RuntimeError("Could not parse STL formula into TLTK objects")
+    for i in range(len(times) - 2):
+        yield abs(times[i] - times[i + 1])
 
-            self._tltk_obj = phi
 
-        self._tltk_obj.reset()
-        self._tltk_obj.eval_interval(traces, timestamps)
-
-        return self._tltk_obj.robustness
-
-    def _rtamt_discrete_evaluate(self, traces: Dict[str, ndarray], timestamps: ndarray) -> float:
-        """
-        The _rtamt_discrete_evaluate function evaluates the robustness value
-        utilizing the RTAMT discrete-time offline monitor.
-        """
+class RTAMTDiscrete(Specification):
+    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         try:
             from rtamt import STLDiscreteTimeSpecification
-            from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
+            from rtamt.enumerations.options import Semantics
         except ModuleNotFoundError:
-            raise RuntimeError(
-                "RTAMT library must be installed to use RTAMT discrete time backend"
-            )
+            raise RuntimeError("RTAMT must be installed to use associated backends")
 
-        for predicate in self._data.values():
-            if not isinstance(predicate, str):
-                raise ValueError(
-                    "Provided predicates must be strings to evaluate with RTAMT backend"
-                )
+        if "time" in predicates:
+            raise ValueError("'time' cannot be used as a predicate name for RTAMT")
 
-        phi = STLDiscreteTimeSpecification()
-        phi.name = "RTAMT Discrete-Time Offline Monitor"
-        phi.semantics = Semantics.STANDARD
+        self.predicates = predicates
+        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj.spec = phi
+        self.rtamt_obj.parse()
+        self.rtamt_obj.pastify()
 
+        for name, options in predicates.items():
+            self.rtamt_obj.declare_var(name, options.dtype)
+
+    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
         # set sampling period
-        period = 0.0
-        for i in range(0, len(timestamps) - 1):
-            period = period + (timestamps[i + 1] - timestamps[i])
+        period = mean(_step_widths(timestamps))
+        self.rtamt_obj.set_sampling_period(period, "s", 0.1)
 
-        period = period / (len(timestamps) - 1)
-        phi.set_sampling_period(period, "s", 0.1)
+        traces = {"time": timestamps.tolist()}
 
-        # declare variables
-        for var_name, dtype in self._data.items():
-            if not isinstance(dtype, str):
-                raise ValueError("dtype must be of type string")
+        for name, options in self.predicates.items():
+            traces[name] = trajectories[options.column].tolist()
 
-            phi.declare_var(var_name, dtype)
+        robustness = self.rtamt_obj.evaluate(traces)
 
-        # set specification
-        phi.spec = self._spec
+        return robustness[-1][1]
 
-        # parse specification
-        phi.parse()
-        phi.pastify()
 
-        # build traces data structure
-        rtamt_data = {"time": timestamps.tolist(), **traces}
-
-        # calculate robustness
-        robustness = phi.evaluate(rtamt_data)
-
-        return (robustness[-1])[1]
-
-    def _rtamt_dense_evaluate(self, traces: Dict[str, ndarray], timestamps: ndarray) -> float:
-        """
-        The _rtamt_dense_evaluate function evaluates the robustness value
-        utilizing the RTAMT dense-time offline monitor.
-        """
+class RTAMTDense(Specification):
+    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         try:
             from rtamt import STLDenseTimeSpecification
-            from rtamt.spec.stl.discrete_time.specification import Semantics  # type: ignore
+            from rtamt.enumerations.options import Semantics
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT library must be installed to use RTAMT dense time backend")
 
-        for predicate in self._data.values():
-            if not isinstance(predicate, str):
-                raise ValueError(
-                    "Provided predicates must be strings to evaluate with RTAMT backend"
-                )
+        self.predicates = {name: predicate.column for name, predicate in predicates.items()}
+        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj.spec = phi
+        self.rtamt_obj.parse()
+        self.rtamt_obj.pastify()
 
-        phi = STLDenseTimeSpecification()
-        phi.name = "RTAMT Dense-Time Offline Monitor"
-        phi.semantics = Semantics.STANDARD
+        for name, options in predicates.items():
+            self.rtamt_obj.declare_var(name, options.dtype)
 
-        # declare variables
-        for var_name, dtype in self._data.items():
-            if not isinstance(dtype, str):
-                raise ValueError("dtype must be of type string")
+    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        column_map = self.predicates.items()
+        traces = [
+            (name, hstack((timestamps, trajectories[col])).tolist()) for name, col in column_map
+        ]
 
-            phi.declare_var(var_name, dtype)
+        robustness = self.rtamt_obj.evaluate(*traces)
 
-        # set specification
-        phi.spec = self._spec
-
-        # parse specification
-        phi.parse()
-        phi.pastify()
-
-        # build traces data structure
-        rtamt_data = [(key, list(zip(timestamps, trace))) for key, trace in traces.items()]
-
-        # calculate robustness
-        robustness = phi.evaluate(*rtamt_data)
-
-        return (robustness[-1])[1]
+        return robustness[-1][1]
