@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Callable, TypeVar, Generic
 
 from numpy import ndarray
@@ -14,6 +14,7 @@ _O = TypeVar("_O", contravariant=True)
 
 
 class Optimizer(ABC, Generic[_O, _T]):
+    @abstractmethod
     def optimize(
         self, func: ObjectiveFn, options: StaliroOptions, optimizer_options: _O = ...
     ) -> _T:
