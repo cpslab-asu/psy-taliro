@@ -106,6 +106,13 @@ class RTAMTDiscrete(Specification):
 
 
 class RTAMTDense(Specification):
+    """RTAMT dense-time specification backend.
+
+    Attributes:
+        phi: The specification requirement
+        predicates: A set of Predicate(s) used in the requirement
+    """
+
     def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         try:
             from rtamt import STLDenseTimeSpecification
