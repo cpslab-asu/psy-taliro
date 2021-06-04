@@ -1,10 +1,9 @@
 from os import path
 from unittest import TestCase
 
-import numpy as np
-import pandas as pd
-import tltk_mtl as mtl
-from staliro.specification import Specification, Subsystem
+from numpy import float32, float64
+from pandas import read_csv
+from staliro.specification import TLTK, RTAMTDiscrete, RTAMTDense, Predicate
 
 
 class SpecificationTestCase(TestCase):
@@ -18,68 +17,34 @@ class SpecificationTestCase(TestCase):
 
         # trajectory data
         testdir = path.dirname(path.realpath(__file__))
-        self._data = pd.read_csv(path.join(testdir, "data", "trajectory.csv"))
+        self._data = read_csv(path.join(testdir, "data", "trajectory.csv"))
 
     def test_tltk_specification(self) -> None:
-        # predicates
-        a_matrix = np.array([[1, 0, 0], [-1, 0, 0]], dtype=np.float64)
-        predicates = {
-            "a": mtl.Predicate("a", a_matrix, np.array([250, -240], dtype=np.float64)),
-            "b": mtl.Predicate(
-                "b", a_matrix, np.array([240.1, -240], dtype=np.float64)
-            ),
-        }
+        predicates = {"a": Predicate(0), "b": Predicate(0)}
+        specification = TLTK(self._tltk_formula, predicates)
 
-        # create specification with TLTK backend
-        specification = Specification(self._tltk_formula, predicates, Subsystem.TLTK)
-
-        # filter data
-        timestamps = self._data["t"].to_numpy(dtype=np.float32)
+        timestamps = self._data["t"].to_numpy(dtype=float32)
         trajectory = self._data[["x1", "x2", "x3"]].to_numpy()
-        traces = {"a": trajectory, "b": trajectory}
+        robustness = specification.evaluate(trajectory, timestamps)
 
-        # calculate robustness
-        robustness = specification.evaluate(traces, timestamps)
-
-        # assert equivalence
         self.assertAlmostEqual(robustness, self._expected_robustness)
 
     def test_rtamt_discrete_specification(self) -> None:
-        # variables
-        predicates = {"x1": "float"}
+        predicates = {"x1": Predicate(0, "float")}
+        specification = RTAMTDiscrete(self._rtamt_formula, predicates)
 
-        # create specification with RTAMT (discrete) backend
-        specification = Specification(
-            self._rtamt_formula, predicates, Subsystem.RTAMT_DISCRETE
-        )
+        timestamps = self._data["t"].to_numpy(dtype=float64)
+        trajectories = self._data["x1"].to_numpy(dtype=float64)
+        robustness = specification.evaluate(trajectories, timestamps)
 
-        # filter data
-        # RTAMT does not support mult-dimensional variable matrices
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        traces = {"x1": self._data["x1"].to_numpy(dtype=np.float64)}
-
-        # calculate robustness
-        robustness = specification.evaluate(traces, timestamps)
-
-        # assert equivalence
         self.assertAlmostEqual(robustness, self._expected_robustness)
 
     def test_rtamt_dense_specification(self) -> None:
-        # variables
-        predicates = {"x1": "float"}
+        predicates = {"x1": Predicate(0, "float")}
+        specification = RTAMTDense(self._rtamt_formula, predicates)
 
-        # create specification with RTAMT (discrete) backend
-        specification = Specification(
-            self._rtamt_formula, predicates, Subsystem.RTAMT_DENSE
-        )
+        timestamps = self._data["t"].to_numpy(dtype=float64)
+        trajectories = self._data["x1"].to_numpy(dtype=float64)
+        robustness = specification.evaluate(trajectories, timestamps)
 
-        # filter data
-        # RTAMT does not support mult-dimensional variable matrices
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        traces = {"x1": self._data["x1"].to_numpy(dtype=np.float64)}
-
-        # calculate robustness
-        robustness = specification.evaluate(traces, timestamps)
-
-        # assert equivalence
         self.assertAlmostEqual(robustness, self._expected_robustness)
