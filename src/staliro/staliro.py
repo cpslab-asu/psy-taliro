@@ -9,7 +9,7 @@ from numpy import ndarray
 from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
-from .results import StaliroResult
+from .results import Run
 from .specification import Specification
 from .signals import SignalInterpolator
 
@@ -56,7 +56,7 @@ def _make_objective_fn(spec: Specification, model: Model, options: StaliroOption
     return objective_fn
 
 
-_T = TypeVar("_T", bound=StaliroResult)
+_T = TypeVar("_T", bound=Run)
 _O = TypeVar("_O", contravariant=True)
 
 
