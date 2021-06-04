@@ -33,6 +33,7 @@ class TLTK(Specification):
         phi: The specification requirement
         predicates: A set of Predicate(s) used in the requirement
     """
+
     def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         if not all(isinstance(element, Predicate) for element in predicates):
             raise ValueError("predicates must be dictionary of specification.Predicate objects")
@@ -63,6 +64,13 @@ def _step_widths(times: Union[Sequence[float], ndarray]) -> Iterable[float]:
 
 
 class RTAMTDiscrete(Specification):
+    """RTAMT discrete-time specification backend.
+
+    Attributes:
+        phi: The specification requirement
+        predicates: A set of Predicate(s) used in the requirement
+    """
+
     def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         try:
             from rtamt import STLDiscreteTimeSpecification
