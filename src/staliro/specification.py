@@ -127,10 +127,7 @@ class RTAMTDense(Specification):
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        period = round(mean(_step_widths(timestamps)), 2)
-        self.rtamt_obj.set_sampling_period(period, "s", 0.1)
-
-        # parse AFTER declaring variables and setting sampling period
+        # parse AFTER declaring variables
         self.rtamt_obj.parse()
         self.rtamt_obj.pastify()
 
