@@ -92,7 +92,7 @@ class RTAMTDiscrete(Specification):
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
         # set sampling period
-        period = mean(_step_widths(timestamps))
+        period = round(mean(_step_widths(timestamps)), 2)
         self.rtamt_obj.set_sampling_period(period, "s", 0.1)
 
         traces = {"time": timestamps.tolist()}
