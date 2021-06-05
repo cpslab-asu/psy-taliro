@@ -13,7 +13,7 @@ from typing import (
 from numpy import ndarray, hstack
 
 from .parser import parse
-
+from tltk_mtl import Predicate as mPredicate
 
 @runtime_checkable
 class Specification(Protocol):
@@ -23,7 +23,7 @@ class Specification(Protocol):
 
 class Predicate(NamedTuple):
     column: int
-    dtype: Literal["float", "int"] = "float"
+    dtype: Literal["float64"] = "float64"
 
 
 class TLTK(Specification):
@@ -34,11 +34,8 @@ class TLTK(Specification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
-        if not all(isinstance(element, Predicate) for element in predicates):
-            raise ValueError("predicates must be dictionary of specification.Predicate objects")
-
-        parsed = parse(phi, list(predicates.keys()))
+    def __init__(self, phi: str, predicates: Union[Dict[str, Predicate], Dict[str, mPredicate]]):
+        parsed = parse(phi, predicates)
 
         if parsed is None:
             raise RuntimeError("Could not parse requirement")
