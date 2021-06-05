@@ -81,11 +81,10 @@ class RTAMTDiscrete(Specification):
         if "time" in predicates:
             raise ValueError("'time' cannot be used as a predicate name for RTAMT")
 
-        self.predicates = predicates
         self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
+
         self.rtamt_obj.spec = phi
-        self.rtamt_obj.parse()
-        self.rtamt_obj.pastify()
+        self.predicates = predicates
 
         for name, options in predicates.items():
             self.rtamt_obj.declare_var(name, options.dtype)
@@ -94,6 +93,9 @@ class RTAMTDiscrete(Specification):
         # set sampling period
         period = round(mean(_step_widths(timestamps)), 2)
         self.rtamt_obj.set_sampling_period(period, "s", 0.1)
+
+        self.rtamt_obj.parse()
+        self.rtamt_obj.pastify()
 
         traces = {"time": timestamps.tolist()}
 
