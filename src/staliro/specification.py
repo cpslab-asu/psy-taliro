@@ -13,7 +13,6 @@ from typing import (
 from numpy import ndarray, hstack
 
 from .parser import parse
-from tltk_mtl import Predicate as mPredicate
 
 @runtime_checkable
 class Specification(Protocol):
@@ -34,7 +33,7 @@ class TLTK(Specification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicates: Union[Dict[str, Predicate], Dict[str, mPredicate]]):
+    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
         parsed = parse(phi, predicates)
 
         if parsed is None:
