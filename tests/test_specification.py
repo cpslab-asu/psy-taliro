@@ -35,7 +35,7 @@ class SpecificationTestCase(TestCase):
 
         timestamps = self._data["t"].to_numpy(dtype=float64)
         trajectories = self._data["x1"].to_numpy(dtype=float64)
-        robustness = specification.evaluate(trajectories, timestamps)
+        robustness = specification.evaluate([trajectories], timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness)
 
@@ -45,6 +45,6 @@ class SpecificationTestCase(TestCase):
 
         timestamps = self._data["t"].to_numpy(dtype=float64)
         trajectories = self._data["x1"].to_numpy(dtype=float64)
-        robustness = specification.evaluate(trajectories, timestamps)
+        robustness = specification.evaluate([trajectories], timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness)
