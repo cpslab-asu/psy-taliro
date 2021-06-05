@@ -7,6 +7,7 @@ else:
     from stlParser import stlParser
 
 import tltk_mtl as mtl
+import numpy as np
 
 # This class defines a complete generic visitor for a parse tree produced by stlParser.
 class stlParserVisitor(ParseTreeVisitor):
@@ -125,14 +126,14 @@ class stlParserVisitor(ParseTreeVisitor):
                 )
             elif operator == "<=":
                 if minus == "-":
-                    return mtl.Predicate(var, -1.0, value)
+                    return mtl.Predicate(var, -1.0, np.array(value, dtype=np.float64))
                 else:
-                    return mtl.Predicate(var, 1.0, value)
+                    return mtl.Predicate(var, 1.0, np.array(value, dtype=np.float64))
             elif operator == ">=":
                 if minus == "-":
-                    return mtl.Predicate(var, 1.0, -value)
+                    return mtl.Predicate(var, 1.0, np.array(-value, dtype=np.float64))
                 else:
-                    return mtl.Predicate(var, -1.0, -value)
+                    return mtl.Predicate(var, -1.0, np.array(-value, dtype=np.float64))
 
     # Visit a parse tree produced by stlParser#interval.
     def visitInterval(self, ctx: stlParser.IntervalContext):
