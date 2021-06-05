@@ -76,7 +76,7 @@ INT_NUMBER
     : DECIMAL_INTEGER ;
 
 FLOAT_NUMBER
-    : POINT_FLOAT ;
+    : DECIMAL_FLOAT ;
 
 fragment DECIMAL_INTEGER
     : NON_ZERO_DIGIT DIGIT*
@@ -86,19 +86,15 @@ fragment DECIMAL_INTEGER
 fragment NON_ZERO_DIGIT
     : [1-9] ;
 
+fragment DECIMAL_FLOAT
+    : DIGITS '.' DIGITS?
+    | '.' DIGITS
+;
+
 fragment DIGIT
     : [0-9] ;
 
-fragment POINT_FLOAT
-    : DIGIT? FRACTION
-    | DIGIT '.'
-;
-
-fragment FRACTION
-    : '.' DIGIT+
-;
-
-fragment Digits
+fragment DIGITS
     : [0-9]+ ;
 
 fragment PREFIX
