@@ -10,18 +10,10 @@ import tltk_mtl as mtl
 
 # This class defines a complete generic visitor for a parse tree produced by stlParser.
 class stlParserVisitor(ParseTreeVisitor):
-    def __init__(self, lexer, data, mode):
+    def __init__(self, lexer, predicates, mode):
         self._lexer = lexer
         self._mode = mode
-
-        if type(data) is dict:
-            self._predicates = data
-        elif type(data) is list:
-            self._variables = data
-        else:
-            raise Exception(
-                "data: provided data is not a dict of mtl.Predicate's or list of variable names"
-            )
+        self._predicates = predicates
 
     # Visit a parse tree produced by stlParser#stlSpecification.
     def visitStlSpecification(self, ctx: stlParser.StlSpecificationContext):
@@ -122,7 +114,7 @@ class stlParserVisitor(ParseTreeVisitor):
             value = float(value)
 
             # check that the variable is valid
-            if var not in self._variables:
+            if var not in self._predicates.keys():
                 raise Exception(
                     "predicate: " + var + " is not in the list of valid variables"
                 )
