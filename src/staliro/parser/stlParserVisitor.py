@@ -116,7 +116,7 @@ class stlParserVisitor(ParseTreeVisitor):
             # check that the variable is valid
             if var not in self._predicates.keys():
                 raise Exception(
-                    "predicate: " + var + " is not in the list of valid variables"
+                    "Error: predicate " + var + " is not in the list of valid variables"
                 )
 
             if operator == "<" or operator == ">":
@@ -125,14 +125,14 @@ class stlParserVisitor(ParseTreeVisitor):
                 )
             elif operator == "<=":
                 if minus == "-":
-                    return mtl.Predicate(var, -1, value)
+                    return mtl.Predicate(var, -1.0, value)
                 else:
-                    return mtl.Predicate(var, 1, value)
+                    return mtl.Predicate(var, 1.0, value)
             elif operator == ">=":
                 if minus == "-":
-                    return mtl.Predicate(var, 1, -value)
+                    return mtl.Predicate(var, 1.0, -value)
                 else:
-                    return mtl.Predicate(var, -1, -value)
+                    return mtl.Predicate(var, -1.0, -value)
 
     # Visit a parse tree produced by stlParser#interval.
     def visitInterval(self, ctx: stlParser.IntervalContext):
