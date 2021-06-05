@@ -90,18 +90,18 @@ class RTAMTDiscrete(Specification):
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        # set sampling period
         period = round(mean(_step_widths(timestamps)), 2)
         self.rtamt_obj.set_sampling_period(period, "s", 0.1)
 
+        # parse AFTER declaring variables and setting sampling period
         self.rtamt_obj.parse()
         self.rtamt_obj.pastify()
 
         traces = {"time": timestamps.tolist()}
-
         for name, options in self.predicates.items():
             traces[name] = trajectories[options.column].tolist()
 
+        # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
 
         return robustness[-1][1]
@@ -122,21 +122,28 @@ class RTAMTDense(Specification):
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT library must be installed to use RTAMT dense time backend")
 
-        self.predicates = {name: predicate.column for name, predicate in predicates.items()}
         self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
+
+        self.predicates = {name: predicate.column for name, predicate in predicates.items()}
         self.rtamt_obj.spec = phi
-        self.rtamt_obj.parse()
-        self.rtamt_obj.pastify()
 
         for name, options in predicates.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        period = round(mean(_step_widths(timestamps)), 2)
+        self.rtamt_obj.set_sampling_period(period, "s", 0.1)
+
+        # parse AFTER declaring variables and setting sampling period
+        self.rtamt_obj.parse()
+        self.rtamt_obj.pastify()
+
         column_map = self.predicates.items()
         traces = [
-            (name, hstack((timestamps, trajectories[col])).tolist()) for name, col in column_map
+            (name, list(zip(timestamps, trajectories[col]))) for name, col in column_map
         ]
 
+        # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
         robustness = self.rtamt_obj.evaluate(*traces)
 
         return robustness[-1][1]
