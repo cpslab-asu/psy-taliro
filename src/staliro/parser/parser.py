@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
-from typing import Dict, Optional, TYPE_CHECKING, Union, Sequence, NamedTuple, Literal
+from typing import Dict, Optional, TYPE_CHECKING, Union, Sequence
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 
+if TYPE_CHECKING:
+    from tltk_mtl import Predicate
+
+    PredicateDict = Dict[str, Predicate]
+    Predicates = Union[Sequence[str], PredicateDict]
+
 from .stlSpecification import StlSpecification
 
-class Predicate(NamedTuple):
-    column: int
-    dtype: Literal["float64"] = "float64"
-
-
-def parse(formula: str, predicates: Dict[str, Predicate], mode: str = "cpu") -> Optional[StlSpecification]:
+def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
     """TLTk parser parses a specification requirement into an equivalent TLTk structure
 
     Attributes:

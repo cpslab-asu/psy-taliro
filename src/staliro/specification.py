@@ -13,12 +13,16 @@ from typing import (
 from numpy import ndarray, hstack
 
 from .parser import parse
-from .parser import Predicate
 
 @runtime_checkable
 class Specification(Protocol):
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
         ...
+
+
+class Predicate(NamedTuple):
+    column: int
+    dtype: Literal["float64"] = "float64"
 
 
 class TLTK(Specification):
