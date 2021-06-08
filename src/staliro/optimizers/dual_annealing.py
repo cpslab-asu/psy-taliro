@@ -1,55 +1,47 @@
 from __future__ import annotations
 
 from datetime import datetime
-from random import randint
-from sys import maxsize
 from typing import List
 
 from numpy import ndarray
-from numpy.random import default_rng, Generator
+from numpy.random import default_rng
 from scipy import optimize
 from typing_extensions import Literal
 
-from .optimizer import ObjectiveFn, Optimizer
+from .optimizer import ObjectiveFn, Optimizer, Iteration, Run
 from ..options import StaliroOptions, Behavior
-from ..results import Run, Iteration, StaliroResult
 
 
-def _optimize(func: ObjectiveFn, rng: Generator, options: StaliroOptions) -> Run:
-    history: List[Iteration] = []
+class DualAnnealing(Optimizer[None, Run]):
+    def __init__(self, options: StaliroOptions, optimizer_options: None = None):
+        self.behavior = options.behavior
+        self.bounds = options.bounds
+        self.iterations = options.iterations
 
-    def wrapper(sample: ndarray) -> float:
-        robustness = func(sample)
-        history.append(Iteration(robustness, sample))
+    def optimize(self, func: ObjectiveFn, seed: int) -> Run:
+        history: List[Iteration] = []
 
-        return robustness
+        def wrapper(sample: ndarray) -> float:
+            robustness = func(sample)
+            history.append(Iteration(robustness, sample))
 
-    def listener(sample: ndarray, robustness: float, context: Literal[-1, 0, 1]) -> bool:
-        if robustness < 0 and options.behavior is Behavior.FALSIFICATION:
-            return True
+            return robustness
 
-        return False
+        def listener(sample: ndarray, robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
+            if robustness < 0 and self.behavior is Behavior.FALSIFICATION:
+                return True
 
-    start = datetime.now()
-    bounds = [bound.astuple() for bound in options.bounds]
-    optimize.dual_annealing(
-        wrapper,
-        bounds,
-        seed=rng,
-        maxiter=options.iterations,
-        no_local_search=True,  # Disable local search, use only traditional generalized SA
-        callback=listener,
-    )
+            return False
 
-    return Run(history, datetime.now() - start)
+        start = datetime.now()
+        bounds = [bound.astuple() for bound in self.bounds]
+        optimize.dual_annealing(
+            wrapper,
+            bounds,
+            seed=default_rng(seed),
+            maxiter=self.iterations,
+            no_local_search=True,  # Disable local search, use only traditional generalized SA
+            callback=listener,
+        )
 
-
-class DualAnnealing(Optimizer[None, StaliroResult]):
-    def optimize(
-        self, func: ObjectiveFn, options: StaliroOptions, optimizer_options: None = None
-    ) -> StaliroResult:
-        seed = randint(0, maxsize) if options.seed is None else options.seed
-        rng = default_rng(seed)
-        runs = [_optimize(func, rng, options) for _ in range(options.runs)]
-
-        return StaliroResult(runs, seed)
+        return Run(history, datetime.now() - start)
