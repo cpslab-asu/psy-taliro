@@ -7,12 +7,33 @@ from typing import (
     NamedTuple,
     Sequence,
     Union,
+    Tuple,
     runtime_checkable,
 )
 
-from numpy import ndarray, hstack
+from numpy import ndarray, array
 
 from .parser import parse
+
+
+def _parse_traces(trajectories: ndarray, timestamps: ndarray) -> Tuple[ndarray, ndarray]:
+    if timestamps.ndim != 1:
+        raise ValueError("expected 2-dimensional timestamps")
+
+    if trajectories.ndim == 1 and trajectories.shape[0] == timestamps.shape[0]:
+        return array([trajectories]), timestamps
+    elif trajectories.ndim == 2:
+        if trajectories.shape[0] == timestamps.shape[0]:
+            return trajectories.T, timestamps
+        elif trajectories.shape[1] == timestamps.shape[0]:
+            return trajectories, timestamps
+        else:
+            raise ValueError(
+                "expected trajectories to have one axis of equal length to timestamps"
+            )
+    else:
+        raise ValueError("expected 1 or 2-dimensional trajectories")
+
 
 @runtime_checkable
 class Specification(Protocol):
@@ -20,9 +41,12 @@ class Specification(Protocol):
         ...
 
 
-class Predicate(NamedTuple):
+PredicateName = str
+
+
+class PredicateProps(NamedTuple):
     column: int
-    dtype: Literal["float64"] = "float64"
+    dtype: Literal["float"] = "float"
 
 
 class TLTK(Specification):
@@ -33,18 +57,20 @@ class TLTK(Specification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
-        parsed = parse(phi, predicates)
+    def __init__(self, phi: str, predicate_props: Dict[PredicateName, PredicateProps]):
+        predicate_names = predicate_props.keys()
+        parsed = parse(phi, list(predicate_names))
 
         if parsed is None:
             raise RuntimeError("Could not parse requirement")
 
         self.tltk_obj = parsed
-        self.predicates = predicates
+        self.props = predicate_props
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        pred_map = self.predicates.items()
-        traces = {name: trajectories[pred.column].astype(pred.dtype) for name, pred in pred_map}
+        trajectories, timestamps = _parse_traces(trajectories, timestamps)
+        prop_map = self.props.items()
+        traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
 
         self.tltk_obj.reset()
         self.tltk_obj.eval_interval(traces, timestamps)
@@ -67,35 +93,36 @@ class RTAMTDiscrete(Specification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
+    def __init__(self, phi: str, predicate_props: Dict[PredicateName, PredicateProps]):
         try:
             from rtamt import STLDiscreteTimeSpecification
             from rtamt.enumerations.options import Semantics
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT must be installed to use associated backends")
 
-        if "time" in predicates:
+        if "time" in predicate_props:
             raise ValueError("'time' cannot be used as a predicate name for RTAMT")
 
         self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
 
         self.rtamt_obj.spec = phi
-        self.predicates = predicates
+        self.props = {name: props.column for name, props in predicate_props.items()}
 
-        for name, options in predicates.items():
+        for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        period = round(mean(_step_widths(timestamps)), 2)
-        self.rtamt_obj.set_sampling_period(period, "s", 0.1)
+        trajectories, timestamps = _parse_traces(trajectories, timestamps)
+        period = mean(_step_widths(timestamps))
+        self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
         self.rtamt_obj.parse()
         self.rtamt_obj.pastify()
 
         traces = {"time": timestamps.tolist()}
-        for name, options in self.predicates.items():
-            traces[name] = trajectories[options.column].tolist()
+        for name, column in self.props.items():
+            traces[name] = trajectories[column].tolist()
 
         # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
@@ -111,7 +138,7 @@ class RTAMTDense(Specification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicates: Dict[str, Predicate]):
+    def __init__(self, phi: str, predicate_props: Dict[PredicateName, PredicateProps]):
         try:
             from rtamt import STLDenseTimeSpecification
             from rtamt.enumerations.options import Semantics
@@ -120,21 +147,21 @@ class RTAMTDense(Specification):
 
         self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
 
-        self.predicates = {name: predicate.column for name, predicate in predicates.items()}
+        self.props = {name: predicate.column for name, predicate in predicate_props.items()}
         self.rtamt_obj.spec = phi
 
-        for name, options in predicates.items():
+        for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        trajectories, timestamps = _parse_traces(trajectories, timestamps)
+
         # parse AFTER declaring variables
         self.rtamt_obj.parse()
         self.rtamt_obj.pastify()
 
-        column_map = self.predicates.items()
-        traces = [
-            (name, list(zip(timestamps, trajectories[col]))) for name, col in column_map
-        ]
+        column_map = self.props.items()
+        traces = [(name, list(zip(timestamps, trajectories[col]))) for name, col in column_map]
 
         # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
         robustness = self.rtamt_obj.evaluate(*traces)
