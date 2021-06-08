@@ -9,10 +9,11 @@ from antlr4.InputStream import InputStream
 if TYPE_CHECKING:
     from tltk_mtl import Predicate
 
+    from .stlSpecification import StlSpecification
+
     PredicateDict = Dict[str, Predicate]
     Predicates = Union[Sequence[str], PredicateDict]
 
-from .stlSpecification import StlSpecification
 
 def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
     """TLTk parser parses a specification requirement into an equivalent TLTk structure
