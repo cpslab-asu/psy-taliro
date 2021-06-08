@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from logging import getLogger, NullHandler
 from math import inf
-from typing import Optional, TypeVar, List
+from random import randint
+from sys import maxsize
+from typing import Dict, Optional, TypeVar, Tuple, List, Type
 
-from numpy import ndarray
+from numpy import ndarray, float32, float64
+from numpy.random import default_rng
 
 from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
-from .optimizers import Optimizer, ObjectiveFn
-from .results import Run
+from .optimizers import Optimizer, ObjectiveFn, Run
+from .results import StaliroResult
 from .specification import Specification
 from .signals import SignalInterpolator
 
@@ -64,9 +67,9 @@ def staliro(
     specification: Specification,
     model: Model,
     options: StaliroOptions,
-    optimizer: Optimizer[_O, _T],
+    optimizer_cls: Type[Optimizer[_O, _T]],
     optimizer_options: Optional[_O] = None,
-) -> _T:
+) -> StaliroResult:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
@@ -76,7 +79,7 @@ def staliro(
         specification: The requirement for the system
         model: The model of the system being tested
         options: General options to manipulate the behavior of the search
-        optimizer: The optimizer to use to search the sample space
+        optimizer_cls: The class of the optimizer to use to search the sample space
         optimizer_options: Specific options to manipulate the behavior of the specific optimizer
 
     Returns:
@@ -91,12 +94,15 @@ def staliro(
     if not isinstance(options, StaliroOptions):
         raise ValueError
 
-    if not isinstance(optimizer, Optimizer):
-        raise ValueError
+    if optimizer_options is None:
+        optimizer = optimizer_cls(options)
+    else:
+        optimizer = optimizer_cls(options, optimizer_options)
 
     objective_fn = _make_objective_fn(specification, model, options)
+    seed = options.seed if options.seed is not None else randint(0, maxsize)
+    rng = default_rng(seed)
+    seeds = rng.integers(low=0, high=maxsize, size=options.runs)
+    runs = [optimizer.optimize(objective_fn, seed) for seed in seeds]
 
-    if optimizer_options is None:
-        return optimizer.optimize(objective_fn, options)
-
-    return optimizer.optimize(objective_fn, options, optimizer_options)
+    return StaliroResult(runs, seed)
