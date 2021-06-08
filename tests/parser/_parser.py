@@ -3,8 +3,6 @@ from unittest import TestCase
 import numpy as np
 import tltk_mtl as mtl
 
-from staliro.specification import Predicate
-
 
 class ParserTestCase(TestCase):
     def setUp(self) -> None:
@@ -18,12 +16,4 @@ class ParserTestCase(TestCase):
             "pred7": mtl.Predicate("pred7", np.array([-1]), np.array([-1])),
         }
 
-        self._vars = {
-            "pred1": Predicate(0),
-            "pred2": Predicate(0),
-            "pred3": Predicate(0),
-            "pred4": Predicate(0),
-            "pred5": Predicate(0),
-            "pred6": Predicate(0),
-            "pred7": Predicate(0),
-        }
+        self._vars = ["pred1" "pred2" "pred3" "pred4" "pred5" "pred6" "pred7"]
