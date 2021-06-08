@@ -1,10 +1,10 @@
-from .optimizer import Optimizer, ObjectiveFn
+from .optimizer import Optimizer, ObjectiveFn, Run
 from ..options import StaliroOptions
-from ..results import StaliroResult
 
 
-class Basinhopping(Optimizer[None, StaliroResult]):
-    def optimize(
-        self, func: ObjectiveFn, options: StaliroOptions, optimizer_options: None = None
-    ) -> StaliroResult:
+class Basinhopping(Optimizer[None, Run]):
+    def __init__(self, options: StaliroOptions, optimizer_options: None = None):
+        raise NotImplementedError()
+
+    def optimize(self, func: ObjectiveFn, seed: int) -> Run:
         raise NotImplementedError()
