@@ -1,5 +1,6 @@
 # Generated from stlParser.g4 by ANTLR 4.5.1
 from antlr4 import *
+from numpy.lib.arraysetops import isin
 
 if __name__ is not None and "." in __name__:
     from .stlParser import stlParser
@@ -12,6 +13,13 @@ import numpy as np
 # This class defines a complete generic visitor for a parse tree produced by stlParser.
 class stlParserVisitor(ParseTreeVisitor):
     def __init__(self, lexer, predicates, mode):
+        if not isinstance(predicates, (dict, list, tuple)):
+            raise ValueError("predicates must be list, dict or tuple")
+
+        if isinstance(predicates, dict):
+            if not all(isinstance(pred, mtl.Predicate) for pred in predicates.values()):
+                raise ValueError("all dictionary values must be TLTK Predicate objects")
+
         self._lexer = lexer
         self._mode = mode
         self._predicates = predicates
@@ -93,32 +101,34 @@ class stlParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by stlParser#predicate.
     def visitPredicate(self, ctx: stlParser.PredicateContext):
-        child_count = ctx.getRuleContext().getChildCount()
+        child_count: int = ctx.getRuleContext().getChildCount()
 
         if child_count == 1:
+            child_name = ctx.getRuleContext().getChild(0).getText()
+
             # the predicate name only exists, so return the relevant
             # mtl.Predicate data structure
+            if not isinstance(self._predicates, dict):
+                raise ValueError(
+                    "singular variable names require predicates be provided as dictionary"
+                )
 
-            return self._predicates[ctx.getRuleContext().getChild(0).getText()]
+            return self._predicates[child_name]
         else:
-            minus = ctx.getRuleContext().getChild(0).getText()
+            minus: str = ctx.getRuleContext().getChild(0).getText()
 
             if minus == "-":
-                var = ctx.getRuleContext().getChild(1).getText()
-                operator = ctx.getRuleContext().getChild(2).getText()
-                value = ctx.getRuleContext().getChild(3).getText()
+                var: str = ctx.getRuleContext().getChild(1).getText()
+                operator: str = ctx.getRuleContext().getChild(2).getText()
+                value: str = ctx.getRuleContext().getChild(3).getText()
             else:
-                var = ctx.getRuleContext().getChild(0).getText()
-                operator = ctx.getRuleContext().getChild(1).getText()
-                value = ctx.getRuleContext().getChild(2).getText()
-
-            value = float(value)
+                var: str = ctx.getRuleContext().getChild(0).getText()
+                operator: str = ctx.getRuleContext().getChild(1).getText()
+                value: str = ctx.getRuleContext().getChild(2).getText()
 
             # check that the variable is valid
-            if var not in self._predicates.keys():
-                raise Exception(
-                    "Error: predicate " + var + " is not in the list of valid variables"
-                )
+            if var not in self._predicates:
+                raise Exception(f"Error: predicate {var} is not in the list of valid variables")
 
             if operator == "<" or operator == ">":
                 raise Exception(
@@ -126,14 +136,14 @@ class stlParserVisitor(ParseTreeVisitor):
                 )
             elif operator == "<=":
                 if minus == "-":
-                    return mtl.Predicate(var, -1.0, np.array(value, dtype=np.float64))
+                    return mtl.Predicate(var, -1, float(value))
                 else:
-                    return mtl.Predicate(var, 1.0, np.array(value, dtype=np.float64))
+                    return mtl.Predicate(var, 1, float(value))
             elif operator == ">=":
                 if minus == "-":
-                    return mtl.Predicate(var, 1.0, np.array(-value, dtype=np.float64))
+                    return mtl.Predicate(var, 1, -float(value))
                 else:
-                    return mtl.Predicate(var, -1.0, np.array(-value, dtype=np.float64))
+                    return mtl.Predicate(var, -1, -float(value))
 
     # Visit a parse tree produced by stlParser#interval.
     def visitInterval(self, ctx: stlParser.IntervalContext):
