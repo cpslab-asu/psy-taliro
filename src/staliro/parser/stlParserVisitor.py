@@ -1,6 +1,5 @@
 # Generated from stlParser.g4 by ANTLR 4.5.1
 from antlr4 import *
-from numpy.lib.arraysetops import isin
 
 if __name__ is not None and "." in __name__:
     from .stlParser import stlParser
@@ -101,9 +100,7 @@ class stlParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by stlParser#predicate.
     def visitPredicate(self, ctx: stlParser.PredicateContext):
-        child_count: int = ctx.getRuleContext().getChildCount()
-
-        if child_count == 1:
+        if ctx.getRuleContext().getChildCount() == 1:
             child_name = ctx.getRuleContext().getChild(0).getText()
 
             # the predicate name only exists, so return the relevant
@@ -128,7 +125,9 @@ class stlParserVisitor(ParseTreeVisitor):
 
             # check that the variable is valid
             if var not in self._predicates:
-                raise Exception(f"Error: predicate {var} is not in the list of valid variables")
+                raise Exception(
+                    f"Error: predicate {var} is not in the list of valid variables {self._predicates}"
+                )
 
             if operator == "<" or operator == ">":
                 raise Exception(
