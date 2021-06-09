@@ -6,8 +6,8 @@ from typing import Iterable, Sequence
 from numpy import array, ndarray
 from numpy.random import default_rng, Generator
 
-from .optimizer import ObjectiveFn, Optimizer, Iteration, Run
-from ..options import StaliroOptions, Interval, Behavior
+from .optimizer import ObjectiveFn, Optimizer, Iteration, Run, RunOptions
+from ..options import Interval, Behavior
 
 _Samples = Sequence[ndarray]
 _Bounds = Sequence[Interval]
@@ -28,16 +28,11 @@ def _iterations(samples: _Samples, func: ObjectiveFn, behavior: Behavior) -> _It
             break
 
 
-class UniformRandom(Optimizer[None, Run]):
-    def __init__(self, options: StaliroOptions, optimizer_options: None = None):
-        self.bounds = options.bounds
-        self.iterations = options.iterations
-        self.behavior = options.behavior
-
-    def optimize(self, func: ObjectiveFn, seed: int) -> Run:
+class UniformRandom(Optimizer[Run]):
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> Run:
         start_time = datetime.now()
-        rng = default_rng(seed)
-        samples = [_sample(self.bounds, rng) for _ in range(self.iterations)]
-        history = list(_iterations(samples, func, self.behavior))
+        rng = default_rng(options.seed)
+        samples = [_sample(options.bounds, rng) for _ in range(options.iterations)]
+        history = list(_iterations(samples, func, options.behavior))
 
         return Run(history, datetime.now() - start_time)
