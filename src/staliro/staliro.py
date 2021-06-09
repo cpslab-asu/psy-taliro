@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import getLogger, NullHandler
 from typing import Optional, TypeVar, Tuple
 
 from numpy import ndarray
@@ -9,6 +10,9 @@ from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
 from .specification import Specification
+
+logger = getLogger("staliro")
+logger.addHandler(NullHandler())
 
 
 def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
@@ -34,8 +38,10 @@ def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> 
     def obj_fn(values: ndarray) -> float:
         result = model.simulate(values, options)
         trajectories, timestamps = _validate_result(result)
+        robustness = spec.evaluate(trajectories, timestamps)
 
-        return spec.evaluate(trajectories, timestamps)
+        logger.debug(f"{values} -> {robustness}")
+        return robustness
 
     return obj_fn
 
