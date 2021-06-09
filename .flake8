@@ -1,23 +1,17 @@
 [flake8]
 select =
     # Default Flake8 error codes
-    E,F,W,C90,
+    F4, F6, F7, F8, C90,
     # List comprehension plugin
     C4,
     # Stub file plugin
     Y0,
     # Return value plugin
-    R5,
-    # Quotes plugin
-    Q0,
-    # Variable name plugin
-    VNE002, VNE003
+    R501, R502, 504
     # PEP8 naming plugin
     N8,
     # F-string plugin
     FS,
-    # Annotation plugin
-    # ANN0, ANN2, ANN3,
     # Annotation complexity plugin
     TAE,
     # Import order plugin
@@ -40,9 +34,6 @@ exclude =
 ignore = D203
 
 max-line-length = 99
-
-inline_quotes = double
-docstring_quotes = double
 
 per-file-ignores =
     # F401: Imported but unused
