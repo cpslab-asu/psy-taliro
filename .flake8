@@ -34,7 +34,7 @@ max-line-length = 99
 
 per-file-ignores =
     # F401: Imported but unused
-    __init__.py,__init__.pyi: F401
+    __init__.py: F401
     # N8: PEP8 naming conventions
     *.pyi: N8
     # W605: Invalid escape sequence
