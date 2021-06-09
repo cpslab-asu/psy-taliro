@@ -111,13 +111,19 @@ class RTAMTDiscrete(Specification):
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        from rtamt import LTLPastifyException
+
         trajectories, timestamps = _parse_traces(trajectories, timestamps)
         period = mean(_step_widths(timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
         self.rtamt_obj.parse()
-        self.rtamt_obj.pastify()
+
+        try:
+            self.rtamt_obj.pastify()
+        except LTLPastifyException:
+            pass
 
         traces = {"time": timestamps.tolist()}
         for name, column in self.props.items():
@@ -152,11 +158,17 @@ class RTAMTDense(Specification):
             self.rtamt_obj.declare_var(name, options.dtype)
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+        from rtamt import LTLPastifyException
+
         trajectories, timestamps = _parse_traces(trajectories, timestamps)
 
         # parse AFTER declaring variables
         self.rtamt_obj.parse()
-        self.rtamt_obj.pastify()
+
+        try:
+            self.rtamt_obj.pastify()
+        except LTLPastifyException:
+            pass
 
         column_map = self.props.items()
         traces = [
