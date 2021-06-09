@@ -95,8 +95,7 @@ class RTAMTDiscrete(Specification):
 
     def __init__(self, phi: str, predicate_props: Dict[PredicateName, PredicateProps]):
         try:
-            from rtamt import STLDiscreteTimeSpecification
-            from rtamt.enumerations.options import Semantics
+            from rtamt import STLDiscreteTimeSpecification, Semantics
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT must be installed to use associated backends")
 
@@ -140,8 +139,7 @@ class RTAMTDense(Specification):
 
     def __init__(self, phi: str, predicate_props: Dict[PredicateName, PredicateProps]):
         try:
-            from rtamt import STLDenseTimeSpecification
-            from rtamt.enumerations.options import Semantics
+            from rtamt import STLDenseTimeSpecification, Semantics
         except ModuleNotFoundError:
             raise RuntimeError("RTAMT library must be installed to use RTAMT dense time backend")
 
