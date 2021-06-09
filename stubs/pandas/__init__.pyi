@@ -104,6 +104,11 @@ class DataFrame:
 _UsecolsPredicate = Callable[[str], bool]
 _DtypeDict = Dict[str, DTypeLike]
 _SkiprowsPredicate = Callable[[int], bool]
+_Converters = Dict[Union[int, str], Callable[..., Any]]
+_AnyDict = Dict[Union[str, int], Any]
+_ParseDateDict = Dict[str, List[int]]
+_IntMatrix = List[List[int]]
+_StrMatrix = List[List[int]]
 
 def read_csv(
     filepath_or_buffer: str,
@@ -118,14 +123,14 @@ def read_csv(
     mangle_dupe_cols: bool = ...,
     dtype: Union[DTypeLike, _DtypeDict, None] = ...,
     engine: Union[Literal["c"], Literal["python"]] = ...,
-    converters: Optional[Dict[Union[int, str], Callable[..., Any]]] = ...,
+    converters: Optional[_Converters] = ...,
     true_values: Optional[List[Any]] = ...,
     false_values: Optional[List[Any]] = ...,
     skipinitialspace: bool = ...,
     skiprows: Union[List[int], List[str], int, _SkiprowsPredicate, None] = ...,
     skipfooter: int = ...,
     nrows: Optional[int] = ...,
-    na_values: Union[float, str, List[float], Dict[Union[str, int], Any], None] = ...,
+    na_values: Union[float, str, List[float], _AnyDict, None] = ...,
     keep_default_na: bool = ...,
     na_filter: bool = ...,
     verbose: bool = ...,
@@ -134,9 +139,9 @@ def read_csv(
         bool,
         List[int],
         List[str],
-        List[List[int]],
-        List[List[str]],
-        Dict[str, List[int]],
+        _IntMatrix,
+        _StrMatrix,
+        _ParseDateDict,
     ] = ...,
     infer_datetime_format: bool = ...,
     keep_date_col: bool = ...,
