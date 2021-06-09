@@ -22,7 +22,7 @@ flake8:
   allow_failure: true
   script:
     - poetry install
-    - poetry run flake8 --statistics
+    - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
   stage: analyze
