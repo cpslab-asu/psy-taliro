@@ -34,7 +34,7 @@ black:
 
 mypy:
   stage: analyze
-  image: python:3.8
+  image: python:3.8-slim
   script:
     - poetry install
     - poetry run mypy --pretty
