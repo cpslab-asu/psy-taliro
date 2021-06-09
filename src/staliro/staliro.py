@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, TypeVar, Tuple
 
-from numpy import ndarray, float32, float64
+from numpy import ndarray
 
 from .models import Model, ModelResult
 from .options import StaliroOptions
@@ -25,9 +25,9 @@ def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
         raise ValueError("one dimension of trajectories must equal size of timestamps")
 
     if trajectories.shape[1] == timestamps.size:
-        return trajectories.astype(float64), timestamps.astype(float32)
+        return trajectories, timestamps
     else:
-        return trajectories.astype(float64).T, timestamps.astype(float32)
+        return trajectories.T, timestamps
 
 
 def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:

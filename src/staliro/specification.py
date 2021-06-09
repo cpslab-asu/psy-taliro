@@ -11,7 +11,7 @@ from typing import (
     runtime_checkable,
 )
 
-from numpy import ndarray, array
+from numpy import ndarray, array, float32
 
 from .parser import parse
 
@@ -73,7 +73,7 @@ class TLTK(Specification):
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, timestamps)
+        self.tltk_obj.eval_interval(traces, timestamps.astype(float32))
 
         return self.tltk_obj.robustness
 
