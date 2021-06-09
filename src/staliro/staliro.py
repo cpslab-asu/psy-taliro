@@ -4,14 +4,14 @@ from logging import getLogger, NullHandler
 from math import inf
 from random import randint
 from sys import maxsize
-from typing import Dict, Optional, TypeVar, Tuple, List, Type
+from typing import Dict, TypeVar, Tuple, List
 
 from numpy import ndarray, float32, float64
 from numpy.random import default_rng
 
 from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
-from .optimizers import Optimizer, ObjectiveFn, Run
+from .optimizers import Optimizer, ObjectiveFn, Run, RunOptions
 from .results import StaliroResult
 from .specification import Specification
 from .signals import SignalInterpolator
@@ -60,15 +60,13 @@ def _make_objective_fn(spec: Specification, model: Model, options: StaliroOption
 
 
 _T = TypeVar("_T", bound=Run)
-_O = TypeVar("_O", contravariant=True)
 
 
 def staliro(
     specification: Specification,
     model: Model,
     options: StaliroOptions,
-    optimizer_cls: Type[Optimizer[_O, _T]],
-    optimizer_options: Optional[_O] = None,
+    optimizer: Optimizer[_T],
 ) -> StaliroResult:
     """Search for falsifying inputs to the provided system.
 
@@ -86,23 +84,24 @@ def staliro(
         results: A list of result objects corresponding to each run from the optimizer
     """
     if not isinstance(specification, Specification):
-        raise ValueError
+        raise ValueError()
 
     if not isinstance(model, Model):
-        raise ValueError
+        raise ValueError()
 
     if not isinstance(options, StaliroOptions):
-        raise ValueError
+        raise ValueError()
 
-    if optimizer_options is None:
-        optimizer = optimizer_cls(options)
-    else:
-        optimizer = optimizer_cls(options, optimizer_options)
+    if not isinstance(optimizer, Optimizer):
+        raise ValueError()
 
     objective_fn = _make_objective_fn(specification, model, options)
     seed = options.seed if options.seed is not None else randint(0, maxsize)
     rng = default_rng(seed)
     seeds = rng.integers(low=0, high=maxsize, size=options.runs)
-    runs = [optimizer.optimize(objective_fn, seed) for seed in seeds]
+    runs_options = [
+        RunOptions(options.bounds, options.iterations, options.behavior, seed) for seed in seeds
+    ]
+    runs = [optimizer.optimize(objective_fn, run_options) for run_options in runs_options]
 
     return StaliroResult(runs, seed)
