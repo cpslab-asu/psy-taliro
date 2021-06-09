@@ -7,7 +7,15 @@ from typing import Callable, TypeVar, Generic, Sequence
 
 from numpy import ndarray
 
-from ..options import StaliroOptions
+from ..options import Interval, Behavior
+
+
+@dataclass
+class RunOptions:
+    bounds: Sequence[Interval]
+    iterations: int
+    behavior: Behavior
+    seed: int
 
 
 @dataclass
@@ -46,14 +54,9 @@ class Run:
 
 ObjectiveFn = Callable[[ndarray], float]
 _T = TypeVar("_T", bound=Run, covariant=True)
-_O = TypeVar("_O", contravariant=True)
 
 
-class Optimizer(ABC, Generic[_O, _T]):
+class Optimizer(ABC, Generic[_T]):
     @abstractmethod
-    def __init__(self, options: StaliroOptions, optimizer_options: _O = ...):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def optimize(self, func: ObjectiveFn, seed: int) -> _T:
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> _T:
         raise NotImplementedError()
