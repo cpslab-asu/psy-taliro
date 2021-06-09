@@ -161,7 +161,9 @@ class RTAMTDense(Specification):
         self.rtamt_obj.pastify()
 
         column_map = self.props.items()
-        traces = [(name, list(zip(timestamps, trajectories[col]))) for name, col in column_map]
+        traces = [
+            (name, array([timestamps, trajectories[col]]).T.tolist()) for name, col in column_map
+        ]
 
         # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
         robustness = self.rtamt_obj.evaluate(*traces)
