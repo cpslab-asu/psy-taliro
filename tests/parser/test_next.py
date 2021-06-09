@@ -18,6 +18,4 @@ class NextTestCase(ParserTestCase):
         self.assertIsInstance(parse("X (pred1 && X X X pred3)", self._preds), mtl.Next)
 
     def test_many_next(self) -> None:
-        self.assertIsInstance(
-            parse("X X X X X X X X (pred1 & pred2)", self._preds), mtl.Next
-        )
+        self.assertIsInstance(parse("X X X X X X X X (pred1 & pred2)", self._preds), mtl.Next)

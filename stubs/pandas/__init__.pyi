@@ -44,7 +44,7 @@ class Series:
         **kwargs: Any
     ) -> ndarray: ...
 
-_Axis = Union[Literal[0], Literal[1], Literal["index"], Literal["columns"]]
+_Axis = Union[Literal[0], Literal[1], Literal["index", "columns"]]
 
 class _Loc:
     @overload
@@ -75,9 +75,7 @@ class DataFrame:
         func: Callable[..., Any],
         axis: _Axis = ...,
         raw: bool = ...,
-        result_type: Union[
-            Literal["expand"], Literal["reduce"], Literal["broadcast"], None
-        ] = ...,
+        result_type: Optional[Literal["expand", "reduce", "broadcast"]] = ...,
         args: Tuple[Any] = ...,
         **kwds: Any
     ) -> DataFrame: ...
@@ -122,7 +120,7 @@ def read_csv(
     prefix: Optional[str] = ...,
     mangle_dupe_cols: bool = ...,
     dtype: Union[DTypeLike, _DtypeDict, None] = ...,
-    engine: Union[Literal["c"], Literal["python"]] = ...,
+    engine: Union[Literal["c", "python"]] = ...,
     converters: Optional[_Converters] = ...,
     true_values: Optional[List[Any]] = ...,
     false_values: Optional[List[Any]] = ...,

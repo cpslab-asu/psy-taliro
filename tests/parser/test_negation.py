@@ -16,6 +16,4 @@ class NegationTestCase(ParserTestCase):
         self.assertIsInstance(parse("!(pred1 and pred2)", self._preds), mtl.Not)
 
     def test_many_negation_with_and(self) -> None:
-        self.assertIsInstance(
-            parse("!!!!!(pred1 and pred2 and pred3)", self._preds), mtl.Not
-        )
+        self.assertIsInstance(parse("!!!!!(pred1 and pred2 and pred3)", self._preds), mtl.Not)

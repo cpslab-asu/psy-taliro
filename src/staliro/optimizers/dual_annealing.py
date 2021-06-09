@@ -24,9 +24,7 @@ def _optimize(func: ObjectiveFn, rng: Generator, options: StaliroOptions) -> Run
 
         return robustness
 
-    def listener(
-        sample: ndarray, robustness: float, context: Literal[-1, 0, 1]
-    ) -> bool:
+    def listener(sample: ndarray, robustness: float, context: Literal[-1, 0, 1]) -> bool:
         if robustness < 0 and options.behavior is Behavior.FALSIFICATION:
             return True
 

@@ -34,20 +34,20 @@ def serializedATN():
         buf.write("\35\3\35\3\36\6\36\u0109\n\36\r\36\16\36\u010a\3\37\3")
         buf.write("\37\3\37\3\37\3\37\3 \6 \u0113\n \r \16 \u0114\2\2!\3")
         buf.write("\3\5\4\7\5\t\6\13\7\r\b\17\t\21\n\23\13\25\f\27\r\31\16")
-        buf.write("\33\17\35\20\37\21!\22#\23%\24\'\25)\26+\27-\30/\31\61")
-        buf.write("\32\63\2\65\2\67\29\2;\2=\2?\2\3\2\t\5\2\13\f\17\17\"")
-        buf.write("\"\4\2##\u0080\u0080\4\2>>@@\4\2\62;aa\3\2\63;\3\2\62")
+        buf.write("\33\17\35\20\37\21!\22#\23%\24'\25)\26+\27-\30/\31\61")
+        buf.write('\32\63\2\65\2\67\29\2;\2=\2?\2\3\2\t\5\2\13\f\17\17"')
+        buf.write('"\4\2##\u0080\u0080\4\2>>@@\4\2\62;aa\3\2\63;\3\2\62')
         buf.write(";\4\2C\\c|\u0131\2\3\3\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2")
         buf.write("\t\3\2\2\2\2\13\3\2\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21")
         buf.write("\3\2\2\2\2\23\3\2\2\2\2\25\3\2\2\2\2\27\3\2\2\2\2\31\3")
         buf.write("\2\2\2\2\33\3\2\2\2\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2\2")
-        buf.write("\2\2#\3\2\2\2\2%\3\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2")
+        buf.write("\2\2#\3\2\2\2\2%\3\2\2\2\2'\3\2\2\2\2)\3\2\2\2\2+\3\2")
         buf.write("\2\2\2-\3\2\2\2\2/\3\2\2\2\2\61\3\2\2\2\3B\3\2\2\2\5H")
         buf.write("\3\2\2\2\7J\3\2\2\2\tL\3\2\2\2\13N\3\2\2\2\rP\3\2\2\2")
         buf.write("\17R\3\2\2\2\21X\3\2\2\2\23_\3\2\2\2\25e\3\2\2\2\27l\3")
         buf.write("\2\2\2\31\u0085\3\2\2\2\33\u0098\3\2\2\2\35\u00a0\3\2")
         buf.write("\2\2\37\u00aa\3\2\2\2!\u00b4\3\2\2\2#\u00bd\3\2\2\2%\u00c8")
-        buf.write("\3\2\2\2\'\u00d0\3\2\2\2)\u00d2\3\2\2\2+\u00d6\3\2\2\2")
+        buf.write("\3\2\2\2'\u00d0\3\2\2\2)\u00d2\3\2\2\2+\u00d6\3\2\2\2")
         buf.write("-\u00e6\3\2\2\2/\u00e8\3\2\2\2\61\u00ea\3\2\2\2\63\u00f8")
         buf.write("\3\2\2\2\65\u00fa\3\2\2\2\67\u0103\3\2\2\29\u0105\3\2")
         buf.write("\2\2;\u0108\3\2\2\2=\u010c\3\2\2\2?\u0112\3\2\2\2AC\t")
@@ -85,7 +85,7 @@ def serializedATN():
         buf.write("\7p\2\2\u00ae\u00b5\7f\2\2\u00af\u00b0\7\61\2\2\u00b0")
         buf.write("\u00b5\7^\2\2\u00b1\u00b2\7(\2\2\u00b2\u00b5\7(\2\2\u00b3")
         buf.write("\u00b5\7(\2\2\u00b4\u00ac\3\2\2\2\u00b4\u00af\3\2\2\2")
-        buf.write("\u00b4\u00b1\3\2\2\2\u00b4\u00b3\3\2\2\2\u00b5\"\3\2\2")
+        buf.write('\u00b4\u00b1\3\2\2\2\u00b4\u00b3\3\2\2\2\u00b5"\3\2\2')
         buf.write("\2\u00b6\u00b7\7q\2\2\u00b7\u00be\7t\2\2\u00b8\u00b9\7")
         buf.write("^\2\2\u00b9\u00be\7\61\2\2\u00ba\u00bb\7~\2\2\u00bb\u00be")
         buf.write("\7~\2\2\u00bc\u00be\7~\2\2\u00bd\u00b6\3\2\2\2\u00bd\u00b8")
@@ -136,8 +136,7 @@ class stlLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
-
+    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
 
     WS = 1
     LPAREN = 2
@@ -164,31 +163,79 @@ class stlLexer(Lexer):
     INT_NUMBER = 23
     FLOAT_NUMBER = 24
 
-    modeNames = [ "DEFAULT_MODE" ]
+    modeNames = ["DEFAULT_MODE"]
 
-    literalNames = [ "<INVALID>",
-            "'('", "')'", "'['", "']'", "','", "'-'", "'inf'" ]
+    literalNames = ["<INVALID>", "'('", "')'", "'['", "']'", "','", "'-'", "'inf'"]
 
-    symbolicNames = [ "<INVALID>",
-            "WS", "LPAREN", "RPAREN", "LBRACK", "RBRACK", "COMMA", "MINUS", 
-            "NEGATION", "RELOP", "EQUALITYOP", "NEXTOP", "FUTUREOP", "GLOBALLYOP", 
-            "UNTILOP", "RELEASEOP", "ANDOP", "OROP", "IMPLIESOP", "EQUIVOP", 
-            "INF", "NAME", "NUMBER", "INT_NUMBER", "FLOAT_NUMBER" ]
+    symbolicNames = [
+        "<INVALID>",
+        "WS",
+        "LPAREN",
+        "RPAREN",
+        "LBRACK",
+        "RBRACK",
+        "COMMA",
+        "MINUS",
+        "NEGATION",
+        "RELOP",
+        "EQUALITYOP",
+        "NEXTOP",
+        "FUTUREOP",
+        "GLOBALLYOP",
+        "UNTILOP",
+        "RELEASEOP",
+        "ANDOP",
+        "OROP",
+        "IMPLIESOP",
+        "EQUIVOP",
+        "INF",
+        "NAME",
+        "NUMBER",
+        "INT_NUMBER",
+        "FLOAT_NUMBER",
+    ]
 
-    ruleNames = [ "WS", "LPAREN", "RPAREN", "LBRACK", "RBRACK", "COMMA", 
-                  "MINUS", "NEGATION", "RELOP", "EQUALITYOP", "NEXTOP", 
-                  "FUTUREOP", "GLOBALLYOP", "UNTILOP", "RELEASEOP", "ANDOP", 
-                  "OROP", "IMPLIESOP", "EQUIVOP", "INF", "NAME", "NUMBER", 
-                  "INT_NUMBER", "FLOAT_NUMBER", "DECIMAL_INTEGER", "NON_ZERO_DIGIT", 
-                  "DECIMAL_FLOAT", "DIGIT", "DIGITS", "PREFIX", "LETTER" ]
+    ruleNames = [
+        "WS",
+        "LPAREN",
+        "RPAREN",
+        "LBRACK",
+        "RBRACK",
+        "COMMA",
+        "MINUS",
+        "NEGATION",
+        "RELOP",
+        "EQUALITYOP",
+        "NEXTOP",
+        "FUTUREOP",
+        "GLOBALLYOP",
+        "UNTILOP",
+        "RELEASEOP",
+        "ANDOP",
+        "OROP",
+        "IMPLIESOP",
+        "EQUIVOP",
+        "INF",
+        "NAME",
+        "NUMBER",
+        "INT_NUMBER",
+        "FLOAT_NUMBER",
+        "DECIMAL_INTEGER",
+        "NON_ZERO_DIGIT",
+        "DECIMAL_FLOAT",
+        "DIGIT",
+        "DIGITS",
+        "PREFIX",
+        "LETTER",
+    ]
 
     grammarFileName = "stlLexer.g4"
 
     def __init__(self, input=None):
         super().__init__(input)
         self.checkVersion("4.5.3")
-        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
+        self._interp = LexerATNSimulator(
+            self, self.atn, self.decisionsToDFA, PredictionContextCache()
+        )
         self._actions = None
         self._predicates = None
-
-

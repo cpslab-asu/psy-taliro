@@ -15,9 +15,7 @@ class ImpliesTestCase(ParserTestCase):
         self.assertIsInstance(parse("pred1 -> pred2 -> pred3", self._preds), mtl.Or)
 
     def test_implication_with_multi_and(self) -> None:
-        self.assertIsInstance(
-            parse("pred1 -> (pred1 && pred2 && pred3)", self._preds), mtl.Or
-        )
+        self.assertIsInstance(parse("pred1 -> (pred1 && pred2 && pred3)", self._preds), mtl.Or)
 
     def test_implication_with_or_and_literal(self) -> None:
         self.assertIsInstance(
