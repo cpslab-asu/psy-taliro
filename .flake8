@@ -30,17 +30,13 @@ exclude =
     src/staliro/parser/stlParserVisitor.py,
     docs/conf.py
 
-# D203: 1 blank line required before class docstring
-ignore = D203
-
 max-line-length = 99
 
 per-file-ignores =
     # F401: Imported but unused
-    __init__.py: F401
-    # E704: Multiple statements on one line
+    __init__.py,__init__.pyi: F401
     # N8: PEP8 naming conventions
-    *.pyi: E704, N8, E301, E302, E305, E701
+    *.pyi: N8
     # W605: Invalid escape sequence
     examples/*.py: W605
     # W605: Invalid escape sequence
