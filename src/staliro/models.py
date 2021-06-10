@@ -15,7 +15,7 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Protocol, runtime_checkable, overload
 
-from numpy import linspace, ndarray, array
+from numpy import linspace, ndarray, array, atleast_2d
 from scipy import integrate
 
 from .options import Interval
@@ -43,14 +43,12 @@ class SimulationResult:
 
     @property
     def trajectories(self) -> ndarray:
-        if self._trajectories.ndim == 1:
-            return array([self._trajectories])
+        _trajectories = atleast_2d(self._trajectories)
 
-        # Trajectories must be 2-D
-        if self._trajectories.shape[0] == self._timestamps.shape[0]:
-            return self._trajectories.T
+        if _trajectories.shape[0] == self._timestamps.shape[0]:
+            return _trajectories.T
 
-        return self._trajectories
+        return _trajectories
 
 
 class Falsification:
