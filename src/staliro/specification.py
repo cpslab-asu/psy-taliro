@@ -1,38 +1,20 @@
+import sys
 from statistics import mean
-from typing import (
-    Dict,
-    Iterable,
-    Protocol,
-    Literal,
-    NamedTuple,
-    Sequence,
-    Union,
-    Tuple,
-    runtime_checkable,
-)
+from typing import Dict, NamedTuple, Union, runtime_checkable
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol, Literal
+else:
+    from typing_extensions import Protocol, Literal
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Sequence, Iterable
+else:
+    from typing import Sequence, Iterable
 
 from numpy import ndarray, array, float32
 
 from .parser import parse
-
-
-def _parse_traces(trajectories: ndarray, timestamps: ndarray) -> Tuple[ndarray, ndarray]:
-    if timestamps.ndim != 1:
-        raise ValueError("expected 2-dimensional timestamps")
-
-    if trajectories.ndim == 1 and trajectories.shape[0] == timestamps.shape[0]:
-        return array([trajectories]), timestamps
-    elif trajectories.ndim == 2:
-        if trajectories.shape[0] == timestamps.shape[0]:
-            return trajectories.T, timestamps
-        elif trajectories.shape[1] == timestamps.shape[0]:
-            return trajectories, timestamps
-        else:
-            raise ValueError(
-                "expected trajectories to have one axis of equal length to timestamps"
-            )
-    else:
-        raise ValueError("expected 1 or 2-dimensional trajectories")
 
 
 @runtime_checkable
@@ -68,7 +50,6 @@ class TLTK(Specification):
         self.props = predicate_props
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
 
@@ -113,7 +94,6 @@ class RTAMTDiscrete(Specification):
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
         from rtamt import LTLPastifyException
 
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
         period = mean(_step_widths(timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
@@ -159,8 +139,6 @@ class RTAMTDense(Specification):
 
     def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
         from rtamt import LTLPastifyException
-
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
 
         # parse AFTER declaring variables
         self.rtamt_obj.parse()
