@@ -4,9 +4,9 @@ from logging import getLogger, NullHandler
 from math import inf
 from random import randint
 from sys import maxsize
-from typing import Dict, TypeVar, Tuple, List
+from typing import TypeVar, Tuple, List
 
-from numpy import ndarray, float32, float64
+from numpy import ndarray
 from numpy.random import default_rng
 
 from .models import Model, SimulationResult, Falsification
