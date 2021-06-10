@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from logging import getLogger, NullHandler
-from typing import Optional, TypeVar, Tuple, List
+from math import inf
+from typing import Optional, TypeVar, List
 
 from numpy import ndarray
 
-from .models import Model, ModelResult
+from .models import Model, Observations, Falsification
 from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
@@ -35,35 +36,21 @@ logger = getLogger("staliro")
 logger.addHandler(NullHandler())
 
 
-def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
-    """Ensure that the results conform to the expected dimensions."""
-    trajectories, timestamps = result
-
-    if timestamps.ndim != 1:
-        raise ValueError("timestamps must be 1-dimensional")
-
-    if trajectories.ndim != 2:
-        raise ValueError("trajectories must be 2-dimensional")
-
-    if trajectories.shape[0] != timestamps.size and trajectories.shape[1] != timestamps.size:
-        raise ValueError("one dimension of trajectories must equal size of timestamps")
-
-    if trajectories.shape[1] == timestamps.size:
-        return trajectories, timestamps
-    else:
-        return trajectories.T, timestamps
-
-
 def _make_objective_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
     def objective_fn(values: ndarray) -> float:
         static_params = _static_parameters(values, options)
         interpolators = _signal_interpolators(values, options)
-
         result = model.simulate(static_params, interpolators, options.interval)
-        trajectories, timestamps = _validate_result(result)
-        robustness = spec.evaluate(trajectories, timestamps)
+
+        if isinstance(result, Observations):
+            robustness = spec.evaluate(result.trajectories, result.timestamps)
+        elif isinstance(result, Falsification):
+            robustness = -inf
+        else:
+            raise ValueError(f"Unexpected return type {type(result)}")
 
         logger.debug(f"{values} -> {robustness}")
+
         return robustness
 
     return objective_fn
