@@ -75,8 +75,8 @@ SignalTimes = ndarray
 SignalValues = ndarray
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
-_BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
-_BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], _BlackboxResult]
+BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
+_BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
 
 class _Blackbox(Model):
