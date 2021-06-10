@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from logging import getLogger, NullHandler
 from math import inf
-from typing import Optional, TypeVar, List
+from random import randint
+from sys import maxsize
+from typing import TypeVar, List
 
 from numpy import ndarray
+from numpy.random import default_rng
 
 from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
-from .optimizers import Optimizer, ObjectiveFn
+from .optimizers import Optimizer, ObjectiveFn, Run, RunOptions
 from .results import StaliroResult
 from .specification import Specification
 from .signals import SignalInterpolator
@@ -56,17 +59,15 @@ def _make_objective_fn(spec: Specification, model: Model, options: StaliroOption
     return objective_fn
 
 
-_T = TypeVar("_T", bound=StaliroResult)
-_O = TypeVar("_O", contravariant=True)
+_T = TypeVar("_T", bound=Run)
 
 
 def staliro(
     specification: Specification,
     model: Model,
     options: StaliroOptions,
-    optimizer: Optimizer[_O, _T],
-    optimizer_options: Optional[_O] = None,
-) -> _T:
+    optimizer: Optimizer[_T],
+) -> StaliroResult:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
@@ -76,27 +77,31 @@ def staliro(
         specification: The requirement for the system
         model: The model of the system being tested
         options: General options to manipulate the behavior of the search
-        optimizer: The optimizer to use to search the sample space
+        optimizer_cls: The class of the optimizer to use to search the sample space
         optimizer_options: Specific options to manipulate the behavior of the specific optimizer
 
     Returns:
         results: A list of result objects corresponding to each run from the optimizer
     """
     if not isinstance(specification, Specification):
-        raise ValueError
+        raise ValueError()
 
     if not isinstance(model, Model):
-        raise ValueError
+        raise ValueError()
 
     if not isinstance(options, StaliroOptions):
-        raise ValueError
+        raise ValueError()
 
     if not isinstance(optimizer, Optimizer):
-        raise ValueError
+        raise ValueError()
 
     objective_fn = _make_objective_fn(specification, model, options)
+    seed = options.seed if options.seed is not None else randint(0, maxsize)
+    rng = default_rng(seed)
+    seeds = rng.integers(low=0, high=maxsize, size=options.runs)
+    runs_options = [
+        RunOptions(options.bounds, options.iterations, options.behavior, seed) for seed in seeds
+    ]
+    runs = [optimizer.optimize(objective_fn, run_options) for run_options in runs_options]
 
-    if optimizer_options is None:
-        return optimizer.optimize(objective_fn, options)
-
-    return optimizer.optimize(objective_fn, options, optimizer_options)
+    return StaliroResult(runs, seed)
