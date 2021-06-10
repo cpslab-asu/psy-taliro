@@ -4,7 +4,7 @@ from logging import getLogger, NullHandler
 from math import inf
 from random import randint
 from sys import maxsize
-from typing import TypeVar, Tuple, List
+from typing import TypeVar, List
 
 from numpy import ndarray
 from numpy.random import default_rng
