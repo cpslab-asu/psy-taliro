@@ -23,7 +23,7 @@ from .signals import SignalInterpolator
 
 
 @dataclass(frozen=True)
-class Observations:
+class SimulationResult:
     _trajectories: ndarray
     _timestamps: ndarray
 
@@ -58,7 +58,6 @@ class Falsification:
 
 StaticParameters = ndarray
 SignalInterpolators = Sequence[SignalInterpolator]
-ModelResult = Union[Observations, Falsification]
 
 
 @runtime_checkable
@@ -68,7 +67,7 @@ class Model(Protocol):
         __static_params: StaticParameters,
         __interpolators: SignalInterpolators,
         __interval: Interval,
-    ) -> ModelResult:
+    ) -> Union[SimulationResult, Falsification]:
         ...
 
 
@@ -76,7 +75,7 @@ SignalTimes = ndarray
 SignalValues = ndarray
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
-BlackboxResult = Union[Observations, Falsification, Tuple[Trajectories, Timestamps]]
+BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
 BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
 
@@ -90,7 +89,7 @@ class _Blackbox(Model):
         static_params: StaticParameters,
         interpolators: SignalInterpolators,
         interval: Interval,
-    ) -> ModelResult:
+    ) -> Union[SimulationResult, Falsification]:
         duration = interval.upper - interval.lower
         point_count = floor(duration / self.sampling_interval)
         signal_times = linspace(start=interval.lower, stop=interval.upper, num=point_count)
@@ -98,7 +97,7 @@ class _Blackbox(Model):
         result = self.func(static_params, signal_times, array(signal_traces))
 
         if isinstance(result, tuple):
-            return Observations(array(result[0]), array(result[1]))
+            return SimulationResult(array(result[0]), array(result[1]))
 
         return result
 
@@ -129,11 +128,11 @@ class _ODE(Model):
         static_params: StaticParameters,
         interpolators: SignalInterpolators,
         interval: Interval,
-    ) -> ModelResult:
+    ) -> Union[SimulationResult, Falsification]:
         integration_fn = _make_integration_fn(interpolators, self.func)
         integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
 
-        return Observations(integration.y, integration.t)
+        return SimulationResult(integration.y, integration.t)
 
 
 def blackbox(*, sampling_interval: float = 0.1) -> Callable[[BlackboxFunc], _Blackbox]:

@@ -6,7 +6,7 @@ from typing import Optional, TypeVar, List
 
 from numpy import ndarray
 
-from .models import Model, Observations, Falsification
+from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
@@ -42,7 +42,7 @@ def _make_objective_fn(spec: Specification, model: Model, options: StaliroOption
         interpolators = _signal_interpolators(values, options)
         result = model.simulate(static_params, interpolators, options.interval)
 
-        if isinstance(result, Observations):
+        if isinstance(result, SimulationResult):
             robustness = spec.evaluate(result.trajectories, result.timestamps)
         elif isinstance(result, Falsification):
             robustness = -inf
