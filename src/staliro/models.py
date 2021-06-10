@@ -15,7 +15,7 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Protocol, runtime_checkable
 
-from numpy import float32, linspace, ndarray, array
+from numpy import linspace, ndarray, array
 from scipy import integrate
 
 from .options import Interval
@@ -34,10 +34,10 @@ class Observations:
         if self._trajectories.ndim != 2:
             raise ValueError("trajectories must be 2-dimensional")
 
-        times_len = self._timestamps.shape[0]
-        traj_shape = self._trajectories.shape
+        first_dim_eq = self._trajectories.shape[0] == self._timestamps.shape[0]
+        second_dim_eq = self._trajectories.shape[1] == self._timestamps.shape[0]
 
-        if traj_shape[0] != times_len and traj_shape[1] != times_len:
+        if not first_dim_eq and not second_dim_eq:
             raise ValueError("trajectories must have one axis of equal length to timestamps")
 
     @property
@@ -80,13 +80,6 @@ BlackboxResult = Union[Observations, Falsification, Tuple[Trajectories, Timestam
 BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
 
-def _make_observation(result: Tuple[Trajectories, Timestamps]) -> Observations:
-    if len(result) != 2:
-        raise ValueError("Expected tuple to be length 2")
-
-    return Observations(array(result[0]), array(result[1]))
-
-
 class _Blackbox(Model):
     def __init__(self, func: BlackboxFunc, sampling_interval: float = 0.1):
         self.func = func
@@ -105,11 +98,9 @@ class _Blackbox(Model):
         result = self.func(static_params, signal_times, array(signal_traces))
 
         if isinstance(result, tuple):
-            return _make_observation(result)
-        elif isinstance(result, (Observations, Falsification)):
-            return result
-        else:
-            raise ValueError("Unknown return type from blackbox")
+            return Observations(array(result[0]), array(result[1]))
+
+        return result
 
 
 Time = float
@@ -142,7 +133,7 @@ class _ODE(Model):
         integration_fn = _make_integration_fn(interpolators, self.func)
         integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
 
-        return integration.y, integration.t.astype(float32)
+        return Observations(integration.y, integration.t)
 
 
 def blackbox(*, sampling_interval: float = 0.1) -> Callable[[BlackboxFunc], _Blackbox]:
