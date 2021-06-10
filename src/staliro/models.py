@@ -1,135 +1,176 @@
 from __future__ import annotations
 
-from abc import ABC
-from typing import Callable, List, Literal, overload, Sequence, Type, Tuple, Union
+import sys
+from dataclasses import dataclass
+from math import floor
+from typing import Tuple, Union, Optional
 
-from numpy import float32, linspace, ndarray, array
+if sys.version_info >= (3, 9):
+    from collections.abc import Sequence, Callable
+else:
+    from typing import Sequence, Callable
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol, runtime_checkable, overload
+else:
+    from typing_extensions import Protocol, runtime_checkable, overload
+
+from numpy import linspace, ndarray, array, atleast_2d
 from scipy import integrate
 
-from .options import StaliroOptions
+from .options import Interval
 from .signals import SignalInterpolator
 
 
-def _static_parameters(values: ndarray, options: StaliroOptions) -> ndarray:
-    stop = len(options.static_parameters)
-    return values[0:stop]  # type: ignore
+@dataclass(frozen=True)
+class SimulationResult:
+    _trajectories: ndarray
+    _timestamps: ndarray
+
+    def __post_init__(self) -> None:
+        if self._timestamps.ndim != 1:
+            raise ValueError("timestamps must be 1-dimensional")
+
+        if not 1 <= self._trajectories.ndim <= 2:
+            raise ValueError("expected 1 or 2-dimensional trajectories")
+
+        if not any(dim == self._timestamps.shape[0] for dim in self._trajectories.shape):
+            raise ValueError("expected one dimension to match timestamps length")
+
+    @property
+    def timestamps(self) -> ndarray:
+        return self._timestamps
+
+    @property
+    def trajectories(self) -> ndarray:
+        _trajectories = atleast_2d(self._trajectories)
+
+        if _trajectories.shape[0] == self._timestamps.shape[0]:
+            return _trajectories.T
+
+        return _trajectories
 
 
-def _signal_interpolators(values: ndarray, options: StaliroOptions) -> List[SignalInterpolator]:
-    start = len(options.static_parameters)
-    interpolators: List[SignalInterpolator] = []
-
-    for signal in options.signals:
-        factory = signal.factory
-        end = start + signal.control_points
-        interpolators.append(factory.create(signal.interval.astuple(), values[start:end]))
-        start = end
-
-    return interpolators
-
-
-def _signal_trace(interpolator: SignalInterpolator, times: ndarray) -> ndarray:
-    return array(interpolator.interpolate(times))
-
-
-ModelResult = Tuple[ndarray, ndarray]
-
-
-class Model(ABC):
-    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
-        raise NotImplementedError()
+class Falsification:
+    pass
 
 
 StaticParameters = ndarray
+SignalInterpolators = Sequence[SignalInterpolator]
+
+
+@runtime_checkable
+class Model(Protocol):
+    def simulate(
+        self,
+        __static_params: StaticParameters,
+        __interpolators: SignalInterpolators,
+        __interval: Interval,
+    ) -> Union[SimulationResult, Falsification]:
+        ...
+
+
 SignalTimes = ndarray
 SignalValues = ndarray
-
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
-BlackboxResult = Tuple[Trajectories, Timestamps]
-
-BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
-InterpolatorBlackboxFunc = Callable[
-    [StaticParameters, Sequence[SignalInterpolator]], BlackboxResult
-]
+BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
+_BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
 
-class Blackbox(Model):
-    def __init__(self, func: BlackboxFunc):
+class _Blackbox(Model):
+    def __init__(self, func: _BlackboxFunc, sampling_interval: float = 0.1):
         self.func = func
+        self.sampling_interval = sampling_interval
 
-    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
-        interval = options.interval
+    def simulate(
+        self,
+        static_params: StaticParameters,
+        interpolators: SignalInterpolators,
+        interval: Interval,
+    ) -> Union[SimulationResult, Falsification]:
         duration = interval.upper - interval.lower
-        point_count = duration / options.sampling_interval
+        point_count = floor(duration / self.sampling_interval)
+        signal_times = linspace(start=interval.lower, stop=interval.upper, num=point_count)
+        signal_traces = [interpolator.interpolate(signal_times) for interpolator in interpolators]
+        result = self.func(static_params, signal_times, array(signal_traces))
 
-        static_params = _static_parameters(values, options)
-        interpolators = _signal_interpolators(values, options)
-        signal_times = linspace(
-            start=interval.lower, stop=interval.upper, num=int(point_count), endpoint=True
-        )
-        signal_traces = [
-            _signal_trace(interpolator, signal_times) for interpolator in interpolators
-        ]
-        trajectories, timestamps = self.func(static_params, signal_times, array(signal_traces))
+        if isinstance(result, tuple):
+            return SimulationResult(array(result[0]), array(result[1]))
 
-        return array(trajectories), array(timestamps)
-
-
-class InterpolatorBlackbox(Model):
-    def __init__(self, func: InterpolatorBlackboxFunc):
-        self.func = func
-
-    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
-        static_params = _static_parameters(values, options)
-        interpolators = _signal_interpolators(values, options)
-        trajectories, timestamps = self.func(static_params, interpolators)
-
-        return array(trajectories), array(timestamps)
+        return result
 
 
 Time = float
 State = ndarray
+IntegrationFn = Callable[[float, ndarray], ndarray]
 ODEResult = Union[ndarray, Sequence[float]]
 ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
 
 
-class ODE(Model):
+def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> IntegrationFn:
+    def integration_fn(time: float, state: ndarray) -> ndarray:
+        signal_values = [signal.interpolate(time) for signal in signals]
+        result = func(time, state, array(signal_values))
+
+        return array(result)
+
+    return integration_fn
+
+
+class _ODE(Model):
     def __init__(self, func: ODEFunc):
         self.func = func
 
-    def simulate(self, values: ndarray, options: StaliroOptions) -> ModelResult:
-        static_params = _static_parameters(values, options)
-        interpolators = _signal_interpolators(values, options)
+    def simulate(
+        self,
+        static_params: StaticParameters,
+        interpolators: SignalInterpolators,
+        interval: Interval,
+    ) -> Union[SimulationResult, Falsification]:
+        integration_fn = _make_integration_fn(interpolators, self.func)
+        integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
 
-        def integration_fn(time: float, state: ndarray) -> ndarray:
-            signal_values = [interpolator.interpolate(time) for interpolator in interpolators]
-            new_state = self.func(time, state, array(signal_values))
+        return SimulationResult(integration.y, integration.t)
 
-            return array(new_state)
 
-        interval = options.interval.astuple()
-        integration = integrate.solve_ivp(integration_fn, interval, static_params)
-
-        return integration.y, integration.t.astype(float32)
+_BlackboxDecorator = Callable[[_BlackboxFunc], _Blackbox]
 
 
 @overload
-def blackbox(*, interpolated: Literal[False]) -> Type[InterpolatorBlackbox]:
+def blackbox(*, sampling_interval: float = ...) -> _BlackboxDecorator:
     ...
 
 
 @overload
-def blackbox(*, interpolated: Literal[True] = ...) -> Type[Blackbox]:
+def blackbox(_func: _BlackboxFunc) -> _Blackbox:
     ...
 
 
-def blackbox(*, interpolated: bool = True) -> Union[Type[Blackbox], Type[InterpolatorBlackbox]]:
-    if not interpolated:
-        return InterpolatorBlackbox
+def blackbox(
+    _func: Optional[_BlackboxFunc] = None, *, sampling_interval: float = 0.1
+) -> Union[_Blackbox, _BlackboxDecorator]:
+    """Decorate a function as a blackbox model.
+
+    This decorator can be used with or without arguments.
+
+    Args:
+        func: The function to wrap as a blackbox
+        *: Variable length argument list
+        sampling_interval: The time interval to use when sampling the signal interpolators
+
+    Returns:
+        A blackbox model
+    """
+
+    def decorator(func: _BlackboxFunc) -> _Blackbox:
+        return _Blackbox(func, sampling_interval)
+
+    if _func is not None:
+        return _Blackbox(_func, sampling_interval)
     else:
-        return Blackbox
+        return decorator
 
 
-def ode() -> Type[ODE]:
-    return ODE
+def ode() -> Callable[[ODEFunc], _ODE]:
+    return _ODE

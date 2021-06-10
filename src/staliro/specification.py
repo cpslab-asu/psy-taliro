@@ -1,43 +1,26 @@
+import sys
 from statistics import mean
-from typing import (
-    Dict,
-    Iterable,
-    Protocol,
-    Literal,
-    NamedTuple,
-    Sequence,
-    Union,
-    Tuple,
-    runtime_checkable,
-)
+from typing import Dict, NamedTuple, Union, runtime_checkable
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol, Literal
+else:
+    from typing_extensions import Protocol, Literal
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Sequence, Iterable
+else:
+    from typing import Sequence, Iterable
 
 from numpy import ndarray, array, float32
 
 from .parser import parse
-
-
-def _parse_traces(trajectories: ndarray, timestamps: ndarray) -> Tuple[ndarray, ndarray]:
-    if timestamps.ndim != 1:
-        raise ValueError("expected 2-dimensional timestamps")
-
-    if trajectories.ndim == 1 and trajectories.shape[0] == timestamps.shape[0]:
-        return array([trajectories]), timestamps
-    elif trajectories.ndim == 2:
-        if trajectories.shape[0] == timestamps.shape[0]:
-            return trajectories.T, timestamps
-        elif trajectories.shape[1] == timestamps.shape[0]:
-            return trajectories, timestamps
-        else:
-            raise ValueError(
-                "expected trajectories to have one axis of equal length to timestamps"
-            )
-    else:
-        raise ValueError("expected 1 or 2-dimensional trajectories")
+from .models import SimulationResult
 
 
 @runtime_checkable
 class Specification(Protocol):
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, __result: SimulationResult) -> float:
         ...
 
 
@@ -67,13 +50,13 @@ class TLTK(Specification):
         self.tltk_obj = parsed
         self.props = predicate_props
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
+    def evaluate(self, result: SimulationResult) -> float:
+        trajectories = result.trajectories
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, timestamps.astype(float32))
+        self.tltk_obj.eval_interval(traces, result.timestamps.astype(float32))
 
         return self.tltk_obj.robustness
 
@@ -110,11 +93,10 @@ class RTAMTDiscrete(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
 
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
-        period = mean(_step_widths(timestamps))
+        period = mean(_step_widths(result.timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
@@ -125,9 +107,9 @@ class RTAMTDiscrete(Specification):
         except LTLPastifyException:
             pass
 
-        traces = {"time": timestamps.tolist()}
+        traces = {"time": result.timestamps.tolist()}
         for name, column in self.props.items():
-            traces[name] = trajectories[column].tolist()
+            traces[name] = result.trajectories[column].tolist()
 
         # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
@@ -157,10 +139,8 @@ class RTAMTDense(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
-
-        trajectories, timestamps = _parse_traces(trajectories, timestamps)
 
         # parse AFTER declaring variables
         self.rtamt_obj.parse()
@@ -172,7 +152,8 @@ class RTAMTDense(Specification):
 
         column_map = self.props.items()
         traces = [
-            (name, array([timestamps, trajectories[col]]).T.tolist()) for name, col in column_map
+            (name, array([result.timestamps, result.trajectories[col]]).T.tolist())
+            for name, col in column_map
         ]
 
         # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]

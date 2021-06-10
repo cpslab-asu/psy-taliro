@@ -1,49 +1,59 @@
 from __future__ import annotations
 
 from logging import getLogger, NullHandler
-from typing import Optional, TypeVar, Tuple
+from math import inf
+from typing import Optional, TypeVar, List
 
 from numpy import ndarray
 
-from .models import Model, ModelResult
+from .models import Model, SimulationResult, Falsification
 from .options import StaliroOptions
 from .optimizers import Optimizer, ObjectiveFn
 from .results import StaliroResult
 from .specification import Specification
+from .signals import SignalInterpolator
+
+
+def _static_parameters(values: ndarray, options: StaliroOptions) -> ndarray:
+    stop = len(options.static_parameters)
+    return values[0:stop]  # type: ignore
+
+
+def _signal_interpolators(values: ndarray, options: StaliroOptions) -> List[SignalInterpolator]:
+    start = len(options.static_parameters)
+    interpolators: List[SignalInterpolator] = []
+
+    for signal in options.signals:
+        factory = signal.factory
+        end = start + signal.control_points
+        interpolators.append(factory.create(signal.interval.astuple(), values[start:end]))
+        start = end
+
+    return interpolators
+
 
 logger = getLogger("staliro")
 logger.addHandler(NullHandler())
 
 
-def _validate_result(result: ModelResult) -> Tuple[ndarray, ndarray]:
-    """Ensure that the results conform to the expected dimensions."""
-    trajectories, timestamps = result
+def _make_objective_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
+    def objective_fn(values: ndarray) -> float:
+        static_params = _static_parameters(values, options)
+        interpolators = _signal_interpolators(values, options)
+        result = model.simulate(static_params, interpolators, options.interval)
 
-    if timestamps.ndim != 1:
-        raise ValueError("timestamps must be 1-dimensional")
-
-    if trajectories.ndim != 2:
-        raise ValueError("trajectories must be 2-dimensional")
-
-    if trajectories.shape[0] != timestamps.size and trajectories.shape[1] != timestamps.size:
-        raise ValueError("one dimension of trajectories must equal size of timestamps")
-
-    if trajectories.shape[1] == timestamps.size:
-        return trajectories, timestamps
-    else:
-        return trajectories.T, timestamps
-
-
-def _make_obj_fn(spec: Specification, model: Model, options: StaliroOptions) -> ObjectiveFn:
-    def obj_fn(values: ndarray) -> float:
-        result = model.simulate(values, options)
-        trajectories, timestamps = _validate_result(result)
-        robustness = spec.evaluate(trajectories, timestamps)
+        if isinstance(result, SimulationResult):
+            robustness = spec.evaluate(result)
+        elif isinstance(result, Falsification):
+            robustness = -inf
+        else:
+            raise ValueError(f"Unexpected return type {type(result)}")
 
         logger.debug(f"{values} -> {robustness}")
+
         return robustness
 
-    return obj_fn
+    return objective_fn
 
 
 _T = TypeVar("_T", bound=StaliroResult)
@@ -72,8 +82,19 @@ def staliro(
     Returns:
         results: A list of result objects corresponding to each run from the optimizer
     """
+    if not isinstance(specification, Specification):
+        raise ValueError
 
-    objective_fn = _make_obj_fn(specification, model, options)
+    if not isinstance(model, Model):
+        raise ValueError
+
+    if not isinstance(options, StaliroOptions):
+        raise ValueError
+
+    if not isinstance(optimizer, Optimizer):
+        raise ValueError
+
+    objective_fn = _make_objective_fn(specification, model, options)
 
     if optimizer_options is None:
         return optimizer.optimize(objective_fn, options)

@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from numpy import float32, float64, atleast_2d
 from pandas import read_csv
+from staliro.models import SimulationResult
 from staliro.specification import TLTK, RTAMTDiscrete, RTAMTDense, PredicateProps
 
 SIG_FIGS = 3
@@ -25,7 +26,7 @@ class SpecificationTestCase(TestCase):
 
         timestamps = self._data["t"].to_numpy(dtype=float32)
         trajectories = self._data[["x1"]].to_numpy()
-        robustness = specification.evaluate(atleast_2d(trajectories), timestamps)
+        robustness = specification.evaluate(SimulationResult(atleast_2d(trajectories), timestamps))
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
 
@@ -35,7 +36,7 @@ class SpecificationTestCase(TestCase):
 
         timestamps = self._data["t"].to_numpy(dtype=float64)
         trajectories = self._data["x1"].to_numpy(dtype=float64)
-        robustness = specification.evaluate(atleast_2d(trajectories), timestamps)
+        robustness = specification.evaluate(SimulationResult(trajectories, timestamps))
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
 
@@ -45,6 +46,6 @@ class SpecificationTestCase(TestCase):
 
         timestamps = self._data["t"].to_numpy(dtype=float64)
         trajectories = self._data["x1"].to_numpy(dtype=float64)
-        robustness = specification.evaluate(trajectories, timestamps)
+        robustness = specification.evaluate(SimulationResult(trajectories, timestamps))
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
