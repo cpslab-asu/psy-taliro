@@ -15,11 +15,12 @@ else:
 from numpy import ndarray, array, float32
 
 from .parser import parse
+from .models import SimulationResult
 
 
 @runtime_checkable
 class Specification(Protocol):
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, __result: SimulationResult) -> float:
         ...
 
 
@@ -49,12 +50,13 @@ class TLTK(Specification):
         self.tltk_obj = parsed
         self.props = predicate_props
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, result: SimulationResult) -> float:
+        trajectories = result.trajectories
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, timestamps.astype(float32))
+        self.tltk_obj.eval_interval(traces, result.timestamps.astype(float32))
 
         return self.tltk_obj.robustness
 
@@ -91,10 +93,10 @@ class RTAMTDiscrete(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
 
-        period = mean(_step_widths(timestamps))
+        period = mean(_step_widths(result.timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
@@ -105,9 +107,9 @@ class RTAMTDiscrete(Specification):
         except LTLPastifyException:
             pass
 
-        traces = {"time": timestamps.tolist()}
+        traces = {"time": result.timestamps.tolist()}
         for name, column in self.props.items():
-            traces[name] = trajectories[column].tolist()
+            traces[name] = result.trajectories[column].tolist()
 
         # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
@@ -137,7 +139,7 @@ class RTAMTDense(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, trajectories: ndarray, timestamps: ndarray) -> float:
+    def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
 
         # parse AFTER declaring variables
@@ -150,7 +152,8 @@ class RTAMTDense(Specification):
 
         column_map = self.props.items()
         traces = [
-            (name, array([timestamps, trajectories[col]]).T.tolist()) for name, col in column_map
+            (name, array([result.timestamps, result.trajectories[col]]).T.tolist())
+            for name, col in column_map
         ]
 
         # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
