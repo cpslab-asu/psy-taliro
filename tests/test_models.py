@@ -6,7 +6,7 @@ from staliro.models import (
     SignalValues,
     BlackboxResult,
     blackbox,
-    Blackbox,
+    _Blackbox,
 )
 
 
@@ -16,5 +16,5 @@ class ModelTestCase(TestCase):
         def func1(X: StaticParameters, T: SignalTimes, U: SignalValues) -> BlackboxResult:
             pass
 
-        self.assertIsInstance(func1, Blackbox)
+        self.assertIsInstance(func1, _Blackbox)
         self.assertEqual(func1.sampling_interval, 0.2)
