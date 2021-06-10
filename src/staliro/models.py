@@ -31,14 +31,11 @@ class SimulationResult:
         if self._timestamps.ndim != 1:
             raise ValueError("timestamps must be 1-dimensional")
 
-        if self._trajectories.ndim != 2:
-            raise ValueError("trajectories must be 2-dimensional")
+        if not 1 <= self._trajectories.ndim <= 2:
+            raise ValueError("expected 1 or 2-dimensional trajectories")
 
-        first_dim_eq = self._trajectories.shape[0] == self._timestamps.shape[0]
-        second_dim_eq = self._trajectories.shape[1] == self._timestamps.shape[0]
-
-        if not first_dim_eq and not second_dim_eq:
-            raise ValueError("trajectories must have one axis of equal length to timestamps")
+        if not any(dim == self._timestamps.shape[0] for dim in self._trajectories.shape):
+            raise ValueError("expected one dimension to match timestamps length")
 
     @property
     def timestamps(self) -> ndarray:
@@ -46,6 +43,10 @@ class SimulationResult:
 
     @property
     def trajectories(self) -> ndarray:
+        if self._trajectories.ndim == 1:
+            return array([self._trajectories])
+
+        # Trajectories must be 2-D
         if self._trajectories.shape[0] == self._timestamps.shape[0]:
             return self._trajectories.T
 
