@@ -43,7 +43,7 @@ def _make_objective_fn(spec: Specification, model: Model, options: StaliroOption
         result = model.simulate(static_params, interpolators, options.interval)
 
         if isinstance(result, SimulationResult):
-            robustness = spec.evaluate(result.trajectories, result.timestamps)
+            robustness = spec.evaluate(result)
         elif isinstance(result, Falsification):
             robustness = -inf
         else:
