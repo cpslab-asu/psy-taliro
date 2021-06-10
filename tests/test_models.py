@@ -13,7 +13,9 @@ from staliro.models import (
 class ModelTestCase(TestCase):
     def test_blackbox_decorator(self) -> None:
         @blackbox(sampling_interval=0.2)
-        def func1(X: StaticParameters, T: SignalTimes, U: SignalValues) -> BlackboxResult:
+        def func1(
+            params: StaticParameters, times: SignalTimes, signals: SignalValues
+        ) -> BlackboxResult:
             pass
 
         self.assertIsInstance(func1, _Blackbox)
