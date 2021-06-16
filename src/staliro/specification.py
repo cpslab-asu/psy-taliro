@@ -96,6 +96,8 @@ class RTAMTDiscrete(Specification):
     def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
 
+        self.rtamt_obj.reset()
+
         period = mean(_step_widths(result.timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
@@ -141,6 +143,8 @@ class RTAMTDense(Specification):
 
     def evaluate(self, result: SimulationResult) -> float:
         from rtamt import LTLPastifyException
+
+        self.rtamt_obj.reset()
 
         # parse AFTER declaring variables
         self.rtamt_obj.parse()
