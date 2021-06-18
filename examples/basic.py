@@ -1,13 +1,12 @@
 from math import cos, pi, sin
 
-from numpy import array, float64, ndarray
+from numpy import array, ndarray
 from staliro import staliro
 from staliro.models import ode
-from staliro.optimizers import DualAnnealing
+from staliro.optimizers import UniformRandom
 from staliro.options import SignalOptions, StaliroOptions
 from staliro.signals import LinearFactory
-from staliro.specification import Specification
-from tltk_mtl import Predicate
+from staliro.specification import PredicateProps, TLTK
 
 
 @ode()
@@ -46,22 +45,22 @@ signals = [
     SignalOptions(interval=(0.0, 16.0), control_points=20, factory=LinearFactory()),
 ]
 
-phi = "!([]_[0,4.0]a /\ <>_[3.5,4.0]b)"
-
-A = array([[1, 0, 0], [-1, 0, 0]], dtype=float64)
+phi = "!([](0,4.0)(a <= 250 /\ a >= 240) /\ <>(3.5,4.0)(b <= 240.1 /\ b >= 240)"
 predicates = {
-    "a": Predicate("a", A, array([250, -240], dtype=float64)),
-    "b": Predicate("b", A, array([240.1, -240], dtype=float64)),
+    "a": PredicateProps(0, "float"),
+    "b": PredicateProps(0, "float"),
 }
 
-spec = Specification(phi, predicates)
+spec = TLTK(phi, predicates)
 
 options = StaliroOptions(
     runs=1, iterations=10, static_parameters=initial_conditions, signals=signals
 )
 
-# Example using the first falsify method where optimizer is passed by value
-results = staliro(phi, predicates, aircraft_ode, options, DualAnnealing())
+optimizer = UniformRandom()
 
-for i, result in enumerate(results.runs):
-    print(f"Run {i} lowest robustness found: {result.best_iter.robustness}")
+# Example using the first falsify method where optimizer is passed by value
+result = staliro(spec, aircraft_ode, options, optimizer)
+
+for n, run in enumerate(result.runs):
+    print(f"Run {n} - Best iteration: {run.best_iter}")
