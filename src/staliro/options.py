@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import auto, IntEnum
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Tuple, Iterable, Sequence
 
 from attr import attrs, attrib, Attribute
 from attr.converters import optional
@@ -134,7 +134,7 @@ class StaliroOptions:
     sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
     static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
-    signals: List[SignalOptions] = attrib(factory=list, converter=list)
+    signals: Iterable[SignalOptions] = attrib(factory=list)
     seed: Optional[int] = attrib(default=None, converter=optional(int))
     verbose: bool = False
 
