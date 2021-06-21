@@ -8,7 +8,7 @@ from staliro.specification import PredicateProps, TLTK
 
 
 @blackbox()
-def system_model(X: StaticParameters, T: SignalTimes, signals: SignalValues) -> BlackboxResult:
+def system_model(ps: StaticParameters, ts: SignalTimes, ss: SignalValues) -> BlackboxResult:
     pass
 
 
