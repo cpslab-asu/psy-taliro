@@ -32,7 +32,7 @@ def _static_parameters(values: NDArray[_T], options: StaliroOptions) -> NDArray[
     return values[0 : len(options.static_parameters)]  # type: ignore
 
 
-_Interpolators = list[SignalInterpolator]
+_Interpolators = List[SignalInterpolator]
 
 
 def _signal_interpolators(values: Sample, options: StaliroOptions) -> _Interpolators:
@@ -52,7 +52,7 @@ _IT = TypeVar("_IT", bound=Iteration)
 
 
 class CostFn(Protocol[_IT]):
-    iterations: list[_IT]
+    iterations: List[_IT]
 
     def __call__(self, sample: Sample) -> float:
         ...
@@ -60,7 +60,7 @@ class CostFn(Protocol[_IT]):
 
 _RT = TypeVar("_RT", bound=OptimizerResult)
 _CostFnFactory = Callable[[Model, Specification, StaliroOptions], CostFn[_IT]]
-_Runs = list[Run[_RT, _IT]]
+_Runs = List[Run[_RT, _IT]]
 
 
 class RunManager(Generic[_RT, _IT]):
