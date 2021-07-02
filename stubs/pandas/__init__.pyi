@@ -14,8 +14,7 @@ from typing import (
     overload,
 )
 
-from numpy import ndarray
-from numpy.typing import ArrayLike, DTypeLike
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 
 class Index: ...
 
@@ -42,9 +41,9 @@ class Series:
         copy: bool = ...,
         na_value: Any = ...,
         **kwargs: Any
-    ) -> ndarray: ...
+    ) -> NDArray[Any]: ...
 
-_Axis = Union[Literal[0], Literal[1], Literal["index", "columns"]]
+_Axis = Union[Literal[0, 1], Literal["index", "columns"]]
 
 class _Loc:
     @overload
@@ -58,7 +57,7 @@ class _Index:
 class DataFrame:
     def __init__(
         self,
-        data: Union[ndarray, Iterable[Any], Dict[str, Any], DataFrame],
+        data: Union[NDArray[Any], Iterable[Any], Dict[str, Any], DataFrame],
         index: Union[Index, ArrayLike],
         columns: Union[Index, ArrayLike],
         dtype: Optional[DTypeLike] = ...,
@@ -91,7 +90,7 @@ class DataFrame:
         copy: bool = ...,
         na_value: Any = ...,
         **kwargs: Any
-    ) -> ndarray: ...
+    ) -> NDArray[Any]: ...
     @property
     def loc(self) -> _Loc: ...
     @property

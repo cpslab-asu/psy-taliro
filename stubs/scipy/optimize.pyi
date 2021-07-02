@@ -1,11 +1,25 @@
 from typing import Callable, Sequence, Tuple, Dict, Optional, Literal, Any
 
-from numpy import ndarray
+from numpy import float_
+from numpy.typing import NDArray
 
-class OptimizeResult: ...
+class OptimizeResult:
+    x: NDArray[float_]
+    success: bool
+    status: int
+    message: str
+    fun: NDArray[float_]
+    jac: NDArray[float_]
+    hess: NDArray[float_]
+    hess_inv: object
+    nfev: int
+    njev: int
+    nhev: int
+    nit: int
+    maxcv: float
 
 def dual_annealing(
-    func: Callable[[ndarray], float],
+    func: Callable[[NDArray[float_]], float],
     bounds: Sequence[Tuple[float, float]],
     args: Tuple[Any, ...] = ...,
     maxiter: int = ...,
@@ -17,6 +31,6 @@ def dual_annealing(
     maxfun: int = ...,
     seed: Optional[int] = ...,
     no_local_search: bool = ...,
-    callback: Optional[Callable[[ndarray, float, Literal[-1, 0, 1]], bool]] = ...,
-    x0: Optional[ndarray] = ...,
+    callback: Optional[Callable[[NDArray[float_], float, Literal[-1, 0, 1]], bool]] = ...,
+    x0: Optional[NDArray[float_]] = ...,
 ) -> OptimizeResult: ...
