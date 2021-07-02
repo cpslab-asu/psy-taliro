@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from enum import auto, IntEnum
+from random import randint
+from sys import maxsize
 from typing import Any, List, Optional, Tuple, Iterable, Sequence
 
 from attr import attrs, attrib, Attribute
-from attr.converters import optional
 
 from .signals import InterpolatorFactory, PchipFactory
 
@@ -112,6 +113,10 @@ def _static_parameter_converter(obj: Any) -> List[Interval]:
     return [Interval(elem) for elem in obj]
 
 
+def _seed_factory() -> int:
+    return randint(0, maxsize)
+
+
 @attrs
 class StaliroOptions:
     """General options for controlling falsification behavior.
@@ -130,7 +135,7 @@ class StaliroOptions:
 
     static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
     signals: Iterable[SignalOptions] = attrib(factory=list)
-    seed: int = attrib(default=None, converter=optional(int))
+    seed: int = attrib(factory=_seed_factory)
     iterations: int = attrib(default=400, converter=int)
     runs: int = attrib(default=1, converter=int)
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
