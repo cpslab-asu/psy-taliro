@@ -1,4 +1,4 @@
 from .dual_annealing import DualAnnealing
-from .optimizer import Optimizer, ObjectiveFn, Iteration, Run, RunOptions
+from .optimizer import Optimizer, Sample, ObjectiveFn, RunOptions, OptimizerResult
 from .uniform_random import UniformRandom
 from .basinhopping import Basinhopping
