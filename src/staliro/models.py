@@ -15,7 +15,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Protocol, runtime_checkable, overload
 
-from numpy import linspace, ndarray, array, atleast_2d
+from numpy import linspace, ndarray, array, atleast_2d, int_, float_
+from numpy.typing import NDArray
 from scipy import integrate
 
 from .options import Interval
@@ -24,8 +25,8 @@ from .signals import SignalInterpolator
 
 @dataclass(frozen=True)
 class SimulationResult:
-    _trajectories: ndarray
-    _timestamps: ndarray
+    _trajectories: NDArray[Union[int_, float_]]
+    _timestamps: NDArray[float_]
 
     def __post_init__(self) -> None:
         if self._timestamps.ndim != 1:
@@ -38,11 +39,11 @@ class SimulationResult:
             raise ValueError("expected one dimension to match timestamps length")
 
     @property
-    def timestamps(self) -> ndarray:
+    def timestamps(self) -> NDArray[float_]:
         return self._timestamps
 
     @property
-    def trajectories(self) -> ndarray:
+    def trajectories(self) -> NDArray[Union[int_, float_]]:
         _trajectories = atleast_2d(self._trajectories)
 
         if _trajectories.shape[0] == self._timestamps.shape[0]:
@@ -55,7 +56,7 @@ class Falsification:
     pass
 
 
-StaticParameters = ndarray
+StaticParameters = NDArray[Union[float_, int_]]
 SignalInterpolators = Sequence[SignalInterpolator]
 
 
@@ -102,14 +103,14 @@ class _Blackbox(Model):
 
 
 Time = float
-State = ndarray
+State = NDArray[float_]
 IntegrationFn = Callable[[float, ndarray], ndarray]
 ODEResult = Union[ndarray, Sequence[float]]
 ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
 
 
 def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> IntegrationFn:
-    def integration_fn(time: float, state: ndarray) -> ndarray:
+    def integration_fn(time: float, state: State) -> State:
         signal_values = [signal.interpolate(time) for signal in signals]
         result = func(time, state, array(signal_values))
 
