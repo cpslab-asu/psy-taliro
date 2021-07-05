@@ -51,18 +51,34 @@ build:
   script:
     - poetry build
   except:
-    - tags
+    variables:
+      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
 
-publish:
+pypi:
   stage: publish
   image: python:3.8-slim
   script:
     - poetry build
     - poetry publish
   only:
-    - tags
+    variables:
+      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+
+    
   artifacts:
     paths:
       - dist/*.whl
       - dist/*.tar.gz
 
+pages:
+  stage: publish
+  image: python:3.8
+  script:
+    - poetry install --extras docs
+    - poetry run sphinx-build -b html docs public
+  only:
+    variables:
+      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  artifacts:
+    paths:
+      - public
