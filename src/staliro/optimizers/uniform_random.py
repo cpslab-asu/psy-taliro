@@ -6,7 +6,7 @@ from numpy import array, float_
 from numpy.typing import NDArray
 from numpy.random import default_rng, Generator
 
-from .optimizer import ObjectiveFn, Optimizer, OptimizerResult, RunOptions
+from .optimizer import ObjectiveFn, Optimizer, RunOptions
 from ..options import Interval, Behavior
 
 
@@ -14,8 +14,8 @@ def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[float_]:
     return array([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
 
-class UniformRandom(Optimizer[OptimizerResult]):
-    def optimize(self, func: ObjectiveFn, options: RunOptions) -> OptimizerResult:
+class UniformRandom(Optimizer[None]):
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> None:
         rng = default_rng(options.seed)
         samples = [_sample(options.bounds, rng) for _ in range(options.iterations)]
 
@@ -24,5 +24,3 @@ class UniformRandom(Optimizer[OptimizerResult]):
 
             if options.behavior is Behavior.FALSIFICATION and cost < 0:
                 break
-
-        return OptimizerResult()

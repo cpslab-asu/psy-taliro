@@ -1,6 +1,6 @@
-from .optimizer import Optimizer, ObjectiveFn, RunOptions, OptimizerResult
+from .optimizer import Optimizer, ObjectiveFn, RunOptions
 
 
-class Basinhopping(Optimizer[OptimizerResult]):
-    def optimize(self, func: ObjectiveFn, options: RunOptions) -> OptimizerResult:
+class Basinhopping(Optimizer[None]):
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> None:
         raise NotImplementedError()

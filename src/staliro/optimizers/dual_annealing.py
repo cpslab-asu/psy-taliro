@@ -7,20 +7,20 @@ from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Literal
 
-from .optimizer import ObjectiveFn, Optimizer, Sample, RunOptions, OptimizerResult
+from .optimizer import ObjectiveFn, Optimizer, Sample, RunOptions
 from ..options import Behavior
 
 
 @dataclass
-class DualAnnealingResult(OptimizerResult):
+class DualAnnealingResult:
     jacobian_value: NDArray[float_]
     jacobian_evals: int
     hessian_value: NDArray[float_]
     hessian_evals: int
 
 
-class DualAnnealing(Optimizer[OptimizerResult]):
-    def optimize(self, func: ObjectiveFn, options: RunOptions) -> OptimizerResult:
+class DualAnnealing(Optimizer[DualAnnealingResult]):
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> DualAnnealingResult:
         def wrapper(sample: Sample) -> float:
             return func(sample)
 
