@@ -17,7 +17,7 @@ from numpy.random import default_rng
 
 from .models import Model, Falsification
 from .options import StaliroOptions
-from .optimizers import Optimizer, Sample, RunOptions, OptimizerResult
+from .optimizers import Optimizer, Sample, RunOptions
 from .results import StaliroResult, Run, Iteration, TimedIteration
 from .specification import Specification
 from .signals import SignalInterpolator
@@ -58,7 +58,7 @@ class CostFn(Protocol[_IT]):
         ...
 
 
-_RT = TypeVar("_RT", bound=OptimizerResult)
+_RT = TypeVar("_RT")
 _CostFnFactory = Callable[[Model, Specification, StaliroOptions], CostFn[_IT]]
 _Runs = List[Run[_RT, _IT]]
 
