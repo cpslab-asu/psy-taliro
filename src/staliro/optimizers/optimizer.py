@@ -18,15 +18,9 @@ class RunOptions:
     seed: int
 
 
-@dataclass
-class OptimizerResult:
-    pass
-
-
 Sample = NDArray[Union[float_, int_]]
 ObjectiveFn = Callable[[Sample], float]
-
-_T = TypeVar("_T", bound=OptimizerResult)
+_T = TypeVar("_T")
 
 
 class Optimizer(ABC, Generic[_T]):
