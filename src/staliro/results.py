@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from statistics import mean
-from typing import Sequence, Generic, TypeVar
+from typing import Generic, TypeVar
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable, Sequence
+else:
+    from typing import Iterable, Sequence
 
 from .optimizers import Sample
 
@@ -38,22 +44,31 @@ _TIT = TypeVar("_TIT", bound=TimedIteration)
 
 
 @dataclass(frozen=True)
+class TimeStats:
+    _durations: Iterable[float]
+
+    @property
+    def average_time(self) -> float:
+        return mean(self._durations)
+
+    @property
+    def total_time(self) -> float:
+        return sum(self._durations)
+
+    @property
+    def longest_duration(self) -> float:
+        return max(self._durations)
+
+
+@dataclass(frozen=True)
 class TimedRun(Run[_RT, _TIT]):
     @property
-    def avg_model_duration(self) -> float:
-        return mean(iteration.model_duration for iteration in self.history)
+    def model(self) -> TimeStats:
+        return TimeStats(iteration.model_duration for iteration in self.history)
 
     @property
-    def total_model_time(self) -> float:
-        return sum(iteration.model_duration for iteration in self.history)
-
-    @property
-    def avg_cost_duration(self) -> float:
-        return mean(iteration.cost_duration for iteration in self.history)
-
-    @property
-    def total_cost_time(self) -> float:
-        return sum(iteration.cost_duration for iteration in self.history)
+    def cost_fn(self) -> TimeStats:
+        return TimeStats(iteration.cost_duration for iteration in self.history)
 
 
 @dataclass(frozen=True)
