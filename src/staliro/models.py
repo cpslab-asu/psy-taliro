@@ -177,5 +177,24 @@ def blackbox(
         return decorator
 
 
-def ode() -> Callable[[ODEFunc], _ODE]:
-    return _ODE
+_ODEDecorator = Callable[[ODEFunc], ODE]
+
+
+@overload
+def ode() -> _ODEDecorator:
+    ...
+
+
+@overload
+def ode(_func: ODEFunc) -> ODE:
+    ...
+
+
+def ode(_func: Optional[ODEFunc] = None) -> Union[_ODEDecorator, ODE]:
+    def decorator(func: ODEFunc) -> ODE:
+        return ODE(func)
+
+    if _func is not None:
+        return decorator(_func)
+    else:
+        return decorator
