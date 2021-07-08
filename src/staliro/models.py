@@ -75,8 +75,8 @@ class Model(Protocol):
         ...
 
 
-SignalTimes = ndarray
-SignalValues = ndarray
+SignalTimes = NDArray[float_]
+SignalValues = NDArray[float_]
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
 BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
