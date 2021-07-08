@@ -11,6 +11,7 @@ else:
     from typing import Iterable, Sequence
 
 from .optimizers import Sample
+from .options import Options
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,7 @@ class TimedRun(Run[_RT, _TIT]):
 @dataclass(frozen=True)
 class Result(Generic[_RT, _IT]):
     runs: Sequence[Run[_RT, _IT]]
-    seed: int
+    options: Options
 
     @property
     def best_run(self) -> Run[_RT, _IT]:
