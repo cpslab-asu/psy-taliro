@@ -61,6 +61,8 @@ class Falsification:
 StaticParameters = NDArray[_Numeric]
 SignalInterpolators = Sequence[SignalInterpolator]
 
+ModelResult = Union[SimulationResult, Falsification]
+
 
 @runtime_checkable
 class Model(Protocol):
@@ -69,7 +71,7 @@ class Model(Protocol):
         __static_params: StaticParameters,
         __interpolators: SignalInterpolators,
         __interval: Interval,
-    ) -> Union[SimulationResult, Falsification]:
+    ) -> ModelResult:
         ...
 
 
@@ -91,7 +93,7 @@ class _Blackbox(Model):
         static_params: StaticParameters,
         interpolators: SignalInterpolators,
         interval: Interval,
-    ) -> Union[SimulationResult, Falsification]:
+    ) -> ModelResult:
         duration = interval.upper - interval.lower
         point_count = floor(duration / self.sampling_interval)
         signal_times = linspace(start=interval.lower, stop=interval.upper, num=point_count)
@@ -130,7 +132,7 @@ class _ODE(Model):
         static_params: StaticParameters,
         interpolators: SignalInterpolators,
         interval: Interval,
-    ) -> Union[SimulationResult, Falsification]:
+    ) -> ModelResult:
         integration_fn = _make_integration_fn(interpolators, self.func)
         integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
 
