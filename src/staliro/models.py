@@ -80,11 +80,11 @@ SignalValues = ndarray
 Timestamps = Union[ndarray, Sequence[float]]
 Trajectories = Union[ndarray, Sequence[Sequence[float]]]
 BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
-_BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
 
-class _Blackbox(Model):
-    def __init__(self, func: _BlackboxFunc, sampling_interval: float = 0.1):
+class Blackbox(Model):
+    def __init__(self, func: BlackboxFunc, sampling_interval: float = 0.1):
         self.func = func
         self.sampling_interval = sampling_interval
 
@@ -123,7 +123,7 @@ def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> Integra
     return integration_fn
 
 
-class _ODE(Model):
+class ODE(Model):
     def __init__(self, func: ODEFunc):
         self.func = func
 
@@ -139,7 +139,7 @@ class _ODE(Model):
         return SimulationResult(integration.y, integration.t)
 
 
-_BlackboxDecorator = Callable[[_BlackboxFunc], _Blackbox]
+_BlackboxDecorator = Callable[[BlackboxFunc], Blackbox]
 
 
 @overload
@@ -148,13 +148,13 @@ def blackbox(*, sampling_interval: float = ...) -> _BlackboxDecorator:
 
 
 @overload
-def blackbox(_func: _BlackboxFunc) -> _Blackbox:
+def blackbox(_func: BlackboxFunc) -> Blackbox:
     ...
 
 
 def blackbox(
-    _func: Optional[_BlackboxFunc] = None, *, sampling_interval: float = 0.1
-) -> Union[_Blackbox, _BlackboxDecorator]:
+    _func: Optional[BlackboxFunc] = None, *, sampling_interval: float = 0.1
+) -> Union[Blackbox, _BlackboxDecorator]:
     """Decorate a function as a blackbox model.
 
     This decorator can be used with or without arguments.
