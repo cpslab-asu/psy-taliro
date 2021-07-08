@@ -1,6 +1,6 @@
 import sys
 from statistics import mean
-from typing import Dict, NamedTuple, Union, runtime_checkable
+from typing import Dict, NamedTuple, runtime_checkable
 
 if sys.version_info >= (3, 8):
     from typing import Protocol, Literal
@@ -8,14 +8,14 @@ else:
     from typing_extensions import Protocol, Literal
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Sequence, Iterable
+    from collections.abc import Iterable
 else:
-    from typing import Sequence, Iterable
+    from typing import Iterable
 
-from numpy import ndarray, array, float32
+from numpy import array, float32
 
 from .parser import parse
-from .models import SimulationResult
+from .models import SimulationResult, Timestamps
 
 
 @runtime_checkable
@@ -61,7 +61,7 @@ class TLTK(Specification):
         return self.tltk_obj.robustness
 
 
-def _step_widths(times: Union[Sequence[float], ndarray]) -> Iterable[float]:
+def _step_widths(times: Timestamps) -> Iterable[float]:
     """Compute the distance between adjacent elements."""
 
     for i in range(len(times) - 2):

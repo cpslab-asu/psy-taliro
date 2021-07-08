@@ -1,9 +1,9 @@
 from typing import Callable, Tuple, Union, Literal, Any, Optional, List
 
-from numpy import ndarray
-from numpy.typing import ArrayLike
+from numpy import float_
+from numpy.typing import ArrayLike, NDArray
 
-_ObjectiveFun = Callable[[float, ndarray], ArrayLike]
+_ObjectiveFun = Callable[[float, NDArray[float_]], ArrayLike]
 _Method = Union[
     Literal["RK45"],
     Literal["RK23"],
@@ -12,15 +12,15 @@ _Method = Union[
     Literal["BDF"],
     Literal["LSODA"],
 ]
-_EventFn = Callable[[float, ndarray], float]
+_EventFn = Callable[[float, NDArray[float_]], float]
 _Events = Union[_EventFn, List[_EventFn]]
-_Jacobian = Union[ArrayLike, Callable[[float, ndarray], ArrayLike]]
+_Jacobian = Union[ArrayLike, Callable[[float, NDArray[float_]], ArrayLike]]
 
 class DenseOutput:
     t_min: float
     t_max: float
     def __init__(self, t_old: float, t: float) -> None: ...
-    def __call__(self, t: ArrayLike) -> ndarray: ...
+    def __call__(self, t: ArrayLike) -> NDArray[float_]: ...
 
 class OdeSolver:
     def __init__(
@@ -38,18 +38,20 @@ class OdeSolution:
     t_min: float
     t_max: float
     def __init__(self, ts: ArrayLike, interpolants: List[DenseOutput]) -> None: ...
-    def __call__(self, t: ArrayLike) -> ndarray: ...
+    def __call__(self, t: ArrayLike) -> NDArray[float_]: ...
+
+_EventList = List[NDArray[float_]]
 
 class _IvpSolution:
-    t: ndarray
-    y: ndarray
+    t: NDArray[float_]
+    y: NDArray[float_]
     sol: Optional[OdeSolution]
-    t_events: Optional[List[ndarray]]
-    y_events: Optional[List[ndarray]]
+    t_events: Optional[_EventList]
+    y_events: Optional[_EventList]
     nfev: int
     njev: int
     nlu: int
-    status: Union[Literal[-1], Literal[0], Literal[1]]
+    status: Literal[-1, 0, 1]
     message: str
     success: bool
 

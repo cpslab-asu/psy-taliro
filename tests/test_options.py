@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from staliro.options import StaliroOptions, SignalOptions, Interval
+from staliro.options import Options, SignalOptions, Interval
 
 
 class IntervalTestCase(TestCase):
@@ -37,7 +37,7 @@ class IntervalTestCase(TestCase):
 
 class StaliroOptionsTestCase(TestCase):
     def test_bounds_length(self):
-        options = StaliroOptions(
+        options = Options(
             static_parameters=[(0, 1), (0, 1)],
             signals=[SignalOptions(interval=(0, 1), control_points=10)],
         )

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from enum import auto, IntEnum
+from random import randint
+from sys import maxsize
 from typing import Any, List, Optional, Tuple, Iterable, Sequence
 
 from attr import attrs, attrib, Attribute
-from attr.converters import optional
 
 from .signals import InterpolatorFactory, PchipFactory
 
@@ -58,8 +59,8 @@ class SignalOptions:
     """
 
     interval: Interval = attrib(converter=Interval)
-    control_points: int = attrib(default=10, converter=int)
     factory: InterpolatorFactory = attrib(factory=PchipFactory)
+    control_points: int = attrib(default=10, converter=int)
     step: float = attrib(default=0.1, converter=float)
     signal_times: Optional[SignalTimes] = attrib(default=None)
     time_varying: bool = (
@@ -112,8 +113,12 @@ def _static_parameter_converter(obj: Any) -> List[Interval]:
     return [Interval(elem) for elem in obj]
 
 
+def _seed_factory() -> int:
+    return randint(0, maxsize)
+
+
 @attrs
-class StaliroOptions:
+class Options:
     """General options for controlling falsification behavior.
 
     Attributes:
@@ -128,14 +133,14 @@ class StaliroOptions:
         bounds: The combined bounds from both the static_parameters and signals
     """
 
+    static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
+    signals: Iterable[SignalOptions] = attrib(factory=list)
+    seed: int = attrib(factory=_seed_factory)
     iterations: int = attrib(default=400, converter=int)
     runs: int = attrib(default=1, converter=int)
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
     sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
-    static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
-    signals: Iterable[SignalOptions] = attrib(factory=list)
-    seed: Optional[int] = attrib(default=None, converter=optional(int))
     verbose: bool = False
 
     @runs.validator

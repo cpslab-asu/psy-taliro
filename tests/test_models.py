@@ -6,7 +6,7 @@ from staliro.models import (
     SignalValues,
     BlackboxResult,
     blackbox,
-    _Blackbox,
+    Blackbox,
 )
 
 
@@ -18,7 +18,7 @@ class ModelTestCase(TestCase):
         ) -> BlackboxResult:
             pass
 
-        self.assertIsInstance(dummy, _Blackbox)
+        self.assertIsInstance(dummy, Blackbox)
         self.assertEqual(dummy.sampling_interval, 0.2)
 
     def test_blackbox_decorator_no_args(self) -> None:
@@ -28,5 +28,5 @@ class ModelTestCase(TestCase):
         ) -> BlackboxResult:
             pass
 
-        self.assertIsInstance(dummy, _Blackbox)
+        self.assertIsInstance(dummy, Blackbox)
         self.assertEqual(dummy.sampling_interval, 0.1)

@@ -1,42 +1,43 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List
+from dataclasses import dataclass
 
-from numpy import ndarray
-from numpy.random import default_rng
+from numpy import float_
+from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Literal
 
-from .optimizer import ObjectiveFn, Optimizer, Iteration, Run, RunOptions
+from .optimizer import ObjectiveFn, Optimizer, Sample, RunOptions
 from ..options import Behavior
 
 
-class DualAnnealing(Optimizer[Run]):
-    def optimize(self, func: ObjectiveFn, options: RunOptions) -> Run:
-        history: List[Iteration] = []
+@dataclass
+class DualAnnealingResult:
+    jacobian_value: NDArray[float_]
+    jacobian_evals: int
+    hessian_value: NDArray[float_]
+    hessian_evals: int
 
-        def wrapper(sample: ndarray) -> float:
-            robustness = func(sample)
-            history.append(Iteration(robustness, sample))
 
-            return robustness
+class DualAnnealing(Optimizer[DualAnnealingResult]):
+    def optimize(self, func: ObjectiveFn, options: RunOptions) -> DualAnnealingResult:
+        def wrapper(sample: Sample) -> float:
+            return func(sample)
 
-        def listener(sample: ndarray, robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
+        def listener(sample: Sample, robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
             if robustness < 0 and options.behavior is Behavior.FALSIFICATION:
                 return True
 
             return False
 
-        start = datetime.now()
         bounds = [bound.astuple() for bound in options.bounds]
-        optimize.dual_annealing(
+        result: optimize.OptimizeResult = optimize.dual_annealing(
             wrapper,
             bounds,
-            seed=default_rng(options.seed),
+            seed=options.seed,
             maxiter=options.iterations,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
             callback=listener,
         )
 
-        return Run(history, datetime.now() - start)
+        return DualAnnealingResult(result.jac, result.njev, result.hess, result.nhev)
