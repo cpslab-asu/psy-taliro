@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from statistics import mean
 from typing import Sequence, Generic, TypeVar
 
 from .optimizers import Sample
