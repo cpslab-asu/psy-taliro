@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence, Generic, TypeVar
 
-from .optimizers import OptimizerResult, Sample
+from .optimizers import Sample
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class TimedIteration(Iteration):
     cost_duration: float
 
 
-_RT = TypeVar("_RT", bound=OptimizerResult)
+_RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
 
