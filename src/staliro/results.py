@@ -80,3 +80,12 @@ class Result(Generic[_RT, _IT]):
     @property
     def best_run(self) -> Run[_RT, _IT]:
         return min(self.runs, key=lambda r: r.best_iter.cost)
+
+
+@dataclass(frozen=True)
+class TimedResult(Result[_RT, _TIT]):
+    runs: Sequence[TimedRun[_RT, _TIT]]
+
+    @property
+    def best_run(self) -> TimedRun[_RT, _TIT]:
+        return min(self.runs, key=lambda r: r.best_iter.cost)
