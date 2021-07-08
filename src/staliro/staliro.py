@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from collections import deque
 from logging import getLogger, NullHandler
 from math import inf
 from time import perf_counter
@@ -94,7 +95,7 @@ class BasicCostFn(CostFn[Iteration]):
         self.model = model
         self.spec = specification
         self.options = options
-        self.iterations: list[Iteration] = []
+        self.iterations: deque[Iteration] = deque()
 
     def __call__(self, sample: Sample) -> float:
         static_params = _static_parameters(sample, self.options)
@@ -138,7 +139,7 @@ class TimedCostFn(CostFn[TimedIteration]):
         self.model = model
         self.spec = specification
         self.options = options
-        self.iterations: list[TimedIteration] = []
+        self.iterations: deque[TimedIteration] = deque()
 
     def __call__(self, sample: Sample) -> float:
         static_params = _static_parameters(sample, self.options)
