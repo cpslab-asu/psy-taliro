@@ -168,11 +168,11 @@ def blackbox(
         A blackbox model
     """
 
-    def decorator(func: _BlackboxFunc) -> _Blackbox:
-        return _Blackbox(func, sampling_interval)
+    def decorator(func: BlackboxFunc) -> Blackbox:
+        return Blackbox(func, sampling_interval)
 
     if _func is not None:
-        return _Blackbox(_func, sampling_interval)
+        return decorator(_func)
     else:
         return decorator
 
