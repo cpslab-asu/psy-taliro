@@ -1,10 +1,17 @@
+from __future__ import annotations
+
+from typing import TypeVar
+
 from staliro import staliro
 from staliro.models import blackbox, StaticParameters, SignalTimes, SignalValues, BlackboxResult
 from staliro.optimizers import UniformRandom
-from staliro.options import SignalOptions, StaliroOptions
-from staliro.results import StaliroResult
+from staliro.options import SignalOptions, Options
+from staliro.results import Iteration, Result
 from staliro.signals import LinearFactory
 from staliro.specification import PredicateProps, TLTK
+
+_RT = TypeVar("_RT")
+_IT = TypeVar("_IT", bound=Iteration)
 
 
 @blackbox()
@@ -16,7 +23,7 @@ class ProcessedResult:
     pass
 
 
-def post_process(result: StaliroResult) -> ProcessedResult:
+def post_process(result: Result[_RT, _IT]) -> ProcessedResult:
     return ProcessedResult()
 
 
@@ -33,14 +40,12 @@ predicates = {
 }
 spec = TLTK(phi, predicates)
 
-options = StaliroOptions(
-    runs=1, iterations=10, static_parameters=initial_conditions, signals=signals
-)
+options = Options(runs=1, iterations=10, static_parameters=initial_conditions, signals=signals)
 
 optimizer = UniformRandom()
 
 # Example using the first falsify method where optimizer is passed by value
-results = staliro(spec, system_model, options, optimizer)
+results = staliro(system_model, spec, optimizer, options)
 
 # Process results after run
 processed_results = post_process(results)
