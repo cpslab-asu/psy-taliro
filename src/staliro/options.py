@@ -118,7 +118,7 @@ def _seed_factory() -> int:
 
 
 @attrs
-class StaliroOptions:
+class Options:
     """General options for controlling falsification behavior.
 
     Attributes:
