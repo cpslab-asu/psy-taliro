@@ -72,7 +72,7 @@ class TimedRun(Run[_RT, _TIT]):
 
 
 @dataclass(frozen=True)
-class StaliroResult(Generic[_RT, _IT]):
+class Result(Generic[_RT, _IT]):
     runs: Sequence[Run[_RT, _IT]]
     seed: int
 
