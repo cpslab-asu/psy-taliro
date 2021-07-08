@@ -22,10 +22,12 @@ from scipy import integrate
 from .options import Interval
 from .signals import SignalInterpolator
 
+_Numeric = Union[int_, float_]
+
 
 @dataclass(frozen=True)
 class SimulationResult:
-    _trajectories: NDArray[Union[int_, float_]]
+    _trajectories: NDArray[_Numeric]
     _timestamps: NDArray[float_]
 
     def __post_init__(self) -> None:
@@ -56,7 +58,7 @@ class Falsification:
     pass
 
 
-StaticParameters = NDArray[Union[float_, int_]]
+StaticParameters = NDArray[_Numeric]
 SignalInterpolators = Sequence[SignalInterpolator]
 
 
