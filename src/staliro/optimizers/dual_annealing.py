@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Literal
 
-from .optimizer import ObjectiveFn, Optimizer, Sample, RunOptions
+from .optimizer import Optimizer, OptimizationFn, OptimizationParams, Sample
 from ..options import Behavior
 
 
@@ -20,7 +20,7 @@ class DualAnnealingResult:
 
 
 class DualAnnealing(Optimizer[DualAnnealingResult]):
-    def optimize(self, func: ObjectiveFn, options: RunOptions) -> DualAnnealingResult:
+    def optimize(self, func: OptimizationFn, options: OptimizationParams) -> DualAnnealingResult:
         def wrapper(sample: Sample) -> float:
             return func(sample)
 
