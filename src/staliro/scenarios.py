@@ -11,7 +11,7 @@ from numpy.random import default_rng
 from numpy.typing import NDArray
 
 from .models import Model, ModelResult, Falsification
-from .optimizers import Optimizer, Sample, RunOptions
+from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
 from .specification import Specification
@@ -22,7 +22,7 @@ _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
 
-class _BaseCostFn(ABC, Generic[_IT]):
+class _BaseCostFn(ABC, Generic[_IT], OptimizationFn):
     def __init__(self, model: Model, specification: Specification, options: Options):
         self.model = model
         self.spec = specification
@@ -93,8 +93,10 @@ class TimedCostFn(_BaseCostFn[TimedIteration]):
         return cost
 
 
-def _run(optimizer: Optimizer[_RT], fn: _BaseCostFn[_IT], opts: RunOptions) -> Run[_RT, _IT]:
-    run_duration, result = _time(lambda: optimizer.optimize(fn, opts))
+def _run(
+    optimizer: Optimizer[_RT], fn: _BaseCostFn[_IT], params: OptimizationParams
+) -> Run[_RT, _IT]:
+    run_duration, result = _time(lambda: optimizer.optimize(fn, params))
     return Run(result, fn.iterations, run_duration)
 
 
@@ -102,24 +104,20 @@ _CostFnFactory = Callable[[], _BaseCostFn[_IT]]
 _Runs = List[Run[_RT, _IT]]
 
 
-class RunManager(Generic[_RT, _IT]):
-    def __init__(self, optimizer: Optimizer[_RT], fn_factory: _CostFnFactory[_IT]):
-        self.optimizer = optimizer
-        self.fn_factory = fn_factory
+def _runs(
+    optimizer: Optimizer[_RT], fn_factory: _CostFnFactory[_IT], options: Options
+) -> _Runs[_RT, _IT]:
+    rng = default_rng(options.seed)
+    run_seeds = [rng.integers(low=0, high=maxsize) for _ in range(options.runs)]
+    run_params = [
+        OptimizationParams(options.bounds, options.iterations, options.behavior, run_seed)
+        for run_seed in run_seeds
+    ]
+    run_fns = [fn_factory() for _ in range(options.runs)]
 
-    def runs(self, options: Options) -> _Runs[_RT, _IT]:
-        rng = default_rng(options.seed)
-        run_seeds = [rng.integers(low=0, high=maxsize) for _ in range(options.runs)]
-        run_options = [
-            RunOptions(options.bounds, options.iterations, options.behavior, run_seed)
-            for run_seed in run_seeds
-        ]
-        run_fns = [self.fn_factory() for _ in range(options.runs)]
-
-        return [_run(self.optimizer, fn, opts) for fn, opts in zip(run_fns, run_options)]
+    return [_run(optimizer, fn, params) for fn, params in zip(run_fns, run_params)]
 
 
-_TimedResult = TimedResult[_RT, TimedIteration]
 ScenarioResult = Union[Result[_RT, Iteration], TimedResult[_RT, TimedIteration]]
 
 
@@ -131,21 +129,21 @@ class Scenario:
 
     def _run(self, optimizer: Optimizer[_RT]) -> Result[_RT, Iteration]:
         fn_factory = lambda: CostFn(self.model, self.spec, self.options)
-        manager = RunManager(optimizer, fn_factory)
-        runs = manager.runs(self.options)
+        runs = _runs(optimizer, fn_factory, self.options)
 
         return Result(runs, self.options)
 
     def _run_timed(self, optimizer: Optimizer[_RT]) -> TimedResult[_RT, TimedIteration]:
         fn_factory = lambda: TimedCostFn(self.model, self.spec, self.options)
-        manager = RunManager(optimizer, fn_factory)
-        runs = manager.runs(self.options)
+        runs = _runs(optimizer, fn_factory, self.options)
         timed_runs = [TimedRun(run.result, run.history, run.duration) for run in runs]
 
         return TimedResult(timed_runs, self.options)
 
     @overload
-    def run(self, optimizer: Optimizer[_RT], *, timed: Literal[True]) -> _TimedResult[_RT]:
+    def run(
+        self, optimizer: Optimizer[_RT], *, timed: Literal[True]
+    ) -> TimedResult[_RT, TimedIteration]:
         ...
 
     @overload
