@@ -98,7 +98,7 @@ def _run(
     optimizer: Optimizer[_RT], fn: _BaseCostFn[_IT], params: OptimizationParams
 ) -> Run[_RT, _IT]:
     run_duration, result = _time(lambda: optimizer.optimize(fn, params))
-    return Run(result, fn.iterations, run_duration)
+    return Run(result, list(fn.iterations), run_duration)
 
 
 _CostFnFactory = Callable[[], _BaseCostFn[_IT]]
