@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import deque
 from math import inf
 from sys import maxsize
 from time import perf_counter
@@ -27,7 +28,7 @@ class _BaseCostFn(ABC, Generic[_IT], OptimizationFn):
         self.model = model
         self.spec = specification
         self.options = options
-        self.iterations: List[_IT] = []
+        self.iterations: deque[_IT] = deque()
 
     def _result_cost(self, result: ModelResult) -> float:
         if isinstance(result, Falsification):
