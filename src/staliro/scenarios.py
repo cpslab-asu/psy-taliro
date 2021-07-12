@@ -23,7 +23,7 @@ _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
 
-class _BaseCostFn(ABC, Generic[_IT], OptimizationFn):
+class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
     def __init__(self, model: Model, specification: Specification, options: Options):
         self.model = model
         self.spec = specification
