@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import sys
 from enum import auto, IntEnum
 from random import randint
 from sys import maxsize
-from typing import Any, List, Optional, Tuple, Iterable, Sequence
+from typing import Any, List, Optional, Tuple, Iterable, Sequence, Union
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 from attr import attrs, attrib, Attribute
 
@@ -117,6 +123,18 @@ def _seed_factory() -> int:
     return randint(0, maxsize)
 
 
+_ParallelizationT = Union[int, Literal["all", "cores"], None]
+
+
+def _parallelization_validator(
+    _: Any, attr: Attribute[_ParallelizationT], value: _ParallelizationT
+) -> None:
+    if isinstance(value, str) and value != "cores" and value != "all":
+        raise ValueError()
+    elif not isinstance(value, int):
+        raise TypeError()
+
+
 @attrs
 class Options:
     """General options for controlling falsification behavior.
@@ -141,6 +159,7 @@ class Options:
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
     sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
+    parallelization: _ParallelizationT = attrib(default=None, validator=_parallelization_validator)
     verbose: bool = False
 
     @runs.validator
