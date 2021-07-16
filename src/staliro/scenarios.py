@@ -33,7 +33,7 @@ class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
         self.model = model
         self.spec = specification
         self.options = options
-        self.iterations: deque[_IT] = deque()
+        self.iterations: Deque[_IT] = deque()
 
     def _result_cost(self, result: ModelResult) -> float:
         if isinstance(result, Falsification):
