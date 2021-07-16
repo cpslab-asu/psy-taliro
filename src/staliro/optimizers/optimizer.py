@@ -24,7 +24,7 @@ class OptimizationParams:
     seed: int
 
 
-Sample = NDArray[Union[float_, int_]]
+Sample = Union[NDArray[float_], NDArray[int_]]
 
 
 class OptimizationFn(Protocol):
