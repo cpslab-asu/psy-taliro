@@ -23,7 +23,7 @@ from .signals import SignalInterpolator
 from .specification import Specification
 from .results import Iteration, Result, TimedIteration, Run, TimedRun, TimedResult
 
-_T = TypeVar("_T", bound=generic)
+_T = TypeVar("_T", bound=np.generic)
 _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
@@ -37,7 +37,7 @@ class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
 
     def _result_cost(self, result: ModelResult) -> float:
         if isinstance(result, Falsification):
-            return -inf
+            return -math.inf
         else:
             return self.spec.evaluate(result)
 
@@ -78,9 +78,9 @@ class CostFn(_BaseCostFn[Iteration]):
 
 
 def _time(fn: Callable[[], _RT]) -> Tuple[float, _RT]:
-    t_start = perf_counter()
+    t_start = time.perf_counter()
     result = fn()
-    t_stop = perf_counter()
+    t_stop = time.perf_counter()
 
     return t_stop - t_start, result
 
@@ -114,7 +114,7 @@ def _runs(
     optimizer: Optimizer[_RT], fn_factory: _CostFnFactory[_IT], options: Options
 ) -> _Runs[_RT, _IT]:
     rng = default_rng(options.seed)
-    run_seeds = [rng.integers(low=0, high=maxsize) for _ in range(options.runs)]
+    run_seeds = [rng.integers(low=0, high=sys.maxsize) for _ in range(options.runs)]
     run_params = [
         OptimizationParams(options.bounds, options.iterations, options.behavior, run_seed)
         for run_seed in run_seeds
