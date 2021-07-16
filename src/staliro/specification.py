@@ -96,7 +96,7 @@ class RTAMTDiscrete(Specification):
 
         self.rtamt_obj.reset()
 
-        period = mean(_step_widths(result.timestamps))
+        period = stats.mean(_step_widths(result.timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
@@ -154,7 +154,7 @@ class RTAMTDense(Specification):
 
         column_map = self.props.items()
         traces = [
-            (name, array([result.timestamps, result.trajectories[col]]).T.tolist())
+            (name, np.array([result.timestamps, result.trajectories[col]]).T.tolist())
             for name, col in column_map
         ]
 
