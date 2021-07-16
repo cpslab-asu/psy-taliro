@@ -52,9 +52,10 @@ class TLTK(Specification):
         trajectories = result.trajectories
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
+        timestamps = np.array(result.timestamps, dtype=np.float32)
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, result.timestamps.astype(float32))
+        self.tltk_obj.eval_interval(traces, timestamps)
 
         return self.tltk_obj.robustness
 
