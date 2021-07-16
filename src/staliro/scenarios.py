@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import math
+import sys
+import time
 from abc import ABC, abstractmethod
 from collections import deque
-from math import inf
-from sys import maxsize
-from time import perf_counter
-from typing import Generic, List, Literal, Tuple, TypeVar, Union, overload, Callable
+from typing import Generic, List, Tuple, TypeVar, Union, Deque
 
-from numpy import generic
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
+
+import numpy as np
 from numpy.random import default_rng
-from numpy.typing import NDArray
+from typing_extensions import overload, Literal
 
-from .models import Model, ModelResult, Falsification
+from .models import Model, ModelResult, Falsification, StaticParameters
 from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
