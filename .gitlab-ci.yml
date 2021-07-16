@@ -45,7 +45,7 @@ isort:
     - poetry run isort .
 
 
-_test:
+.unittest:
   stage: test
   script:
     - poetry install --extras tests --extras tltk
@@ -53,15 +53,15 @@ _test:
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
 unittest-cp37:
-  extends: _test
+  extends: .unittest
   image: python:3.7
 
 unittest-cp38:
-  extends: _test
+  extends: .unittest
   image: python:3.8
 
 unittest-cp39:
-  extends: _test
+  extends: .unittest
   image: python:3.9
 
 wheel:
