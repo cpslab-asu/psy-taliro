@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Tuple, Sequence, Union
+from typing import Tuple, Union
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol, runtime_checkable, overload
+if sys.version_info >= (3, 9):
+    from collections.abc import Sequence
 else:
-    from typing_extensions import Protocol, runtime_checkable, overload
+    from typing import Sequence
 
-from numpy import int_, float_, linspace
+
+import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
+from typing_extensions import Protocol, runtime_checkable, overload
 
 _RealVector = NDArray[Union[float_, int_]]
 
