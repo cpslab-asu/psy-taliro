@@ -11,7 +11,6 @@ else:
     from typing import Sequence, Callable
 
 import numpy as np
-import scipy.integrate as integrate
 from numpy.typing import NDArray
 from scipy import integrate
 from typing_extensions import Protocol, runtime_checkable, overload
@@ -19,13 +18,13 @@ from typing_extensions import Protocol, runtime_checkable, overload
 from .options import Interval
 from .signals import SignalInterpolator
 
-_Numeric = Union[int_, float_]
+_RealVector = Union[NDArray[np.float_], NDArray[np.int_]]
 
 
 @dataclass(frozen=True)
 class SimulationResult:
-    _trajectories: NDArray[_Numeric]
-    _timestamps: NDArray[float_]
+    _trajectories: _RealVector
+    _timestamps: _RealVector
 
     def __post_init__(self) -> None:
         if self._timestamps.ndim != 1:
@@ -38,12 +37,12 @@ class SimulationResult:
             raise ValueError("expected one dimension to match timestamps length")
 
     @property
-    def timestamps(self) -> NDArray[float_]:
+    def timestamps(self) -> _RealVector:
         return self._timestamps
 
     @property
-    def trajectories(self) -> NDArray[Union[int_, float_]]:
-        _trajectories = atleast_2d(self._trajectories)
+    def trajectories(self) -> _RealVector:
+        _trajectories = np.atleast_2d(self._trajectories)
 
         if _trajectories.shape[0] == self._timestamps.shape[0]:
             return _trajectories.T
@@ -55,7 +54,7 @@ class Falsification:
     pass
 
 
-StaticParameters = NDArray[_Numeric]
+StaticParameters = _RealVector
 SignalInterpolators = Sequence[SignalInterpolator]
 
 ModelResult = Union[SimulationResult, Falsification]
@@ -72,10 +71,10 @@ class Model(Protocol):
         ...
 
 
-SignalTimes = NDArray[float_]
-SignalValues = NDArray[float_]
-Timestamps = Union[ndarray, Sequence[float]]
-Trajectories = Union[ndarray, Sequence[Sequence[float]]]
+SignalTimes = NDArray[np.float_]
+SignalValues = NDArray[np.float_]
+Timestamps = Union[_RealVector, Sequence[float], Sequence[int]]
+Trajectories = Union[_RealVector, Sequence[Sequence[float]], Sequence[Sequence[int]]]
 BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
 BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
 
@@ -104,9 +103,9 @@ class Blackbox(Model):
 
 
 Time = float
-State = NDArray[float_]
-IntegrationFn = Callable[[float, ndarray], ndarray]
-ODEResult = Union[ndarray, Sequence[float]]
+State = _RealVector
+IntegrationFn = Callable[[float, _RealVector], _RealVector]
+ODEResult = Union[_RealVector, Sequence[float], Sequence[int]]
 ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
 
 
