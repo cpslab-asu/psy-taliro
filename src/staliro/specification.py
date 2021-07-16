@@ -1,18 +1,16 @@
-import sys
-from statistics import mean
-from typing import Dict, NamedTuple, runtime_checkable
+from __future__ import annotations
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol, Literal
-else:
-    from typing_extensions import Protocol, Literal
+import statistics as stats
+import sys
+from typing import Dict, NamedTuple
 
 if sys.version_info >= (3, 9):
     from collections.abc import Iterable
 else:
     from typing import Iterable
 
-from numpy import array, float32
+import numpy as np
+from typing_extensions import Protocol, Literal, runtime_checkable
 
 from .parser import parse
 from .models import SimulationResult, Timestamps
