@@ -37,6 +37,13 @@ mypy:
     - poetry install
     - poetry run mypy --pretty
 
+isort:
+  stage: analyze
+  image: python:3.9-slim
+  script:
+    - poetry install
+    - poetry run isort .
+
 
 _test:
   stage: test
