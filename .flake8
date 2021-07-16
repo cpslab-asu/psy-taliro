@@ -30,7 +30,7 @@ exclude =
     src/staliro/parser/stlParserVisitor.py,
     docs/conf.py
 
-max-line-length = 99
+max-line-length = 100
 
 per-file-ignores =
     # F401: Imported but unused
