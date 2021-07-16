@@ -55,10 +55,12 @@ isort:
 unittest-cp37:
   extends: .unittest
   image: python:3.7
+  cache: {}
 
 unittest-cp38:
   extends: .unittest
   image: python:3.8
+  cache: {}
 
 unittest-cp39:
   extends: .unittest
