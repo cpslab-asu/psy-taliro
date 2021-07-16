@@ -2,15 +2,13 @@ import math
 import statistics
 
 import numpy as np
-import numpy.typing as npt
 import staliro
 import staliro.signals as signals
+import staliro.models as models
 
-FloatArray = npt.NDArray[np.float_]
 
-
-@staliro.ode()
-def aircraft_model(time: float, state: FloatArray, signals: FloatArray) -> FloatArray:
+@models.ode()
+def aircraft_model(time: float, state: models.State, signals: models.SignalValues) -> models.State:
     b = (0.07351, -1.5e-3, 6.1e-4)
     c = (0.1667, 0.109)
     m = 74e3
@@ -50,9 +48,7 @@ spec = staliro.RTAMTDense(phi, predicates)
 initial_conditions = [(200.0, 260.0), (-10.0, 10.0), (120.0, 150.0)]
 signal_options = [
     staliro.SignalOptions(interval=(34386.0, 53973.0)),
-    staliro.SignalOptions(
-        interval=(0.0, 16.0), control_points=20, factory=signals.LinearFactory()
-    ),
+    staliro.SignalOptions(interval=(0.0, 16.0), control_points=20, factory=signals.LinearFactory()),
 ]
 options = staliro.Options(
     static_parameters=initial_conditions,
