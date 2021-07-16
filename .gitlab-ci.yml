@@ -18,21 +18,21 @@ before_script:
 
 flake8:
   stage: analyze
-  image: python:3.8-slim
+  image: python:3.9-slim
   script:
     - poetry install
     - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
   stage: analyze
-  image: python:3.8-slim
+  image: python:3.9-slim
   script:
     - poetry install
     - poetry run black --check src tests stubs examples
 
 mypy:
   stage: analyze
-  image: python:3.8-slim
+  image: python:3.9-slim
   script:
     - poetry install
     - poetry run mypy --pretty
