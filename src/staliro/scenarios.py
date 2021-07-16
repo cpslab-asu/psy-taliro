@@ -16,7 +16,7 @@ import numpy as np
 from numpy.random import default_rng
 from typing_extensions import overload, Literal
 
-from .models import Model, ModelResult, Falsification, StaticParameters
+from .models import Model, ModelResult, Falsification, StaticParameters, SignalInterpolators
 from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
@@ -50,17 +50,14 @@ def _static_params(sample: Sample, options: Options) -> StaticParameters:
     return sample[0 : len(options.static_parameters)]  # type: ignore
 
 
-_Interpolators = List[SignalInterpolator]
-
-
-def _signal_interpolators(values: Sample, options: Options) -> _Interpolators:
+def _interpolators(sample: Sample, options: Options) -> SignalInterpolators:
     start = len(options.static_parameters)
     interpolators: List[SignalInterpolator] = []
 
     for signal in options.signals:
         factory = signal.factory
         end = start + signal.control_points
-        interpolators.append(factory.create(signal.interval.astuple(), values[start:end]))
+        interpolators.append(factory.create(signal.interval.astuple(), sample[start:end]))
         start = end
 
     return interpolators
