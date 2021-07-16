@@ -69,9 +69,7 @@ class SignalOptions:
     control_points: int = attrib(default=10, converter=int)
     step: float = attrib(default=0.1, converter=float)
     signal_times: Optional[SignalTimes] = attrib(default=None)
-    time_varying: bool = (
-        False  # Boolean flag for turning control point times into search variables
-    )
+    time_varying: bool = False  # Boolean flag for turning control point times into search variables
 
     @control_points.validator
     def _validate_control_points(self, attr: Attribute[int], value: int) -> None:

@@ -36,11 +36,7 @@ class Series:
     def __iter__(self) -> Iterator[Any]: ...
     def __len__(self) -> int: ...
     def to_numpy(
-        self,
-        dtype: Optional[DTypeLike] = ...,
-        copy: bool = ...,
-        na_value: Any = ...,
-        **kwargs: Any
+        self, dtype: Optional[DTypeLike] = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
     ) -> NDArray[Any]: ...
 
 _Axis = Union[Literal[0, 1], Literal["index", "columns"]]
@@ -85,11 +81,7 @@ class DataFrame:
         inplace: bool = ...,
     ) -> DataFrame: ...
     def to_numpy(
-        self,
-        dtype: Optional[DTypeLike] = ...,
-        copy: bool = ...,
-        na_value: Any = ...,
-        **kwargs: Any
+        self, dtype: Optional[DTypeLike] = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
     ) -> NDArray[Any]: ...
     @property
     def loc(self) -> _Loc: ...
