@@ -37,15 +37,25 @@ mypy:
     - poetry install
     - poetry run mypy --pretty
 
-unittest:
+_test:
   stage: test
-  image: python:3.8
   script:
     - poetry install --extras tests --extras tltk
     - poetry run pip install git+https://github.com/andersonjwan/rtamt
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
-build:
+unittest-cp37:
+  extends: _test
+  image: python:3.7
+
+unittest-cp38:
+  extends: _test
+  image: python:3.8
+
+unittest-cp39:
+  extends: _test
+  image: python:3.9
+
   stage: build
   image: python:3.8-slim
   script:
