@@ -32,6 +32,7 @@ flake8-import-order = "^0.18.1"
 flake8-annotations-complexity = "^0.0.6"
 flake8-todo = "^0.7"
 black = "^21.5b1"
+isort = "^5.9.2"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx-autodocgen"]
