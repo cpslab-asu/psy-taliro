@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from numpy import array, float_
-from numpy.typing import NDArray
+import numpy as np
 from numpy.random import default_rng, Generator
+from numpy.typing import NDArray
 
 from .optimizer import Optimizer, OptimizationFn, OptimizationParams
 from ..options import Interval, Behavior
