@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import statistics as stats
 import sys
 from dataclasses import dataclass
-from statistics import mean
 from typing import Generic, TypeVar
 
 if sys.version_info >= (3, 9):
@@ -50,7 +50,7 @@ class TimeStats:
 
     @property
     def average_time(self) -> float:
-        return mean(self._durations)
+        return stats.mean(self._durations)
 
     @property
     def total_time(self) -> float:
