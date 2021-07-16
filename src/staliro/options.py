@@ -11,6 +11,7 @@ else:
     from typing import Iterable, Sequence
 
 from attr import attrs, attrib, Attribute
+from attr.validators import optional
 from typing_extensions import Literal
 
 from .signals import InterpolatorFactory, PchipFactory
@@ -157,7 +158,9 @@ class Options:
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
     sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
-    parallelization: _ParallelizationT = attrib(default=None, validator=_parallelization_validator)
+    parallelization: _ParallelizationT = attrib(
+        default=None, validator=optional(_parallelization_validator)
+    )
     verbose: bool = False
 
     @runs.validator
