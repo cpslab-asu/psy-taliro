@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from numpy import float_
+import numpy as np
 from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Literal
