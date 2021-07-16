@@ -1,23 +1,20 @@
 from __future__ import annotations
 
+import math
 import sys
 from dataclasses import dataclass
-from math import floor
-from typing import Tuple, Union, Optional
+from typing import Union, Tuple, Optional
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Callable
 else:
     from typing import Sequence, Callable
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol, runtime_checkable, overload
-else:
-    from typing_extensions import Protocol, runtime_checkable, overload
-
-from numpy import linspace, ndarray, array, atleast_2d, int_, float_
+import numpy as np
+import scipy.integrate as integrate
 from numpy.typing import NDArray
 from scipy import integrate
+from typing_extensions import Protocol, runtime_checkable, overload
 
 from .options import Interval
 from .signals import SignalInterpolator
