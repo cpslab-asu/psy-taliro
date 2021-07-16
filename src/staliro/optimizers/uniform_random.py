@@ -10,8 +10,8 @@ from .optimizer import Optimizer, OptimizationFn, OptimizationParams
 from ..options import Interval, Behavior
 
 
-def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[float_]:
-    return array([rng.uniform(bound.lower, bound.upper) for bound in bounds])
+def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[np.float_]:
+    return np.array([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
 
 class UniformRandom(Optimizer[None]):
