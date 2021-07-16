@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import enum
+import random
 import sys
-from enum import auto, IntEnum
-from random import randint
-from sys import maxsize
-from typing import Any, List, Optional, Tuple, Iterable, Sequence, Union
+from typing import Any, List, Optional, Tuple, Union
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable, Sequence
 else:
-    from typing_extensions import Literal
+    from typing import Iterable, Sequence
 
 from attr import attrs, attrib, Attribute
+from typing_extensions import Literal
 
 from .signals import InterpolatorFactory, PchipFactory
 
