@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from logging import getLogger, NullHandler
+import logging
 from typing import TypeVar
 
 from .models import Model
