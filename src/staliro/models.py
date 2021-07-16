@@ -91,13 +91,13 @@ class Blackbox(Model):
         interval: Interval,
     ) -> ModelResult:
         duration = interval.upper - interval.lower
-        point_count = floor(duration / self.sampling_interval)
-        signal_times = linspace(start=interval.lower, stop=interval.upper, num=point_count)
+        point_count = math.floor(duration / self.sampling_interval)
+        signal_times = np.linspace(start=interval.lower, stop=interval.upper, num=point_count)
         signal_traces = [interpolator.interpolate(signal_times) for interpolator in interpolators]
-        result = self.func(static_params, signal_times, array(signal_traces))
+        result = self.func(static_params, signal_times, np.array(signal_traces))
 
         if isinstance(result, tuple):
-            return SimulationResult(array(result[0]), array(result[1]))
+            return SimulationResult(np.array(result[0]), np.array(result[1]))
 
         return result
 
@@ -112,9 +112,8 @@ ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
 def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> IntegrationFn:
     def integration_fn(time: float, state: State) -> State:
         signal_values = [signal.interpolate(time) for signal in signals]
-        result = func(time, state, array(signal_values))
-
-        return array(result)
+        result = func(time, state, np.array(signal_values))
+        return np.array(result)
 
     return integration_fn
 
