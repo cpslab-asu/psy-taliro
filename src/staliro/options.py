@@ -102,7 +102,7 @@ class SignalOptions:
         return [self.interval] * self.control_points
 
 
-class Behavior(IntEnum):
+class Behavior(enum.IntEnum):
     """Behavior when falsifying case for system is encountered.
 
     Attributes:
@@ -111,8 +111,8 @@ class Behavior(IntEnum):
                       budget is exhausted
     """
 
-    FALSIFICATION = auto()
-    MINIMIZATION = auto()
+    FALSIFICATION = enum.auto()
+    MINIMIZATION = enum.auto()
 
 
 def _static_parameter_converter(obj: Any) -> List[Interval]:
@@ -120,7 +120,7 @@ def _static_parameter_converter(obj: Any) -> List[Interval]:
 
 
 def _seed_factory() -> int:
-    return randint(0, maxsize)
+    return random.randint(0, sys.maxsize)
 
 
 _ParallelizationT = Union[int, Literal["all", "cores"], None]
