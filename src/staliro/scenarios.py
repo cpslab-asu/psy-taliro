@@ -65,8 +65,8 @@ def _interpolators(sample: Sample, options: Options) -> SignalInterpolators:
 
 class CostFn(_BaseCostFn[Iteration]):
     def __call__(self, sample: Sample) -> float:
-        static_params = _static_parameters(sample, self.options)
-        interpolators = _signal_interpolators(sample, self.options)
+        static_params = _static_params(sample, self.options)
+        interpolators = _interpolators(sample, self.options)
         model_result = self.model.simulate(static_params, interpolators, self.options.interval)
         cost = self._result_cost(model_result)
 
@@ -84,8 +84,8 @@ def _time(fn: Callable[[], _RT]) -> Tuple[float, _RT]:
 
 class TimedCostFn(_BaseCostFn[TimedIteration]):
     def __call__(self, sample: Sample) -> float:
-        static_params = _static_parameters(sample, self.options)
-        interpolators = _signal_interpolators(sample, self.options)
+        static_params = _static_params(sample, self.options)
+        interpolators = _interpolators(sample, self.options)
 
         model_duration, model_result = _time(
             lambda: self.model.simulate(static_params, interpolators, self.options.interval)
