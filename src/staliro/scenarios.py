@@ -46,8 +46,8 @@ class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
         raise NotImplementedError()
 
 
-def _static_parameters(values: NDArray[_T], options: Options) -> NDArray[_T]:
-    return values[0 : len(options.static_parameters)]  # type: ignore
+def _static_params(sample: Sample, options: Options) -> StaticParameters:
+    return sample[0 : len(options.static_parameters)]  # type: ignore
 
 
 _Interpolators = List[SignalInterpolator]
