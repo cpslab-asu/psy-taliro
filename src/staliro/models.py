@@ -89,31 +89,25 @@ SignalTimes = NDArray[np.float_]
 SignalValues = NDArray[np.float_]
 Timestamps = Union[_RealVector, Sequence[float], Sequence[int]]
 Trajectories = Union[_RealVector, Sequence[Sequence[float]], Sequence[Sequence[int]]]
-BlackboxResult = Union[SimulationResult, Falsification, Tuple[Trajectories, Timestamps]]
-BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult]
+BlackboxResult = Union[SimulationResult[_T], Falsification]
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult[_T]]
 
 
-class Blackbox(Model):
-    def __init__(self, func: BlackboxFunc, sampling_interval: float = 0.1):
+class Blackbox(Model[_T]):
+    def __init__(self, func: BlackboxFunc[_T], sampling_interval: float = 0.1):
         self.func = func
         self.sampling_interval = sampling_interval
 
-    def simulate(
-        self,
-        static_params: StaticParameters,
-        interpolators: SignalInterpolators,
-        interval: Interval,
-    ) -> ModelResult:
+    def simulate(self, params: SimulationParams) -> ModelResult[_T]:
+        interval = params.interval
         duration = interval.upper - interval.lower
         point_count = math.floor(duration / self.sampling_interval)
         signal_times = np.linspace(start=interval.lower, stop=interval.upper, num=point_count)
-        signal_traces = [interpolator.interpolate(signal_times) for interpolator in interpolators]
-        result = self.func(static_params, signal_times, np.array(signal_traces))
+        signal_traces = [
+            interpolator.interpolate(signal_times) for interpolator in params.interpolators
+        ]
 
-        if isinstance(result, tuple):
-            return SimulationResult(np.array(result[0]), np.array(result[1]))
-
-        return result
+        return self.func(params.static_parameters, signal_times, np.array(signal_traces))
 
 
 Time = float
