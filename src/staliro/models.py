@@ -139,22 +139,22 @@ class ODE(Model[None]):
         return SimulationResult(integration.y, integration.t, None)
 
 
-_BlackboxDecorator = Callable[[BlackboxFunc], Blackbox]
+_BlackboxDecorator = Callable[[BlackboxFunc[_T]], Blackbox]
 
 
 @overload
-def blackbox(*, sampling_interval: float = ...) -> _BlackboxDecorator:
+def blackbox(*, sampling_interval: float = ...) -> _BlackboxDecorator[_T]:
     ...
 
 
 @overload
-def blackbox(_func: BlackboxFunc) -> Blackbox:
+def blackbox(_func: BlackboxFunc[_T]) -> Blackbox[_T]:
     ...
 
 
 def blackbox(
-    _func: Optional[BlackboxFunc] = None, *, sampling_interval: float = 0.1
-) -> Union[Blackbox, _BlackboxDecorator]:
+    _func: Optional[BlackboxFunc[_T]] = None, *, sampling_interval: float = 0.1
+) -> Union[Blackbox[_T], _BlackboxDecorator[_T]]:
     """Decorate a function as a blackbox model.
 
     This decorator can be used with or without arguments.
@@ -168,7 +168,7 @@ def blackbox(
         A blackbox model
     """
 
-    def decorator(func: BlackboxFunc) -> Blackbox:
+    def decorator(func: BlackboxFunc[_T]) -> Blackbox[_T]:
         return Blackbox(func, sampling_interval)
 
     if _func is not None:
