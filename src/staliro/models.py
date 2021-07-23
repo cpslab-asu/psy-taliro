@@ -69,17 +69,19 @@ class Falsification:
 StaticParameters = _RealVector
 SignalInterpolators = Sequence[SignalInterpolator]
 
-ModelResult = Union[SimulationResult, Falsification]
+ModelResult = Union[SimulationResult[_T], Falsification]
+
+
+@attrs()
+class SimulationParams:
+    static_parameters: StaticParameters
+    interpolators: SignalInterpolators
+    interval: Interval
 
 
 @runtime_checkable
-class Model(Protocol):
-    def simulate(
-        self,
-        __static_params: StaticParameters,
-        __interpolators: SignalInterpolators,
-        __interval: Interval,
-    ) -> ModelResult:
+class Model(Protocol[_T]):
+    def simulate(self, __params: SimulationParams) -> ModelResult[_T]:
         ...
 
 
