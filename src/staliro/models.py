@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import math
 import sys
-from dataclasses import dataclass
-from typing import Union, Tuple, Optional
+from typing import Any, Generic, TypeVar, Union, Optional, Type
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Callable
@@ -11,6 +10,7 @@ else:
     from typing import Sequence, Callable
 
 import numpy as np
+from attr import Attribute, attrs, attrib
 from numpy.typing import NDArray
 from scipy import integrate
 from typing_extensions import Protocol, runtime_checkable, overload
@@ -18,33 +18,45 @@ from typing_extensions import Protocol, runtime_checkable, overload
 from .options import Interval
 from .signals import SignalInterpolator
 
+_Validator = Callable[[Any, Attribute[Any], Any], Any]
+
+
+def _ndarray_validator(dims: Sequence[int], dtypes: Sequence[Type[np.generic]]) -> _Validator:
+    def validator(inst: Any, attr: Attribute[Any], value: Any) -> None:
+        if not isinstance(value, np.ndarray):
+            raise TypeError("timestamps may only be of type np.ndarray")
+
+        if not any(value.ndim == dim for dim in dims):
+            raise ValueError(f"{attr.name} must be have dimension: {dims}")
+
+        if not any(np.issubdtype(value.dtype, dtype) for dtype in dtypes):
+            raise TypeError(f"{attr.name} must have dtype: {dtypes}")
+
+    return validator
+
+
 _RealVector = Union[NDArray[np.float_], NDArray[np.int_]]
+_T = TypeVar("_T")
+_numeric_types = (np.integer, np.floating)
+_timestamp_validator = _ndarray_validator((1,), _numeric_types)
+_trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
 
 
-@dataclass(frozen=True)
-class SimulationResult:
-    _trajectories: _RealVector
-    _timestamps: _RealVector
+@attrs(auto_attribs=True, frozen=True)
+class SimulationResult(Generic[_T]):
+    _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.ndarray)
+    timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.ndarray)
+    extra: _T
 
-    def __post_init__(self) -> None:
-        if self._timestamps.ndim != 1:
-            raise ValueError("timestamps must be 1-dimensional")
-
-        if not 1 <= self._trajectories.ndim <= 2:
-            raise ValueError("expected 1 or 2-dimensional trajectories")
-
-        if not any(dim == self._timestamps.shape[0] for dim in self._trajectories.shape):
-            raise ValueError("expected one dimension to match timestamps length")
-
-    @property
-    def timestamps(self) -> _RealVector:
-        return self._timestamps
+    def __attrs_post_init__(self) -> None:
+        if not any(dim == self.timestamps.shape[0] for dim in self._trajectories.shape):
+            raise ValueError("expected one trajectories dimension to match timestamps length")
 
     @property
     def trajectories(self) -> _RealVector:
         _trajectories = np.atleast_2d(self._trajectories)
 
-        if _trajectories.shape[0] == self._timestamps.shape[0]:
+        if _trajectories.shape[0] == self.timestamps.shape[0]:
             return _trajectories.T
 
         return _trajectories
