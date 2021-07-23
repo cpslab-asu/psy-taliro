@@ -126,20 +126,17 @@ def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> Integra
     return integration_fn
 
 
-class ODE(Model):
+class ODE(Model[None]):
     def __init__(self, func: ODEFunc):
         self.func = func
 
-    def simulate(
-        self,
-        static_params: StaticParameters,
-        interpolators: SignalInterpolators,
-        interval: Interval,
-    ) -> ModelResult:
-        integration_fn = _make_integration_fn(interpolators, self.func)
-        integration = integrate.solve_ivp(integration_fn, interval.astuple(), static_params)
+    def simulate(self, params: SimulationParams) -> ModelResult[None]:
+        integration_fn = _make_integration_fn(params.interpolators, self.func)
+        integration = integrate.solve_ivp(
+            integration_fn, params.interval.astuple(), params.static_parameters
+        )
 
-        return SimulationResult(integration.y, integration.t)
+        return SimulationResult(integration.y, integration.t, None)
 
 
 _BlackboxDecorator = Callable[[BlackboxFunc], Blackbox]
