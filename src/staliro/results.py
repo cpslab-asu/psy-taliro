@@ -30,21 +30,17 @@ class TimedIteration(Iteration[_ET]):
 
 
 _RT = TypeVar("_RT")
-_IT = TypeVar("_IT", bound=Iteration)
 
 
 @dataclass(frozen=True)
-class Run(Generic[_RT, _IT]):
+class Run(Generic[_RT, _ET]):
     result: _RT
-    history: Sequence[_IT]
+    history: Sequence[Iteration[_ET]]
     duration: float
 
     @property
-    def best_iter(self) -> _IT:
+    def best_iter(self) -> Iteration[_ET]:
         return min(self.history, key=lambda i: i.cost)
-
-
-_TIT = TypeVar("_TIT", bound=TimedIteration)
 
 
 @dataclass(frozen=True)
@@ -65,7 +61,17 @@ class TimeStats:
 
 
 @dataclass(frozen=True)
-class TimedRun(Run[_RT, _TIT]):
+class TimedRun(Run[_RT, _ET]):
+    history: Sequence[TimedIteration[_ET]]
+
+    @property
+    def best_iter(self) -> TimedIteration[_ET]:
+        return min(self.history, key=lambda i: i.cost)
+
+    @property
+    def fastest_iter(self) -> TimedIteration[_ET]:
+        return min(self.history, key=lambda i: i.model_duration + i.cost_duration)
+
     @property
     def model(self) -> TimeStats:
         return TimeStats(iteration.model_duration for iteration in self.history)
