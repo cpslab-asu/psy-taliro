@@ -95,7 +95,7 @@ class Falsification(Generic[_T]):
 StaticParameters = _RealVector
 SignalInterpolators = Sequence[SignalInterpolator]
 
-ModelResult = Union[SimulationResult[_T], Falsification]
+ModelResult = Union[SimulationResult[_T], Falsification[_T]]
 
 
 @attrs()
@@ -115,7 +115,7 @@ SignalTimes = NDArray[np.float_]
 SignalValues = NDArray[np.float_]
 Timestamps = Union[_RealVector, Sequence[float], Sequence[int]]
 Trajectories = Union[_RealVector, Sequence[Sequence[float]], Sequence[Sequence[int]]]
-BlackboxResult = Union[SimulationResult[_T], Falsification]
+BlackboxResult = Union[SimulationResult[_T], Falsification[_T]]
 BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult[_T]]
 
 
