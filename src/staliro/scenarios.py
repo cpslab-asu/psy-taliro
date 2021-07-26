@@ -12,7 +12,6 @@ if sys.version_info >= (3, 9):
 else:
     from typing import Callable
 
-import numpy as np
 from numpy.random import default_rng
 from typing_extensions import overload, Literal
 
