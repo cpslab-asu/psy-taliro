@@ -13,15 +13,18 @@ else:
 from .optimizers import Sample
 from .options import Options
 
+_ET = TypeVar("_ET")
+
 
 @dataclass(frozen=True)
-class Iteration:
+class Iteration(Generic[_ET]):
     cost: float
     sample: Sample
+    extra: _ET
 
 
 @dataclass(frozen=True)
-class TimedIteration(Iteration):
+class TimedIteration(Iteration[_ET]):
     model_duration: float
     cost_duration: float
 
