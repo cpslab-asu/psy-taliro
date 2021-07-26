@@ -134,7 +134,7 @@ ScenarioResult = Union[Result[_RT, Iteration], TimedResult[_RT, TimedIteration]]
 
 
 class Scenario:
-    def __init__(self, model: Model, specification: Specification, options: Options):
+    def __init__(self, model: Model, specification: _SpecificationOrFactory, options: Options):
         self.model = model
         self.spec = specification
         self.options = options
