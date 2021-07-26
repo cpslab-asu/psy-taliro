@@ -98,7 +98,7 @@ SignalInterpolators = Sequence[SignalInterpolator]
 ModelResult = Union[SimulationResult[_T], Falsification[_T]]
 
 
-@attrs()
+@attrs(auto_attribs=True, frozen=True)
 class SimulationParams:
     static_parameters: StaticParameters
     interpolators: SignalInterpolators
