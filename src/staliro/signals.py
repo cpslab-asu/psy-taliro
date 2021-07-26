@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Tuple, Sequence, Union
+from typing import Tuple, Union
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol, runtime_checkable, overload
+if sys.version_info >= (3, 9):
+    from collections.abc import Sequence
 else:
-    from typing_extensions import Protocol, runtime_checkable, overload
+    from typing import Sequence
 
-from numpy import int_, float_, linspace
+
+import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
+from typing_extensions import Protocol, runtime_checkable, overload
 
-_RealVector = NDArray[Union[float_, int_]]
+_RealVector = Union[NDArray[np.int_], NDArray[np.float_]]
 
 
 class SignalInterpolator(Protocol):
@@ -50,7 +52,7 @@ class _ScipyFactory(ABC, InterpolatorFactory):
         raise NotImplementedError()
 
     def _x_values(self, interval: Tuple[float, float], size: float) -> _RealVector:
-        return linspace(interval[0], interval[1], size, endpoint=True)  # type: ignore
+        return np.linspace(interval[0], interval[1], size, endpoint=True)  # type: ignore
 
     def create(self, interval: Tuple[float, float], y_values: _RealVector) -> SignalInterpolator:
         x_values = self._x_values(interval, y_values.size)

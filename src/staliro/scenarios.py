@@ -1,24 +1,29 @@
 from __future__ import annotations
 
+import math
+import sys
+import time
 from abc import ABC, abstractmethod
 from collections import deque
-from math import inf
-from sys import maxsize
-from time import perf_counter
-from typing import Generic, List, Literal, Tuple, TypeVar, Union, overload, Callable
+from typing import Generic, List, Tuple, TypeVar, Union, Deque
 
-from numpy import generic
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
+
+import numpy as np
 from numpy.random import default_rng
-from numpy.typing import NDArray
+from typing_extensions import overload, Literal
 
-from .models import Model, ModelResult, Falsification
+from .models import Model, ModelResult, Falsification, StaticParameters, SignalInterpolators
 from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
 from .specification import Specification
 from .results import Iteration, Result, TimedIteration, Run, TimedRun, TimedResult
 
-_T = TypeVar("_T", bound=generic)
+_T = TypeVar("_T", bound=np.generic)
 _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
@@ -28,11 +33,11 @@ class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
         self.model = model
         self.spec = specification
         self.options = options
-        self.iterations: deque[_IT] = deque()
+        self.iterations: Deque[_IT] = deque()
 
     def _result_cost(self, result: ModelResult) -> float:
         if isinstance(result, Falsification):
-            return -inf
+            return -math.inf
         else:
             return self.spec.evaluate(result)
 
@@ -41,21 +46,18 @@ class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
         raise NotImplementedError()
 
 
-def _static_parameters(values: NDArray[_T], options: Options) -> NDArray[_T]:
-    return values[0 : len(options.static_parameters)]  # type: ignore
+def _static_params(sample: Sample, options: Options) -> StaticParameters:
+    return sample[0 : len(options.static_parameters)]  # type: ignore
 
 
-_Interpolators = List[SignalInterpolator]
-
-
-def _signal_interpolators(values: Sample, options: Options) -> _Interpolators:
+def _interpolators(sample: Sample, options: Options) -> SignalInterpolators:
     start = len(options.static_parameters)
     interpolators: List[SignalInterpolator] = []
 
     for signal in options.signals:
         factory = signal.factory
         end = start + signal.control_points
-        interpolators.append(factory.create(signal.interval.astuple(), values[start:end]))
+        interpolators.append(factory.create(signal.interval.astuple(), sample[start:end]))
         start = end
 
     return interpolators
@@ -63,8 +65,8 @@ def _signal_interpolators(values: Sample, options: Options) -> _Interpolators:
 
 class CostFn(_BaseCostFn[Iteration]):
     def __call__(self, sample: Sample) -> float:
-        static_params = _static_parameters(sample, self.options)
-        interpolators = _signal_interpolators(sample, self.options)
+        static_params = _static_params(sample, self.options)
+        interpolators = _interpolators(sample, self.options)
         model_result = self.model.simulate(static_params, interpolators, self.options.interval)
         cost = self._result_cost(model_result)
 
@@ -73,17 +75,17 @@ class CostFn(_BaseCostFn[Iteration]):
 
 
 def _time(fn: Callable[[], _RT]) -> Tuple[float, _RT]:
-    t_start = perf_counter()
+    t_start = time.perf_counter()
     result = fn()
-    t_stop = perf_counter()
+    t_stop = time.perf_counter()
 
     return t_stop - t_start, result
 
 
 class TimedCostFn(_BaseCostFn[TimedIteration]):
     def __call__(self, sample: Sample) -> float:
-        static_params = _static_parameters(sample, self.options)
-        interpolators = _signal_interpolators(sample, self.options)
+        static_params = _static_params(sample, self.options)
+        interpolators = _interpolators(sample, self.options)
 
         model_duration, model_result = _time(
             lambda: self.model.simulate(static_params, interpolators, self.options.interval)
@@ -109,7 +111,7 @@ def _runs(
     optimizer: Optimizer[_RT], fn_factory: _CostFnFactory[_IT], options: Options
 ) -> _Runs[_RT, _IT]:
     rng = default_rng(options.seed)
-    run_seeds = [rng.integers(low=0, high=maxsize) for _ in range(options.runs)]
+    run_seeds = [rng.integers(low=0, high=sys.maxsize) for _ in range(options.runs)]
     run_params = [
         OptimizationParams(options.bounds, options.iterations, options.behavior, run_seed)
         for run_seed in run_seeds

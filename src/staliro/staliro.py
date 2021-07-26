@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from logging import getLogger, NullHandler
+import logging
 from typing import TypeVar
 
 from .models import Model
@@ -10,8 +10,8 @@ from .results import Result, Iteration, TimedIteration, TimedResult
 from .scenarios import Scenario
 from .specification import Specification
 
-logger = getLogger("staliro")
-logger.addHandler(NullHandler())
+logger = logging.getLogger("staliro")
+logger.addHandler(logging.NullHandler())
 
 _RT = TypeVar("_RT")
 

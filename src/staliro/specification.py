@@ -1,18 +1,16 @@
-import sys
-from statistics import mean
-from typing import Dict, NamedTuple, runtime_checkable
+from __future__ import annotations
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol, Literal
-else:
-    from typing_extensions import Protocol, Literal
+import statistics as stats
+import sys
+from typing import Dict, NamedTuple
 
 if sys.version_info >= (3, 9):
     from collections.abc import Iterable
 else:
     from typing import Iterable
 
-from numpy import array, float32
+import numpy as np
+from typing_extensions import Protocol, Literal, runtime_checkable
 
 from .parser import parse
 from .models import SimulationResult, Timestamps
@@ -54,9 +52,10 @@ class TLTK(Specification):
         trajectories = result.trajectories
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
+        timestamps = np.array(result.timestamps, dtype=np.float32)
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, result.timestamps.astype(float32))
+        self.tltk_obj.eval_interval(traces, timestamps)
 
         return self.tltk_obj.robustness
 
@@ -98,7 +97,7 @@ class RTAMTDiscrete(Specification):
 
         self.rtamt_obj.reset()
 
-        period = mean(_step_widths(result.timestamps))
+        period = stats.mean(_step_widths(result.timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
@@ -156,7 +155,7 @@ class RTAMTDense(Specification):
 
         column_map = self.props.items()
         traces = [
-            (name, array([result.timestamps, result.trajectories[col]]).T.tolist())
+            (name, np.array([result.timestamps, result.trajectories[col]]).T.tolist())
             for name, col in column_map
         ]
 
