@@ -16,9 +16,6 @@ numpy = "^1.20.2"
 scipy = "^1.6.2"
 tltk-mtl = {version = "^0.0.27", optional = true}
 typing-extensions = "^3.10.0"
-Sphinx = {version = "^3.5.3", optional = true}
-sphinx-autodocgen = {version = "^1.2", optional = true}
-pandas = {version = "^1.2.3", optional = true}
 
 [tool.poetry.dev-dependencies]
 mypy = "^0"
@@ -33,11 +30,9 @@ flake8-annotations-complexity = "^0.0.6"
 flake8-todo = "^0.7"
 black = "^21.5b1"
 isort = "^5.9.2"
-
-[tool.poetry.extras]
-docs = ["sphinx", "sphinx-autodocgen"]
-tests = ["pandas"]
-tltk = ["tltk-mtl"]
+Sphinx = "^4.1.2"
+sphinx-autodocgen = "^1.2"
+pandas = "^1.3.1"
 
 [tool.black]
 line-length = 100
