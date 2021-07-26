@@ -1,115 +1,39 @@
 from staliro.parser import parse
+from tltk_mtl import Predicate
 
 from ._parser import ParserTestCase
 
 
 class PredicateTestCase(ParserTestCase):
-    def test_predicate_positive_ns_less_than_positive_name(self) -> None:
-        self.assertEqual(
-            parse("pred4 <= 1.0", self._vars).variable_name,
-            self._preds["pred4"].variable_name,
-        )
+    def _do_test(self, phi: str, expected: Predicate) -> None:
+        predicate = parse(phi, self._vars)
 
-    def test_predicate_positive_ns_less_than_positive_matrix(self) -> None:
-        self.assertEqual(parse("pred4 <= 1.0", self._vars).A_Matrix, self._preds["pred4"].A_Matrix)
+        assert isinstance(predicate, Predicate)
 
-    def test_predicate_positive_ns_less_than_positive_bound(self) -> None:
-        self.assertEqual(parse("pred4 <= 1.0", self._vars).bound, self._preds["pred4"].bound)
+        self.assertEqual(predicate.variable_name, expected.variable_name)
+        self.assertEqual(predicate.A_Matrix, expected.A_Matrix)
+        self.assertEqual(predicate.bound, expected.bound)
 
-    def test_predicate_positive_ns_less_than_negative_name(self) -> None:
-        self.assertEqual(
-            parse("pred5 <= -1.0", self._vars).variable_name,
-            self._preds["pred5"].variable_name,
-        )
+    def test_predicate_positive_ns_less_than_positive(self) -> None:
+        self._do_test(r"pred4 <= 1.0", self._preds["pred4"])
 
-    def test_predicate_positive_ns_less_than_negative_matrix(self) -> None:
-        self.assertEqual(
-            parse("pred5 <= -1.0", self._vars).A_Matrix, self._preds["pred5"].A_Matrix
-        )
+    def test_predicate_positive_ns_less_than_negative(self) -> None:
+        self._do_test(r"pred5 <= -1.0", self._preds["pred5"])
 
-    def test_predicate_positive_ns_less_than_negative_bound(self) -> None:
-        self.assertEqual(parse("pred5 <= -1.0", self._vars).bound, self._preds["pred5"].bound)
+    def test_predicate_negative_ns_less_than_positive(self) -> None:
+        self._do_test(r"-pred6 <= 1.0", self._preds["pred6"])
 
-    def test_predicate_negative_ns_less_than_positive_name(self) -> None:
-        self.assertEqual(
-            parse("-pred6 <= 1.0", self._vars).variable_name,
-            self._preds["pred6"].variable_name,
-        )
+    def test_predicate_negative_ns_less_than_negative(self) -> None:
+        self._do_test(r"-pred7 <= -1.0", self._preds["pred7"])
 
-    def test_predicate_negative_ns_less_than_positive_matrix(self) -> None:
-        self.assertEqual(
-            parse("-pred6 <= 1.0", self._vars).A_Matrix, self._preds["pred6"].A_Matrix
-        )
+    def test_predicate_positive_ns_greater_than_positive(self) -> None:
+        self._do_test(r"pred7 >= 1.0", self._preds["preds7"])
 
-    def test_predicate_negative_ns_less_than_positive_bound(self) -> None:
-        self.assertEqual(parse("-pred6 <= 1.0", self._vars).bound, self._preds["pred6"].bound)
+    def test_predicate_positive_ns_greater_than_negative(self) -> None:
+        self._do_test(r"pred6 >= -1.0", self._preds["pred6"])
 
-    def test_predicate_negative_ns_less_than_negative_name(self) -> None:
-        self.assertEqual(
-            parse("-pred6 <= -1.0", self._vars).variable_name,
-            self._preds["pred6"].variable_name,
-        )
+    def test_predicate_negative_ns_greater_than_positive(self) -> None:
+        self._do_test(r"-pred5 >= 1.0", self._preds["pred5"])
 
-    def test_predicate_negative_ns_less_than_negative_matrix(self) -> None:
-        self.assertEqual(
-            parse("-pred7 <= -1.0", self._vars).A_Matrix,
-            self._preds["pred7"].A_Matrix,
-        )
-
-    def test_predicate_negative_ns_less_than_negative_bound(self) -> None:
-        self.assertEqual(parse("-pred7 <= -1.0", self._vars).bound, self._preds["pred7"].bound)
-
-    def test_predicate_positive_ns_greater_than_positive_name(self) -> None:
-        self.assertEqual(
-            parse("pred7 >= 1.0", self._vars).variable_name,
-            self._preds["pred7"].variable_name,
-        )
-
-    def test_predicate_positive_ns_greater_than_positive_matrix(self) -> None:
-        self.assertEqual(parse("pred7 >= 1.0", self._vars).A_Matrix, self._preds["pred7"].A_Matrix)
-
-    def test_predicate_positive_ns_greater_than_positive_bound(self) -> None:
-        self.assertEqual(parse("pred7 >= 1.0", self._vars).bound, self._preds["pred7"].bound)
-
-    def test_predicate_positive_ns_greater_than_negative_name(self) -> None:
-        self.assertEqual(
-            parse("pred6 >= -1.0", self._vars).variable_name,
-            self._preds["pred6"].variable_name,
-        )
-
-    def test_predicate_positive_ns_greater_than_negative_matrix(self) -> None:
-        self.assertEqual(
-            parse("pred6 >= -1.0", self._vars).A_Matrix, self._preds["pred6"].A_Matrix
-        )
-
-    def test_predicate_positive_ns_greater_than_negative_bound(self) -> None:
-        self.assertEqual(parse("pred6 >= -1.0", self._vars).bound, self._preds["pred6"].bound)
-
-    def test_predicate_negative_ns_greater_than_positive_name(self) -> None:
-        self.assertEqual(
-            parse("-pred5 >= 1.0", self._vars).variable_name,
-            self._preds["pred5"].variable_name,
-        )
-
-    def test_predicate_negative_ns_greater_than_positive_matrix(self) -> None:
-        self.assertEqual(
-            parse("-pred5 >= 1.0", self._vars).A_Matrix, self._preds["pred5"].A_Matrix
-        )
-
-    def test_predicate_negative_ns_greater_than_positive_bound(self) -> None:
-        self.assertEqual(parse("-pred5 >= 1.0", self._vars).bound, self._preds["pred5"].bound)
-
-    def test_predicate_negative_ns_greater_than_negative_name(self) -> None:
-        self.assertEqual(
-            parse("-pred4 >= -1.0", self._vars).variable_name,
-            self._preds["pred4"].variable_name,
-        )
-
-    def test_predicate_negative_ns_greater_than_negative_matrix(self) -> None:
-        self.assertEqual(
-            parse("-pred4 >= -1.0", self._vars).A_Matrix,
-            self._preds["pred4"].A_Matrix,
-        )
-
-    def test_predicate_negative_ns_greater_than_negative_bound(self) -> None:
-        self.assertEqual(parse("-pred4 >= -1.0", self._vars).bound, self._preds["pred4"].bound)
+    def test_predicate_negative_ns_greater_than_negative(self) -> None:
+        self._do_test(r"-pred4 >= -1.0", self._preds["pred4"])
