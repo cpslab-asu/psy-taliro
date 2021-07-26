@@ -46,8 +46,9 @@ isort:
 .unittest:
   stage: test
   script:
-    - poetry install --extras tests --extras tltk
-    - poetry run pip install git+https://github.com/andersonjwan/rtamt
+    - poetry install
+    - poetry run pip install tltk_mtl
+    - poetry run pip install git+https://github.com/nickovic/rtamt
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
 unittest-cp37:
