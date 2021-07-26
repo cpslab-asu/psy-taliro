@@ -82,19 +82,19 @@ class TimedRun(Run[_RT, _ET]):
 
 
 @dataclass(frozen=True)
-class Result(Generic[_RT, _IT]):
-    runs: Sequence[Run[_RT, _IT]]
+class Result(Generic[_RT, _ET]):
+    runs: Sequence[Run[_RT, _ET]]
     options: Options
 
     @property
-    def best_run(self) -> Run[_RT, _IT]:
+    def best_run(self) -> Run[_RT, _ET]:
         return min(self.runs, key=lambda r: r.best_iter.cost)
 
 
 @dataclass(frozen=True)
-class TimedResult(Result[_RT, _TIT]):
-    runs: Sequence[TimedRun[_RT, _TIT]]
+class TimedResult(Result[_RT, _ET]):
+    runs: Sequence[TimedRun[_RT, _ET]]
 
     @property
-    def best_run(self) -> TimedRun[_RT, _TIT]:
+    def best_run(self) -> TimedRun[_RT, _ET]:
         return min(self.runs, key=lambda r: r.best_iter.cost)
