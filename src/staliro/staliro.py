@@ -6,7 +6,7 @@ from typing import TypeVar, Union
 from .models import Model
 from .options import Options
 from .optimizers import Optimizer
-from .results import Result, Iteration, TimedIteration, TimedResult
+from .results import Result, TimedResult
 from .scenarios import Scenario
 from .specification import Specification, SpecificationFactory
 
@@ -14,14 +14,15 @@ logger = logging.getLogger("staliro")
 logger.addHandler(logging.NullHandler())
 
 _RT = TypeVar("_RT")
+_ET = TypeVar("_ET")
 
 
 def staliro(
-    model: Model,
+    model: Model[_ET],
     specification: Union[Specification, SpecificationFactory],
     optimizer: Optimizer[_RT],
     options: Options,
-) -> Result[_RT, Iteration]:
+) -> Result[_RT, _ET]:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
@@ -41,11 +42,11 @@ def staliro(
 
 
 def staliro_timed(
-    model: Model,
+    model: Model[_ET],
     specification: Union[Specification, SpecificationFactory],
     optimizer: Optimizer[_RT],
     options: Options,
-) -> TimedResult[_RT, TimedIteration]:
+) -> TimedResult[_RT, _ET]:
     """Search for falsifying inputs to the provided system and time system components.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
