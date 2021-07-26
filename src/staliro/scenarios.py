@@ -74,8 +74,9 @@ class CostFn(_BaseCostFn[Iteration]):
     def __call__(self, sample: Sample) -> float:
         static_params = _static_params(sample, self.options)
         interpolators = _interpolators(sample, self.options)
+        spec = self._make_spec(sample)
         model_result = self.model.simulate(static_params, interpolators, self.options.interval)
-        cost = self._result_cost(model_result)
+        cost = self._result_cost(model_result, spec)
 
         self.iterations.append(Iteration(cost, sample))
         return cost
@@ -93,11 +94,12 @@ class TimedCostFn(_BaseCostFn[TimedIteration]):
     def __call__(self, sample: Sample) -> float:
         static_params = _static_params(sample, self.options)
         interpolators = _interpolators(sample, self.options)
+        spec = self._make_spec(sample)
 
         model_duration, model_result = _time(
             lambda: self.model.simulate(static_params, interpolators, self.options.interval)
         )
-        cost_duration, cost = _time(lambda: self._result_cost(model_result))
+        cost_duration, cost = _time(lambda: self._result_cost(model_result, spec))
 
         self.iterations.append(TimedIteration(cost, sample, model_duration, cost_duration))
         return cost
