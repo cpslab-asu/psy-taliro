@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import sys
-from typing import Any, Generic, TypeVar, Union, Optional, Type
+from typing import Any, Generic, TypeVar, Union, Optional, Type, TYPE_CHECKING
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Callable
@@ -18,7 +18,8 @@ from typing_extensions import Protocol, runtime_checkable, overload
 from .options import Interval
 from .signals import SignalInterpolator
 
-_Validator = Callable[[Any, Attribute[Any], Any], Any]
+if TYPE_CHECKING:
+    _Validator = Callable[[Any, Attribute[Any], Any], Any]
 
 
 def _ndarray_validator(dims: Sequence[int], dtypes: Sequence[Type[np.generic]]) -> _Validator:
