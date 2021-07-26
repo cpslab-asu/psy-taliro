@@ -43,11 +43,24 @@ _timestamp_validator = _ndarray_validator((1,), _numeric_types)
 _trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
 
 
-@attrs(auto_attribs=True, frozen=True)
+@attrs(auto_attribs=True, frozen=True, init=False)
 class SimulationResult(Generic[_T]):
     _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.array)
     timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.array)
     extra: _T
+
+    @overload
+    def __init__(self: SimulationResult[None], trajectories: _RealVector, timestamps: _RealVector):
+        ...
+
+    @overload
+    def __init__(
+        self: SimulationResult[_T], trajectories: _RealVector, timestamps: _RealVector, extra: _T
+    ):
+        ...
+
+    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, extra: _T = None):
+        self.__attrs_init__(trajectories, timestamps, extra)  # type: ignore
 
     def __attrs_post_init__(self) -> None:
         if not any(dim == self.timestamps.shape[0] for dim in self._trajectories.shape):
