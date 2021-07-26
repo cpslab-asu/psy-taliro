@@ -20,16 +20,17 @@ from .models import Model, ModelResult, Falsification, StaticParameters, SignalI
 from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
-from .specification import Specification
+from .specification import Specification, SpecificationFactory
 from .results import Iteration, Result, TimedIteration, Run, TimedRun, TimedResult
 
-_T = TypeVar("_T", bound=np.generic)
 _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
+_SpecificationOrFactory = Union[SpecificationFactory, Specification]
+
 
 class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
-    def __init__(self, model: Model, specification: Specification, options: Options):
+    def __init__(self, model: Model, specification: _SpecificationOrFactory, options: Options):
         self.model = model
         self.spec = specification
         self.options = options
