@@ -76,8 +76,20 @@ class SimulationResult(Generic[_T]):
         return _trajectories
 
 
-class Falsification:
-    pass
+@attrs(auto_attribs=True, frozen=True, init=False)
+class Falsification(Generic[_T]):
+    extra: _T
+
+    @overload
+    def __init__(self: Falsification[None]):
+        ...
+
+    @overload
+    def __init__(self: Falsification[_T], extra: _T):
+        ...
+
+    def __init__(self, extra: _T = None):
+        self.__attrs_init__(extra)  # type: ignore
 
 
 StaticParameters = _RealVector
