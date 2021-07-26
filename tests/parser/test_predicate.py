@@ -27,7 +27,7 @@ class PredicateTestCase(ParserTestCase):
         self._do_test(r"-pred7 <= -1.0", self._preds["pred7"])
 
     def test_predicate_positive_ns_greater_than_positive(self) -> None:
-        self._do_test(r"pred7 >= 1.0", self._preds["preds7"])
+        self._do_test(r"pred7 >= 1.0", self._preds["pred7"])
 
     def test_predicate_positive_ns_greater_than_negative(self) -> None:
         self._do_test(r"pred6 >= -1.0", self._preds["pred6"])
