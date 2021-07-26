@@ -45,8 +45,8 @@ _trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
 
 @attrs(auto_attribs=True, frozen=True)
 class SimulationResult(Generic[_T]):
-    _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.ndarray)
-    timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.ndarray)
+    _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.array)
+    timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.array)
     extra: _T
 
     def __attrs_post_init__(self) -> None:
