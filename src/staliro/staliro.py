@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import logging
-from typing import TypeVar
+from typing import TypeVar, Union
 
 from .models import Model
 from .options import Options
 from .optimizers import Optimizer
 from .results import Result, Iteration, TimedIteration, TimedResult
 from .scenarios import Scenario
-from .specification import Specification
+from .specification import Specification, SpecificationFactory
 
 logger = logging.getLogger("staliro")
 logger.addHandler(logging.NullHandler())
@@ -17,7 +17,10 @@ _RT = TypeVar("_RT")
 
 
 def staliro(
-    model: Model, specification: Specification, optimizer: Optimizer[_RT], options: Options
+    model: Model,
+    specification: Union[Specification, SpecificationFactory],
+    optimizer: Optimizer[_RT],
+    options: Options,
 ) -> Result[_RT, Iteration]:
     """Search for falsifying inputs to the provided system.
 
@@ -38,7 +41,10 @@ def staliro(
 
 
 def staliro_timed(
-    model: Model, specification: Specification, optimizer: Optimizer[_RT], options: Options
+    model: Model,
+    specification: Union[Specification, SpecificationFactory],
+    optimizer: Optimizer[_RT],
+    options: Options,
 ) -> TimedResult[_RT, TimedIteration]:
     """Search for falsifying inputs to the provided system and time system components.
 

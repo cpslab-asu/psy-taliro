@@ -5,15 +5,16 @@ import sys
 from typing import Dict, NamedTuple
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Callable
 else:
-    from typing import Iterable
+    from typing import Iterable, Callable
 
 import numpy as np
 from typing_extensions import Protocol, Literal, runtime_checkable
 
 from .parser import parse
 from .models import SimulationResult, Timestamps
+from .optimizers import Sample
 
 
 @runtime_checkable
@@ -21,6 +22,8 @@ class Specification(Protocol):
     def evaluate(self, __result: SimulationResult) -> float:
         ...
 
+
+SpecificationFactory = Callable[[Sample], Specification]
 
 PredicateName = str
 

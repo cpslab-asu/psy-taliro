@@ -12,7 +12,6 @@ if sys.version_info >= (3, 9):
 else:
     from typing import Callable
 
-import numpy as np
 from numpy.random import default_rng
 from typing_extensions import overload, Literal
 
@@ -20,26 +19,33 @@ from .models import Model, ModelResult, Falsification, StaticParameters, SignalI
 from .optimizers import Optimizer, Sample, OptimizationFn, OptimizationParams
 from .options import Options
 from .signals import SignalInterpolator
-from .specification import Specification
+from .specification import Specification, SpecificationFactory
 from .results import Iteration, Result, TimedIteration, Run, TimedRun, TimedResult
 
-_T = TypeVar("_T", bound=np.generic)
 _RT = TypeVar("_RT")
 _IT = TypeVar("_IT", bound=Iteration)
 
+_SpecificationOrFactory = Union[SpecificationFactory, Specification]
+
 
 class _BaseCostFn(ABC, OptimizationFn, Generic[_IT]):
-    def __init__(self, model: Model, specification: Specification, options: Options):
+    def __init__(self, model: Model, specification: _SpecificationOrFactory, options: Options):
         self.model = model
         self.spec = specification
         self.options = options
         self.iterations: Deque[_IT] = deque()
 
-    def _result_cost(self, result: ModelResult) -> float:
+    def _result_cost(self, result: ModelResult, spec: Specification) -> float:
         if isinstance(result, Falsification):
             return -math.inf
         else:
-            return self.spec.evaluate(result)
+            return spec.evaluate(result)
+
+    def _make_spec(self, sample: Sample) -> Specification:
+        if isinstance(self.spec, Specification):
+            return self.spec
+        else:
+            return self.spec(sample)
 
     @abstractmethod
     def __call__(self, sample: Sample) -> float:
@@ -67,8 +73,9 @@ class CostFn(_BaseCostFn[Iteration]):
     def __call__(self, sample: Sample) -> float:
         static_params = _static_params(sample, self.options)
         interpolators = _interpolators(sample, self.options)
+        spec = self._make_spec(sample)
         model_result = self.model.simulate(static_params, interpolators, self.options.interval)
-        cost = self._result_cost(model_result)
+        cost = self._result_cost(model_result, spec)
 
         self.iterations.append(Iteration(cost, sample))
         return cost
@@ -86,11 +93,12 @@ class TimedCostFn(_BaseCostFn[TimedIteration]):
     def __call__(self, sample: Sample) -> float:
         static_params = _static_params(sample, self.options)
         interpolators = _interpolators(sample, self.options)
+        spec = self._make_spec(sample)
 
         model_duration, model_result = _time(
             lambda: self.model.simulate(static_params, interpolators, self.options.interval)
         )
-        cost_duration, cost = _time(lambda: self._result_cost(model_result))
+        cost_duration, cost = _time(lambda: self._result_cost(model_result, spec))
 
         self.iterations.append(TimedIteration(cost, sample, model_duration, cost_duration))
         return cost
@@ -125,7 +133,7 @@ ScenarioResult = Union[Result[_RT, Iteration], TimedResult[_RT, TimedIteration]]
 
 
 class Scenario:
-    def __init__(self, model: Model, specification: Specification, options: Options):
+    def __init__(self, model: Model, specification: _SpecificationOrFactory, options: Options):
         self.model = model
         self.spec = specification
         self.options = options
