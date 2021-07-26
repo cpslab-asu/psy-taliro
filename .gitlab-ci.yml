@@ -1,3 +1,5 @@
+image: python:3.9-slim
+
 stages:
   - analyze
   - test
@@ -18,28 +20,24 @@ before_script:
 
 flake8:
   stage: analyze
-  image: python:3.9-slim
   script:
     - poetry install
     - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
   stage: analyze
-  image: python:3.9-slim
   script:
     - poetry install
     - poetry run black --check src tests stubs examples
 
 mypy:
   stage: analyze
-  image: python:3.9-slim
   script:
     - poetry install
     - poetry run mypy --pretty
 
 isort:
   stage: analyze
-  image: python:3.9-slim
   script:
     - poetry install
     - poetry run isort .
@@ -68,7 +66,6 @@ unittest-cp39:
 
 wheel:
   stage: build
-  image: python:3.9-slim
   script:
     - poetry build
   except:
@@ -77,7 +74,6 @@ wheel:
 
 pypi:
   stage: publish
-  image: python:3.8-slim
   script:
     - poetry build
     - poetry publish
@@ -93,7 +89,6 @@ pypi:
 
 pages:
   stage: publish
-  image: python:3.8
   script:
     - poetry install --extras docs
     - poetry run sphinx-build -b html docs public
