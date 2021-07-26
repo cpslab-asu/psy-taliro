@@ -7,14 +7,15 @@ _Traces = Dict[str, NDArray[float_]]
 
 class TLTKObject:
     robustness: float
-    variable_name: str
-    A_matrix: NDArray[float_]
     def eval_interval(
         self, traces: _Traces, time_stamps: NDArray[float32], param_names: Optional[Any] = ...
     ) -> None: ...
     def reset(self) -> None: ...
 
 class Predicate(TLTKObject):
+    variable_name: str
+    A_Matrix: NDArray[float_]
+    bound: NDArray[float_]
     def __init__(
         self,
         variable_name: str,
