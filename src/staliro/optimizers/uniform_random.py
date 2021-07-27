@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from itertools import takewhile
 from multiprocessing import Pool
-from typing import Union, Literal
+from typing import Union
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence
@@ -13,6 +13,7 @@ else:
 import numpy as np
 from numpy.random import default_rng, Generator
 from numpy.typing import NDArray
+from typing_extensions import Literal
 
 from .optimizer import Optimizer, OptimizationFn, OptimizationParams
 from ..options import Interval, Behavior
