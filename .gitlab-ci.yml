@@ -91,7 +91,7 @@ pypi:
 pages:
   stage: publish
   script:
-    - poetry install --extras docs
+    - poetry install
     - poetry run sphinx-build -b html docs public
   only:
     variables:
