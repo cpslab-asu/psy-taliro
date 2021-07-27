@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import math
 import sys
 import time
 from collections import deque
-from typing import Generator, Generic, List, Tuple, TypeVar, Union, Deque
+from typing import Any, Generator, Generic, List, Tuple, TypeVar, Union, Deque
 
 if sys.version_info >= (3, 9):
     from collections.abc import Callable
@@ -15,10 +14,10 @@ from numpy.random import default_rng
 from typing_extensions import overload, Literal
 
 from .models import (
-    Model,
-    SimulationParams,
-    ModelResult,
     Falsification,
+    Model,
+    ModelResult,
+    SimulationParams,
     SimulationResult,
     StaticParameters,
     SignalInterpolators,
@@ -66,13 +65,11 @@ def _make_spec(sample: Sample, spec: _SpecificationOrFactory) -> Specification:
         return spec(sample)
 
 
-def _result_cost(result: ModelResult[_ET], spec: Specification) -> float:
-    if isinstance(result, Falsification):
-        return -math.inf
-    elif isinstance(result, SimulationResult):
-        return spec.evaluate(result)
+def _result_cost(result: ModelResult[Any], spec: Specification) -> float:
+    if isinstance(result, (SimulationResult, Falsification)):
+        return result.eval_using(spec)
     else:
-        raise TypeError("Unknown type of result from model")
+        raise TypeError(f"Unknown result type {type(result)}")
 
 
 class CostFn(OptimizationFn, Generic[_ET]):
@@ -91,7 +88,7 @@ class CostFn(OptimizationFn, Generic[_ET]):
         model_result = self.model.simulate(model_params)
         cost = _result_cost(model_result, spec)
 
-        self.iterations.append(Iteration(cost, sample, model_result.extra))
+        self.iterations.append(Iteration(cost, sample, model_result.data))
 
         return cost
 
@@ -117,7 +114,7 @@ class TimedCostFn(OptimizationFn, Generic[_ET]):
         cost_duration, cost = _time(lambda: _result_cost(model_result, spec))
 
         self.iterations.append(
-            TimedIteration(cost, sample, model_result.extra, model_duration, cost_duration)
+            TimedIteration(cost, sample, model_result.data, model_duration, cost_duration)
         )
 
         return cost
