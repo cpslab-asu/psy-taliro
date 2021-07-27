@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import sys
+from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar, Union, Optional, Type, TYPE_CHECKING
 
 if sys.version_info >= (3, 9):
@@ -17,6 +18,7 @@ from typing_extensions import Protocol, runtime_checkable, overload
 
 from .options import Interval
 from .signals import SignalInterpolator
+from .specification import Specification
 
 if TYPE_CHECKING:
     _Validator = Callable[[Any, Attribute[Any], Any], Any]
@@ -43,53 +45,61 @@ _timestamp_validator = _ndarray_validator((1,), _numeric_types)
 _trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
 
 
+class Evaluable(ABC):
+    @abstractmethod
+    def eval_using(self, spec: Specification) -> float:
+        raise NotImplementedError()
+
+
 @attrs(auto_attribs=True, frozen=True, init=False)
-class SimulationResult(Generic[_T]):
+class SimulationResult(Generic[_T], Evaluable):
     _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.array)
     timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.array)
-    extra: _T
+    data: _T
 
     @overload
     def __init__(self: SimulationResult[None], trajectories: _RealVector, timestamps: _RealVector):
         ...
 
     @overload
-    def __init__(
-        self: SimulationResult[_T], trajectories: _RealVector, timestamps: _RealVector, extra: _T
-    ):
+    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, data: _T):
         ...
 
-    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, extra: _T = None):
-        self.__attrs_init__(trajectories, timestamps, extra)  # type: ignore
+    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, data: _T = None):
+        self.__attrs_init__(trajectories, timestamps, data)  # type: ignore
 
-    def __attrs_post_init__(self) -> None:
-        if not any(dim == self.timestamps.shape[0] for dim in self._trajectories.shape):
-            raise ValueError("expected one trajectories dimension to match timestamps length")
+    def eval_using(self, spec: Specification) -> float:
+        return spec.evaluate(self.trajectories, self.timestamps)
 
     @property
     def trajectories(self) -> _RealVector:
-        _trajectories = np.atleast_2d(self._trajectories)
+        trajectories = np.atleast_2d(self._trajectories)
 
-        if _trajectories.shape[0] == self.timestamps.shape[0]:
-            return _trajectories.T
-
-        return _trajectories
+        if trajectories.shape[0] == self.timestamps.shape[0]:
+            return trajectories.T
+        elif trajectories.shape[1] == self.timestamps.shape[0]:
+            return trajectories
+        else:
+            raise ValueError("No dimension of the trajectories matrix matches the timestamps len")
 
 
 @attrs(auto_attribs=True, frozen=True, init=False)
-class Falsification(Generic[_T]):
-    extra: _T
+class Falsification(Generic[_T], Evaluable):
+    data: _T
 
     @overload
     def __init__(self: Falsification[None]):
         ...
 
     @overload
-    def __init__(self: Falsification[_T], extra: _T):
+    def __init__(self, data: _T):
         ...
 
-    def __init__(self, extra: _T = None):
-        self.__attrs_init__(extra)  # type: ignore
+    def __init__(self, data: _T = None):
+        self.__attrs_init__(data)  # type: ignore
+
+    def eval_using(self, spec: Specification) -> float:
+        return -math.inf
 
 
 StaticParameters = _RealVector

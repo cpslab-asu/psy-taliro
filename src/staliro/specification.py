@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import statistics as stats
 import sys
-from typing import Dict, NamedTuple
+from typing import Dict, Union, NamedTuple
 
 if sys.version_info >= (3, 9):
     from collections.abc import Iterable, Callable
@@ -10,27 +10,30 @@ else:
     from typing import Iterable, Callable
 
 import numpy as np
+from numpy.typing import NDArray
 from typing_extensions import Protocol, Literal, runtime_checkable
 
 from .parser import parse
-from .models import SimulationResult, Timestamps
 from .optimizers import Sample
+
+_NumericArray = Union[NDArray[np.float_], NDArray[np.int_]]
 
 
 @runtime_checkable
 class Specification(Protocol):
-    def evaluate(self, __result: SimulationResult) -> float:
+    def evaluate(self, trajectories: _NumericArray, timestamps: _NumericArray) -> float:
         ...
 
 
 SpecificationFactory = Callable[[Sample], Specification]
 
 PredicateName = str
+PredicateDTypes = Literal["float", "float32", "float64"]
 
 
 class PredicateProps(NamedTuple):
     column: int
-    dtype: Literal["float"] = "float"
+    dtype: PredicateDTypes = "float"
 
 
 class TLTK(Specification):
@@ -51,19 +54,17 @@ class TLTK(Specification):
         self.tltk_obj = parsed
         self.props = predicate_props
 
-    def evaluate(self, result: SimulationResult) -> float:
-        trajectories = result.trajectories
+    def evaluate(self, trajectories: _NumericArray, timestamps: _NumericArray) -> float:
         prop_map = self.props.items()
         traces = {name: trajectories[props.column].astype(props.dtype) for name, props in prop_map}
-        timestamps = np.array(result.timestamps, dtype=np.float32)
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, timestamps)
+        self.tltk_obj.eval_interval(traces, np.array(timestamps, dtype=np.float32))
 
         return self.tltk_obj.robustness
 
 
-def _step_widths(times: Timestamps) -> Iterable[float]:
+def _step_widths(times: _NumericArray) -> Iterable[float]:
     """Compute the distance between adjacent elements."""
 
     for i in range(len(times) - 2):
@@ -95,12 +96,12 @@ class RTAMTDiscrete(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, result: SimulationResult) -> float:
+    def evaluate(self, trajectories: _NumericArray, timestamps: _NumericArray) -> float:
         from rtamt import LTLPastifyException
 
         self.rtamt_obj.reset()
 
-        period = stats.mean(_step_widths(result.timestamps))
+        period = stats.mean(_step_widths(timestamps))
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         # parse AFTER declaring variables and setting sampling period
@@ -111,9 +112,9 @@ class RTAMTDiscrete(Specification):
         except LTLPastifyException:
             pass
 
-        traces = {"time": result.timestamps.tolist()}
+        traces = {"time": timestamps.tolist()}
         for name, column in self.props.items():
-            traces[name] = result.trajectories[column].tolist()
+            traces[name] = trajectories[column].tolist()
 
         # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
@@ -143,7 +144,7 @@ class RTAMTDense(Specification):
         for name, options in predicate_props.items():
             self.rtamt_obj.declare_var(name, options.dtype)
 
-    def evaluate(self, result: SimulationResult) -> float:
+    def evaluate(self, trajectories: _NumericArray, timestamps: _NumericArray) -> float:
         from rtamt import LTLPastifyException
 
         self.rtamt_obj.reset()
@@ -158,8 +159,7 @@ class RTAMTDense(Specification):
 
         column_map = self.props.items()
         traces = [
-            (name, np.array([result.timestamps, result.trajectories[col]]).T.tolist())
-            for name, col in column_map
+            (name, np.array([timestamps, trajectories[col]]).T.tolist()) for name, col in column_map
         ]
 
         # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
