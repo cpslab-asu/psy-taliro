@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import sys
 from itertools import takewhile
-from multiprocessing import Pool
 from typing import Union
 
 if sys.version_info >= (3, 9):
@@ -12,6 +11,7 @@ else:
     from typing import Sequence
 
 import numpy as np
+from pathos.multiprocessing import ProcessPool
 from numpy.random import default_rng, Generator
 from numpy.typing import NDArray
 from typing_extensions import Literal
@@ -37,7 +37,7 @@ class UniformRandom(Optimizer[None]):
 
         if params.behavior is Behavior.MINIMIZATION:
             if self.processes is not None:
-                pool = Pool(processes=self.processes)
+                pool = ProcessPool(nodes=self.processes)
                 pool.map(func, samples)
             else:
                 for _ in map(func, samples):
