@@ -40,7 +40,8 @@ class UniformRandom(Optimizer[None]):
                 pool = Pool(processes=self.processes)
                 pool.map(func, samples)
             else:
-                map(func, samples)
+                for _ in map(func, samples):
+                    pass
         else:
             for _ in takewhile(lambda s: func(s) > 0, samples):
                 pass
