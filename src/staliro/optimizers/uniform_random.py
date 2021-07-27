@@ -42,4 +42,5 @@ class UniformRandom(Optimizer[None]):
             else:
                 map(func, samples)
         else:
-            takewhile(lambda s: func(s) > 0, samples)
+            for _ in takewhile(lambda s: func(s) > 0, samples):
+                pass
