@@ -10,7 +10,7 @@ class BlackboxDecoratorTestCase(TestCase):
         @models.blackbox(sampling_interval=0.2)
         def dummy(
             params: models.StaticParameters, times: models.SignalTimes, signals: models.SignalValues
-        ) -> models.BlackboxResult[Any]:
+        ) -> models.ModelResult[Any]:
             pass
 
         self.assertIsInstance(dummy, models.Blackbox)
@@ -20,7 +20,7 @@ class BlackboxDecoratorTestCase(TestCase):
         @models.blackbox
         def dummy(
             params: models.StaticParameters, times: models.SignalTimes, signals: models.SignalValues
-        ) -> models.BlackboxResult[Any]:
+        ) -> models.ModelResult[Any]:
             pass
 
         self.assertIsInstance(dummy, models.Blackbox)
