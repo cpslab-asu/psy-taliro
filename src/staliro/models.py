@@ -14,7 +14,7 @@ import numpy as np
 from attr import Attribute, attrs, attrib
 from numpy.typing import NDArray
 from scipy import integrate
-from typing_extensions import Protocol, runtime_checkable, overload
+from typing_extensions import overload
 
 from .options import Interval
 from .signals import SignalInterpolator
@@ -104,7 +104,6 @@ class Falsification(Generic[_T], Evaluable):
 
 StaticParameters = _RealVector
 SignalInterpolators = Sequence[SignalInterpolator]
-
 ModelResult = Union[SimulationResult[_T], Falsification[_T]]
 
 
@@ -115,18 +114,17 @@ class SimulationParams:
     interval: Interval
 
 
-@runtime_checkable
-class Model(Protocol[_T]):
-    def simulate(self, __params: SimulationParams) -> ModelResult[_T]:
-        ...
+class Model(ABC, Generic[_T]):
+    @abstractmethod
+    def simulate(self, params: SimulationParams) -> ModelResult[_T]:
+        raise NotImplementedError()
 
 
 SignalTimes = NDArray[np.float_]
 SignalValues = NDArray[np.float_]
 Timestamps = Union[_RealVector, Sequence[float], Sequence[int]]
 Trajectories = Union[_RealVector, Sequence[Sequence[float]], Sequence[Sequence[int]]]
-BlackboxResult = Union[SimulationResult[_T], Falsification[_T]]
-BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], BlackboxResult[_T]]
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResult[_T]]
 
 
 class Blackbox(Model[_T]):
@@ -166,7 +164,7 @@ class ODE(Model[None]):
     def __init__(self, func: ODEFunc):
         self.func = func
 
-    def simulate(self, params: SimulationParams) -> ModelResult[None]:
+    def simulate(self, params: SimulationParams) -> SimulationResult[None]:
         integration_fn = _make_integration_fn(params.interpolators, self.func)
         integration = integrate.solve_ivp(
             integration_fn, params.interval.astuple(), params.static_parameters
