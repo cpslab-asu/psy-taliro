@@ -13,35 +13,34 @@ else:
 from .optimizers import Sample
 from .options import Options
 
+_ET = TypeVar("_ET")
+
 
 @dataclass(frozen=True)
-class Iteration:
+class Iteration(Generic[_ET]):
     cost: float
     sample: Sample
+    extra: _ET
 
 
 @dataclass(frozen=True)
-class TimedIteration(Iteration):
+class TimedIteration(Iteration[_ET]):
     model_duration: float
     cost_duration: float
 
 
 _RT = TypeVar("_RT")
-_IT = TypeVar("_IT", bound=Iteration)
 
 
 @dataclass(frozen=True)
-class Run(Generic[_RT, _IT]):
+class Run(Generic[_RT, _ET]):
     result: _RT
-    history: Sequence[_IT]
+    history: Sequence[Iteration[_ET]]
     duration: float
 
     @property
-    def best_iter(self) -> _IT:
+    def best_iter(self) -> Iteration[_ET]:
         return min(self.history, key=lambda i: i.cost)
-
-
-_TIT = TypeVar("_TIT", bound=TimedIteration)
 
 
 @dataclass(frozen=True)
@@ -62,7 +61,17 @@ class TimeStats:
 
 
 @dataclass(frozen=True)
-class TimedRun(Run[_RT, _TIT]):
+class TimedRun(Run[_RT, _ET]):
+    history: Sequence[TimedIteration[_ET]]
+
+    @property
+    def best_iter(self) -> TimedIteration[_ET]:
+        return min(self.history, key=lambda i: i.cost)
+
+    @property
+    def fastest_iter(self) -> TimedIteration[_ET]:
+        return min(self.history, key=lambda i: i.model_duration + i.cost_duration)
+
     @property
     def model(self) -> TimeStats:
         return TimeStats(iteration.model_duration for iteration in self.history)
@@ -73,19 +82,19 @@ class TimedRun(Run[_RT, _TIT]):
 
 
 @dataclass(frozen=True)
-class Result(Generic[_RT, _IT]):
-    runs: Sequence[Run[_RT, _IT]]
+class Result(Generic[_RT, _ET]):
+    runs: Sequence[Run[_RT, _ET]]
     options: Options
 
     @property
-    def best_run(self) -> Run[_RT, _IT]:
+    def best_run(self) -> Run[_RT, _ET]:
         return min(self.runs, key=lambda r: r.best_iter.cost)
 
 
 @dataclass(frozen=True)
-class TimedResult(Result[_RT, _TIT]):
-    runs: Sequence[TimedRun[_RT, _TIT]]
+class TimedResult(Result[_RT, _ET]):
+    runs: Sequence[TimedRun[_RT, _ET]]
 
     @property
-    def best_run(self) -> TimedRun[_RT, _TIT]:
+    def best_run(self) -> TimedRun[_RT, _ET]:
         return min(self.runs, key=lambda r: r.best_iter.cost)
