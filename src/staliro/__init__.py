@@ -1,5 +1,5 @@
 from .staliro import staliro, staliro_timed
-from .options import Options, SignalOptions
+from .options import Options, SignalOptions, Behavior
 from .scenarios import Scenario
 from .specification import TLTK, RTAMTDense, RTAMTDiscrete, PredicateProps
 from .models import blackbox, ode
