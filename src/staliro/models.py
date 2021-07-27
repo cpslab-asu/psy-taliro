@@ -177,7 +177,7 @@ _BlackboxDecorator = Callable[[BlackboxFunc[_T]], Blackbox[_T]]
 
 
 @overload
-def blackbox(*, sampling_interval: float = ...) -> _BlackboxDecorator[_T]:
+def blackbox(*, sampling_interval: float = ...) -> Callable[[BlackboxFunc[_T]], Blackbox[_T]]:
     ...
 
 
