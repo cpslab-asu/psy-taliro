@@ -88,7 +88,7 @@ class CostFn(OptimizationFn, Generic[_ET]):
         model_result = self.model.simulate(model_params)
         cost = _result_cost(model_result, spec)
 
-        self.iterations.append(Iteration(cost, sample, model_result.data))
+        self._iterations.append(Iteration(cost, sample, model_result.data))
 
         return cost
 
@@ -113,7 +113,7 @@ class TimedCostFn(OptimizationFn, Generic[_ET]):
         model_duration, model_result = _time(lambda: self.model.simulate(model_params))
         cost_duration, cost = _time(lambda: _result_cost(model_result, spec))
 
-        self.iterations.append(
+        self._iterations.append(
             TimedIteration(cost, sample, model_result.data, model_duration, cost_duration)
         )
 
