@@ -24,7 +24,7 @@ def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[np.float_]:
 
 
 class UniformRandom(Optimizer[None]):
-    def __init__(self, parallelization: Union[Literal["cores"], int, None]):
+    def __init__(self, parallelization: Union[Literal["cores"], int, None] = None):
         self.parallelization = parallelization
 
     def optimize(self, func: OptimizationFn, params: OptimizationParams) -> None:
