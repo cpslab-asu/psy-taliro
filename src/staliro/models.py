@@ -173,7 +173,7 @@ class ODE(Model[None]):
         return SimulationResult(integration.y, integration.t, None)
 
 
-_BlackboxDecorator = Callable[[BlackboxFunc[_T]], Blackbox]
+_BlackboxDecorator = Callable[[BlackboxFunc[_T]], Blackbox[_T]]
 
 
 @overload
