@@ -25,15 +25,18 @@ def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[np.float_]:
 
 class UniformRandom(Optimizer[None]):
     def __init__(self, parallelization: Union[Literal["cores"], int, None] = None):
-        self.parallelization = parallelization
+        self.processes = parallelization
 
     def optimize(self, func: OptimizationFn, params: OptimizationParams) -> None:
         rng = default_rng(params.seed)
         samples = [_sample(params.bounds, rng) for _ in range(params.iterations)]
 
-        if params.behavior is Behavior.MINIMIZATION and self.parallelization is not None:
-            process_count = self.parallelization if isinstance(self.parallelization, int) else None
-            pool = Pool(processes=process_count)
-            pool.map(func, samples)
+        if params.behavior is Behavior.MINIMIZATION:
+            if self.processes is not None:
+                process_count = self.processes if isinstance(self.processes, int) else None
+                pool = Pool(processes=process_count)
+                pool.map(func, samples)
+            else:
+                map(func, samples)
         else:
             takewhile(lambda s: func(s) > 0, samples)
