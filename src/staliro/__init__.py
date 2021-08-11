@@ -1,4 +1,4 @@
-from .staliro import staliro, staliro_timed
+from .staliro import staliro
 from .options import Options, SignalOptions, Behavior
 from .scenarios import Scenario
 from .specification import TLTK, RTAMTDense, RTAMTDiscrete, PredicateProps
