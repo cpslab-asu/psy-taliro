@@ -1,4 +1,4 @@
-image: python:3.9-slim
+image: python:3.9
 
 stages:
   - analyze
@@ -47,8 +47,6 @@ isort:
   stage: test
   script:
     - poetry install
-    - poetry run pip install tltk_mtl
-    - poetry run pip install git+https://github.com/nickovic/rtamt
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
 unittest-cp37:

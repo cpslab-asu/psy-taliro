@@ -10,37 +10,8 @@ if sys.version_info >= (3, 9):
 else:
     from typing import Iterable, Sequence
 
-from .optimizers import Sample
+from .cost import Evaluation
 from .options import Options
-
-_ET = TypeVar("_ET")
-
-
-@dataclass(frozen=True)
-class Iteration(Generic[_ET]):
-    cost: float
-    sample: Sample
-    extra: _ET
-
-
-@dataclass(frozen=True)
-class TimedIteration(Iteration[_ET]):
-    model_duration: float
-    cost_duration: float
-
-
-_RT = TypeVar("_RT")
-
-
-@dataclass(frozen=True)
-class Run(Generic[_RT, _ET]):
-    result: _RT
-    history: Sequence[Iteration[_ET]]
-    duration: float
-
-    @property
-    def best_iter(self) -> Iteration[_ET]:
-        return min(self.history, key=lambda i: i.cost)
 
 
 @dataclass(frozen=True)
@@ -60,25 +31,31 @@ class TimeStats:
         return max(self._durations)
 
 
+_RT = TypeVar("_RT")
+_ET = TypeVar("_ET")
+
+
 @dataclass(frozen=True)
-class TimedRun(Run[_RT, _ET]):
-    history: Sequence[TimedIteration[_ET]]
+class Run(Generic[_RT, _ET]):
+    result: _RT
+    history: Sequence[Evaluation[_ET]]
+    duration: float
 
     @property
-    def best_iter(self) -> TimedIteration[_ET]:
+    def best_iter(self) -> Evaluation[_ET]:
         return min(self.history, key=lambda i: i.cost)
 
     @property
-    def fastest_iter(self) -> TimedIteration[_ET]:
-        return min(self.history, key=lambda i: i.model_duration + i.cost_duration)
+    def fastest_iter(self) -> Evaluation[_ET]:
+        return min(self.history, key=lambda i: i.timing.total)
 
     @property
     def model(self) -> TimeStats:
-        return TimeStats(iteration.model_duration for iteration in self.history)
+        return TimeStats(iteration.timing.model for iteration in self.history)
 
     @property
-    def cost_fn(self) -> TimeStats:
-        return TimeStats(iteration.cost_duration for iteration in self.history)
+    def specification(self) -> TimeStats:
+        return TimeStats(iteration.timing.specification for iteration in self.history)
 
 
 @dataclass(frozen=True)
@@ -88,13 +65,4 @@ class Result(Generic[_RT, _ET]):
 
     @property
     def best_run(self) -> Run[_RT, _ET]:
-        return min(self.runs, key=lambda r: r.best_iter.cost)
-
-
-@dataclass(frozen=True)
-class TimedResult(Result[_RT, _ET]):
-    runs: Sequence[TimedRun[_RT, _ET]]
-
-    @property
-    def best_run(self) -> TimedRun[_RT, _ET]:
         return min(self.runs, key=lambda r: r.best_iter.cost)

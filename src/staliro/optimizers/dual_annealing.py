@@ -7,8 +7,10 @@ from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Literal
 
-from .optimizer import Optimizer, OptimizationFn, OptimizationParams, Sample
 from ..options import Behavior
+from .optimizer import Optimizer, OptimizationParams, OptimizationFn
+
+Sample = NDArray[np.float_]
 
 
 @dataclass
@@ -22,7 +24,7 @@ class DualAnnealingResult:
 class DualAnnealing(Optimizer[DualAnnealingResult]):
     def optimize(self, func: OptimizationFn, options: OptimizationParams) -> DualAnnealingResult:
         def wrapper(sample: Sample) -> float:
-            return func(sample)
+            return func.eval_sample(sample)
 
         def listener(sample: Sample, robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
             if robustness < 0 and options.behavior is Behavior.FALSIFICATION:

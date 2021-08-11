@@ -38,8 +38,8 @@ def _ndarray_validator(dims: Sequence[int], dtypes: Sequence[Type[np.generic]]) 
     return validator
 
 
-_RealVector = Union[NDArray[np.float_], NDArray[np.int_]]
-_T = TypeVar("_T")
+_ET = TypeVar("_ET")
+
 _numeric_types = (np.integer, np.floating)
 _timestamp_validator = _ndarray_validator((1,), _numeric_types)
 _trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
@@ -51,28 +51,32 @@ class Evaluable(ABC):
         raise NotImplementedError()
 
 
+Timestamps = Union[NDArray[np.float_], NDArray[np.int_]]
+Trajectories = Union[NDArray[np.float_], NDArray[np.int_]]
+
+
 @attrs(auto_attribs=True, frozen=True, init=False)
-class SimulationResult(Generic[_T], Evaluable):
-    _trajectories: _RealVector = attrib(validator=_trajectories_validator, converter=np.array)
-    timestamps: _RealVector = attrib(validator=_timestamp_validator, converter=np.array)
-    data: _T
+class SimulationResult(Generic[_ET], Evaluable):
+    _trajectories: Trajectories = attrib(validator=_trajectories_validator, converter=np.array)
+    timestamps: Timestamps = attrib(validator=_timestamp_validator, converter=np.array)
+    extra: _ET
 
     @overload
-    def __init__(self: SimulationResult[None], trajectories: _RealVector, timestamps: _RealVector):
+    def __init__(self: SimulationResult[None], trajectories: Trajectories, timestamps: Timestamps):
         ...
 
     @overload
-    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, data: _T):
+    def __init__(self, trajectories: Trajectories, timestamps: Timestamps, data: _ET):
         ...
 
-    def __init__(self, trajectories: _RealVector, timestamps: _RealVector, data: _T = None):
+    def __init__(self, trajectories: Trajectories, timestamps: Timestamps, data: _ET = None):
         self.__attrs_init__(trajectories, timestamps, data)  # type: ignore
 
     def eval_using(self, spec: Specification) -> float:
         return spec.evaluate(self.trajectories, self.timestamps)
 
     @property
-    def trajectories(self) -> _RealVector:
+    def trajectories(self) -> Trajectories:
         trajectories = np.atleast_2d(self._trajectories)
 
         if trajectories.shape[0] == self.timestamps.shape[0]:
@@ -84,27 +88,27 @@ class SimulationResult(Generic[_T], Evaluable):
 
 
 @attrs(auto_attribs=True, frozen=True, init=False)
-class Falsification(Generic[_T], Evaluable):
-    data: _T
+class Falsification(Generic[_ET], Evaluable):
+    extra: _ET
 
     @overload
     def __init__(self: Falsification[None]):
         ...
 
     @overload
-    def __init__(self, data: _T):
+    def __init__(self, data: _ET):
         ...
 
-    def __init__(self, data: _T = None):
+    def __init__(self, data: _ET = None):
         self.__attrs_init__(data)  # type: ignore
 
     def eval_using(self, spec: Specification) -> float:
         return -math.inf
 
 
-StaticParameters = _RealVector
+StaticParameters = NDArray[np.float_]
 SignalInterpolators = Sequence[SignalInterpolator]
-ModelResult = Union[SimulationResult[_T], Falsification[_T]]
+ModelResult = Union[SimulationResult[_ET], Falsification[_ET]]
 
 
 @attrs(auto_attribs=True, frozen=True)
@@ -114,25 +118,23 @@ class SimulationParams:
     interval: Interval
 
 
-class Model(ABC, Generic[_T]):
+class Model(ABC, Generic[_ET]):
     @abstractmethod
-    def simulate(self, params: SimulationParams) -> ModelResult[_T]:
+    def simulate(self, params: SimulationParams) -> ModelResult[_ET]:
         raise NotImplementedError()
 
 
 SignalTimes = NDArray[np.float_]
 SignalValues = NDArray[np.float_]
-Timestamps = Union[_RealVector, Sequence[float], Sequence[int]]
-Trajectories = Union[_RealVector, Sequence[Sequence[float]], Sequence[Sequence[int]]]
-BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResult[_T]]
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResult[_ET]]
 
 
-class Blackbox(Model[_T]):
-    def __init__(self, func: BlackboxFunc[_T], sampling_interval: float = 0.1):
+class Blackbox(Model[_ET]):
+    def __init__(self, func: BlackboxFunc[_ET], sampling_interval: float = 0.1):
         self.func = func
         self.sampling_interval = sampling_interval
 
-    def simulate(self, params: SimulationParams) -> ModelResult[_T]:
+    def simulate(self, params: SimulationParams) -> ModelResult[_ET]:
         interval = params.interval
         duration = interval.upper - interval.lower
         point_count = math.floor(duration / self.sampling_interval)
@@ -145,19 +147,19 @@ class Blackbox(Model[_T]):
 
 
 Time = float
-State = _RealVector
-IntegrationFn = Callable[[float, _RealVector], _RealVector]
-ODEResult = Union[_RealVector, Sequence[float], Sequence[int]]
-ODEFunc = Callable[[Time, State, SignalValues], ODEResult]
+State = NDArray[np.float_]
+IntegrationFn = Callable[[Time, State], State]
+ODEFunc = Callable[[Time, State, SignalValues], State]
 
 
-def _make_integration_fn(signals: SignalInterpolators, func: ODEFunc) -> IntegrationFn:
-    def integration_fn(time: float, state: State) -> State:
-        signal_values = [signal.interpolate(time) for signal in signals]
-        result = func(time, state, np.array(signal_values))
-        return np.array(result)
+class _IntegrationFunc:
+    def __init__(self, signals: SignalInterpolators, ode_func: ODEFunc):
+        self.signals = signals
+        self.func = ode_func
 
-    return integration_fn
+    def __call__(self, time: Time, state: State) -> State:
+        signal_values = np.array([signal.interpolate(time) for signal in self.signals])
+        return self.func(time, state, signal_values)
 
 
 class ODE(Model[None]):
@@ -165,7 +167,7 @@ class ODE(Model[None]):
         self.func = func
 
     def simulate(self, params: SimulationParams) -> SimulationResult[None]:
-        integration_fn = _make_integration_fn(params.interpolators, self.func)
+        integration_fn = _IntegrationFunc(params.interpolators, self.func)
         integration = integrate.solve_ivp(
             integration_fn, params.interval.astuple(), params.static_parameters
         )
@@ -173,22 +175,22 @@ class ODE(Model[None]):
         return SimulationResult(integration.y, integration.t, None)
 
 
-_BlackboxDecorator = Callable[[BlackboxFunc[_T]], Blackbox[_T]]
+_BlackboxDecorator = Callable[[BlackboxFunc[_ET]], Blackbox[_ET]]
 
 
 @overload
-def blackbox(*, sampling_interval: float = ...) -> Callable[[BlackboxFunc[_T]], Blackbox[_T]]:
+def blackbox(*, sampling_interval: float = ...) -> Callable[[BlackboxFunc[_ET]], Blackbox[_ET]]:
     ...
 
 
 @overload
-def blackbox(_func: BlackboxFunc[_T]) -> Blackbox[_T]:
+def blackbox(_func: BlackboxFunc[_ET]) -> Blackbox[_ET]:
     ...
 
 
 def blackbox(
-    _func: Optional[BlackboxFunc[_T]] = None, *, sampling_interval: float = 0.1
-) -> Union[Blackbox[_T], _BlackboxDecorator[_T]]:
+    _func: Optional[BlackboxFunc[_ET]] = None, *, sampling_interval: float = 0.1
+) -> Union[Blackbox[_ET], _BlackboxDecorator[_ET]]:
     """Decorate a function as a blackbox model.
 
     This decorator can be used with or without arguments.
@@ -202,7 +204,7 @@ def blackbox(
         A blackbox model
     """
 
-    def decorator(func: BlackboxFunc[_T]) -> Blackbox[_T]:
+    def decorator(func: BlackboxFunc[_ET]) -> Blackbox[_ET]:
         return Blackbox(func, sampling_interval)
 
     if _func is not None:
