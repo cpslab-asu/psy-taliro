@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import os
 import random
 import sys
 from typing import Any, List, Optional, Tuple, Union
@@ -187,3 +188,12 @@ class Options:
         static_bounds = list(self.static_parameters)
 
         return static_bounds + signal_bounds
+
+    @property
+    def process_count(self) -> Optional[int]:
+        if self.parallelization == "all":
+            return self.runs
+        elif self.parallelization == "cores":
+            return os.cpu_count()
+        else:
+            return self.parallelization
