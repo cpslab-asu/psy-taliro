@@ -2,46 +2,67 @@ from __future__ import annotations
 
 import os
 import sys
+import statistics as stats
+from dataclasses import dataclass
 from itertools import takewhile
-from typing import Union
+from typing import Optional, Union, Tuple
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
 else:
-    from typing import Sequence
+    from typing import Sequence, Iterable
 
 import numpy as np
-from pathos.multiprocessing import ProcessPool
 from numpy.random import default_rng, Generator
-from numpy.typing import NDArray
 from typing_extensions import Literal
 
-from .optimizer import Optimizer, OptimizationFn, OptimizationParams
 from ..options import Interval, Behavior
+from .optimizer import Optimizer, OptimizationParams, OptimizationFn
 
 
-def _sample(bounds: Sequence[Interval], rng: Generator) -> NDArray[np.float_]:
+_Sample = np.ndarray[Tuple[int], np.dtype[np.float_]]
+_Samples = Sequence[_Sample]
+
+
+@dataclass(frozen=True)
+class UniformRandomResult:
+    average_cost: float
+
+
+def _sample(bounds: Sequence[Interval], rng: Generator) -> _Sample:
     return np.array([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
 
-class UniformRandom(Optimizer[None]):
+def _minimize(samples: _Samples, func: OptimizationFn, processes: Optional[int]) -> Iterable[float]:
+    if processes is None:
+        return func.eval_samples(samples)
+    else:
+        return func.eval_samples_parallel(samples, processes)
+
+
+def _falsify(samples: _Samples, func: OptimizationFn) -> Iterable[float]:
+    costs = map(func.eval_sample, samples)
+    return takewhile(lambda c: c >= 0, costs)
+
+
+class UniformRandom(Optimizer[UniformRandomResult]):
     def __init__(self, parallelization: Union[Literal["cores"], int, None] = None):
-        if parallelization is not None:
-            self.processes = parallelization if isinstance(parallelization, int) else os.cpu_count()
+        if isinstance(parallelization, int):
+            self.processes: Optional[int] = parallelization
+        elif parallelization == "cores":
+            self.processes = os.cpu_count()
         else:
             self.processes = None
 
-    def optimize(self, func: OptimizationFn, params: OptimizationParams) -> None:
+    def optimize(self, func: OptimizationFn, params: OptimizationParams) -> UniformRandomResult:
         rng = default_rng(params.seed)
         samples = [_sample(params.bounds, rng) for _ in range(params.iterations)]
 
         if params.behavior is Behavior.MINIMIZATION:
-            if self.processes is not None:
-                pool = ProcessPool(nodes=self.processes)
-                pool.map(func, samples)
-            else:
-                for _ in map(func, samples):
-                    pass
+            costs = _minimize(samples, func, self.processes)
         else:
-            for _ in takewhile(lambda s: func(s) > 0, samples):
-                pass
+            costs = _falsify(samples, func)
+
+        average_cost = stats.mean(costs)
+
+        return UniformRandomResult(average_cost)
