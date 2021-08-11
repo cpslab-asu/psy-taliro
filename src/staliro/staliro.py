@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TypeVar, Union
+from typing import TypeVar
 
+from .cost import SpecificationOrFactory
 from .models import Model
 from .options import Options
 from .optimizers import Optimizer
 from .results import Result
 from .scenarios import Scenario
-from .specification import Specification, SpecificationFactory
 
 _RT = TypeVar("_RT")
 _ET = TypeVar("_ET")
@@ -15,7 +15,7 @@ _ET = TypeVar("_ET")
 
 def staliro(
     model: Model[_ET],
-    specification: Union[Specification, SpecificationFactory],
+    specification: SpecificationOrFactory,
     optimizer: Optimizer[_RT],
     options: Options,
 ) -> Result[_RT, _ET]:
