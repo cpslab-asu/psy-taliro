@@ -468,6 +468,24 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 
 [[package]]
+name = "rtamt"
+version = "0.2.5"
+description = ""
+category = "dev"
+optional = false
+python-versions = ">=2.7"
+develop = false
+
+[package.dependencies]
+antlr4-python3-runtime = {version = ">=4.5,<4.6", markers = "python_version >= \"3\""}
+
+[package.source]
+type = "git"
+url = "https://github.com/nickovic/rtamt.git"
+reference = "master"
+resolved_reference = "ba2bc2d8a48d5c6bbd836904b7e421fb26d7e384"
+
+[[package]]
 name = "scipy"
 version = "1.7.1"
 description = "SciPy: Scientific Library for Python"
@@ -612,7 +630,7 @@ name = "tltk-mtl"
 version = "0.0.27"
 description = "A libary for effecient Metric temporal logic calculation"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -678,7 +696,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1, <3.10"
-content-hash = "ac4670d3f3559feca03ebf1f9887ff62fdfe745f5f6671605aeb3bd951a2f46e"
+content-hash = "a77d64eebe4068bca5b92c6b989be46e39935c547e53416da1a671aef3a45024"
 
 [metadata.files]
 alabaster = [
@@ -978,6 +996,7 @@ requests = [
     {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},
     {file = "requests-2.26.0.tar.gz", hash = "sha256:b8aa58f8cf793ffd8782d3d8cb19e66ef36f7aba4353eec859e74678b01b07a7"},
 ]
+rtamt = []
 scipy = [
     {file = "scipy-1.7.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:2a0eeaab01258e0870c4022a6cd329aef3b7c6c2b606bd7cf7bb2ba9820ae561"},
     {file = "scipy-1.7.1-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3f52470e0548cdb74fb8ddf06773ffdcca7c97550f903b1c51312ec19243a7f7"},
