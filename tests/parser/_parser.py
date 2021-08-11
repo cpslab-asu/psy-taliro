@@ -14,6 +14,18 @@ class ParserTestCase(TestCase):
             "pred5": mtl.Predicate("pred5", np.array([1]), np.array([-1])),
             "pred6": mtl.Predicate("pred6", np.array([-1]), np.array([1])),
             "pred7": mtl.Predicate("pred7", np.array([-1]), np.array([-1])),
+            "pred8": mtl.Predicate("pred8", np.array([1]), np.array([110000])),
+            "pred9": mtl.Predicate("pred9", np.array([1]), np.array([0.0000112])),
         }
 
-        self._vars = ["pred1", "pred2", "pred3", "pred4", "pred5", "pred6", "pred7"]
+        self._vars = [
+            "pred1",
+            "pred2",
+            "pred3",
+            "pred4",
+            "pred5",
+            "pred6",
+            "pred7",
+            "pred8",
+            "pred9",
+        ]

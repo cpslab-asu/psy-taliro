@@ -6,7 +6,7 @@ from io import StringIO
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\32")
+        buf.write("\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\33")
         buf.write("M\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\3\2\3\2\3\3\3\3")
         buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\5\3\27\n\3\3\3\3\3\3\3\5")
         buf.write("\3\34\n\3\3\3\3\3\3\3\5\3!\n\3\3\3\3\3\5\3%\n\3\3\3\3")
@@ -97,6 +97,7 @@ class stlParser(Parser):
         "NUMBER",
         "INT_NUMBER",
         "FLOAT_NUMBER",
+        "SCIENTIFIC_NUMBER",
     ]
 
     RULE_stlSpecification = 0
@@ -131,6 +132,7 @@ class stlParser(Parser):
     NUMBER = 22
     INT_NUMBER = 23
     FLOAT_NUMBER = 24
+    SCIENTIFIC_NUMBER = 25
 
     def __init__(self, input: TokenStream):
         super().__init__(input)
