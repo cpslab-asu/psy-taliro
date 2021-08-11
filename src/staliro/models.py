@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar, Union, Optional, Type, TYPE_CHECKING, Tuple
+from typing import Any, Generic, TypeVar, Union, Optional, Type, TYPE_CHECKING
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Callable
@@ -106,7 +106,7 @@ class Falsification(Generic[_ET], Evaluable):
         return -math.inf
 
 
-StaticParameters = np.ndarray[Tuple[int], np.dtype[np.float_]]
+StaticParameters = NDArray[np.float_]
 SignalInterpolators = Sequence[SignalInterpolator]
 ModelResult = Union[SimulationResult[_ET], Falsification[_ET]]
 
@@ -147,7 +147,7 @@ class Blackbox(Model[_ET]):
 
 
 Time = float
-State = np.ndarray[Tuple[int], np.dtype[np.float_]]
+State = NDArray[np.float_]
 IntegrationFn = Callable[[Time, State], State]
 ODEFunc = Callable[[Time, State, SignalValues], State]
 
