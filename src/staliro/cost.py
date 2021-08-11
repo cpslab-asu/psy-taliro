@@ -7,15 +7,15 @@ from multiprocessing import Pool
 from typing import Generic, List, Tuple, TypeVar, Union
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Sequence, Iterable
+    from collections.abc import Sequence, Iterable, Callable
 else:
-    from typing import Sequence, Iterable
+    from typing import Sequence, Iterable, Callable
 
 import numpy as np
 
 from .models import Model, SimulationParams, StaticParameters, SignalInterpolator
 from .options import Options
-from .specification import Specification, SpecificationFactory
+from .specification import Specification
 
 _ET = TypeVar("_ET")
 _AT = TypeVar("_AT", bound=np.generic)
@@ -31,6 +31,7 @@ Samples = Union[
     _2DArray[np.float_],
 ]
 
+SpecificationFactory = Callable[[Sample], Specification]
 SpecificationOrFactory = Union[Specification, SpecificationFactory]
 
 

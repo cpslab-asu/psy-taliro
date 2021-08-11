@@ -5,16 +5,15 @@ import sys
 from typing import Dict, Union, NamedTuple
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Iterable, Callable
+    from collections.abc import Iterable
 else:
-    from typing import Iterable, Callable
+    from typing import Iterable
 
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Protocol, Literal, runtime_checkable
 
 from .parser import parse
-from .optimizers import Sample
 
 _NumericArray = Union[NDArray[np.float_], NDArray[np.int_]]
 
@@ -24,8 +23,6 @@ class Specification(Protocol):
     def evaluate(self, trajectories: _NumericArray, timestamps: _NumericArray) -> float:
         ...
 
-
-SpecificationFactory = Callable[[Sample], Specification]
 
 PredicateName = str
 PredicateDTypes = Literal["float", "float32", "float64"]
