@@ -4,7 +4,7 @@ import sys
 import time
 from dataclasses import dataclass
 from multiprocessing import Pool
-from typing import Generic, List, Tuple, TypeVar, Union
+from typing import Generic, List, TypeVar, Union
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Iterable, Callable
@@ -12,23 +12,21 @@ else:
     from typing import Sequence, Iterable, Callable
 
 import numpy as np
+from numpy.typing import NDArray
 
 from .models import Model, SimulationParams, StaticParameters, SignalInterpolator
 from .options import Options
 from .specification import Specification
 
 _ET = TypeVar("_ET")
-_AT = TypeVar("_AT", bound=np.generic)
-_1DArray = np.ndarray[Tuple[int], np.dtype[_AT]]
-_2DArray = np.ndarray[Tuple[int, int], np.dtype[_AT]]
 
-Sample = Union[Sequence[float], _1DArray[np.int_], _1DArray[np.float_]]
+Sample = Union[Sequence[float], NDArray[np.int_], NDArray[np.float_]]
 Samples = Union[
     Sequence[Sequence[float]],
-    Sequence[_1DArray[np.int_]],
-    Sequence[_1DArray[np.float_]],
-    _2DArray[np.int_],
-    _2DArray[np.float_],
+    Sequence[NDArray[np.float_]],
+    Sequence[NDArray[np.int_]],
+    NDArray[np.float_],
+    NDArray[np.float_],
 ]
 
 SpecificationFactory = Callable[[Sample], Specification]

@@ -40,12 +40,6 @@ def _ndarray_validator(dims: Sequence[int], dtypes: Sequence[Type[np.generic]]) 
 
 _ET = TypeVar("_ET")
 
-_ST = TypeVar("_ST")
-_DT = TypeVar("_DT", bound=np.generic)
-_Array = np.ndarray[_ST, np.dtype[_DT]]
-_1DArray = _Array[Tuple[int], _DT]
-_2DArray = _Array[Tuple[int, int], _DT]
-
 _numeric_types = (np.integer, np.floating)
 _timestamp_validator = _ndarray_validator((1,), _numeric_types)
 _trajectories_validator = _ndarray_validator((1, 2), _numeric_types)
@@ -57,8 +51,8 @@ class Evaluable(ABC):
         raise NotImplementedError()
 
 
-Timestamps = Union[_1DArray[np.float_], _1DArray[np.int_]]
-Trajectories = Union[_2DArray[np.float_], _2DArray[np.int_]]
+Timestamps = Union[NDArray[np.float_], NDArray[np.int_]]
+Trajectories = Union[NDArray[np.float_], NDArray[np.int_]]
 
 
 @attrs(auto_attribs=True, frozen=True, init=False)

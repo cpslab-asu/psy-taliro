@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -11,7 +10,7 @@ from typing_extensions import Literal
 from ..options import Behavior
 from .optimizer import Optimizer, OptimizationParams, OptimizationFn
 
-Sample = np.ndarray[Tuple[int], np.dtype[np.float_]]
+Sample = NDArray[np.float_]
 
 
 @dataclass

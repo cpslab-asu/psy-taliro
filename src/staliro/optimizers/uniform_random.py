@@ -5,7 +5,7 @@ import sys
 import statistics as stats
 from dataclasses import dataclass
 from itertools import takewhile
-from typing import Optional, Union, Tuple
+from typing import Optional, Union
 
 if sys.version_info >= (3, 9):
     from collections.abc import Sequence, Iterable
@@ -13,6 +13,7 @@ else:
     from typing import Sequence, Iterable
 
 import numpy as np
+from numpy.typing import NDArray
 from numpy.random import default_rng, Generator
 from typing_extensions import Literal
 
@@ -20,7 +21,7 @@ from ..options import Interval, Behavior
 from .optimizer import Optimizer, OptimizationParams, OptimizationFn
 
 
-_Sample = np.ndarray[Tuple[int], np.dtype[np.float_]]
+_Sample = NDArray[np.float_]
 _Samples = Sequence[_Sample]
 
 
