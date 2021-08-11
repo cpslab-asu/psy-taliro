@@ -9,6 +9,7 @@ from ..options import Interval, Behavior
 
 OptimizationFn = CostFn[Any]
 
+
 @dataclass(frozen=True)
 class OptimizationParams:
     bounds: Sequence[Interval]
