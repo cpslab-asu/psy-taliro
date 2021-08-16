@@ -15,6 +15,15 @@ Sample = NDArray[np.float_]
 
 @dataclass
 class DualAnnealingResult:
+    """Data class representing the result of a dual annealing optimization.
+
+    Attributes:
+        jacobian_value: The value of the cost function jacobian at the minimum cost discovered
+        jacobian_evals: Number of times the jacobian of the cost function was evaluated
+        hessian_value: The value of the cost function hessian as the minimum cost discovered
+        hessian_evals: Number of times the hessian of the cost function was evaluated
+    """
+
     jacobian_value: NDArray[np.float_]
     jacobian_evals: int
     hessian_value: NDArray[np.float_]
@@ -22,6 +31,12 @@ class DualAnnealingResult:
 
 
 class DualAnnealing(Optimizer[DualAnnealingResult]):
+    """Optimizer that implements the simulated annealing optimization technique.
+
+    The simulated annealing implementation is provided by the SciPy library dual_annealing function
+    with the no_local_search parameter set to True.
+    """
+
     def optimize(self, func: OptimizationFn, options: OptimizationParams) -> DualAnnealingResult:
         def wrapper(sample: Sample) -> float:
             return func.eval_sample(sample)

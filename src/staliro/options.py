@@ -27,6 +27,12 @@ def _bounds_converter(value: Any) -> Any:
 
 @attrs(auto_attribs=True)
 class Interval:
+    """Representation of an interval of values.
+
+    Attributes:
+        bounds: The upper and lower values of the interval
+    """
+
     bounds: Sequence[float] = attrib(converter=_bounds_converter)
 
     @bounds.validator
@@ -39,13 +45,18 @@ class Interval:
 
     @property
     def lower(self) -> float:
+        """The lower value of the interval."""
+
         return self.bounds[0]
 
     @property
     def upper(self) -> float:
+        """The upper value of the interval."""
         return self.bounds[1]
 
     def astuple(self) -> Tuple[float, float]:
+        """Representation of the interval as a tuple."""
+
         return (self.lower, self.upper)
 
 
@@ -57,9 +68,9 @@ class SignalOptions:
     """Options for signal generation.
 
     Attributes:
-        bound: The interval the signal should be generated for
-        control_points: The number of points the optimizer should generate for the signal
+        interval: The interval the signal should be generated for
         factory: Factory to produce interpolators for the signal
+        control_points: The number of points the optimizer should generate for the signal
         step: The step size when evaluating the signal
         signal_times: Time values for the generated control points
         time_varying: Flag that indicates that the signal times should be considered a search
@@ -99,6 +110,8 @@ class SignalOptions:
 
     @property
     def bounds(self) -> List[Interval]:
+        """The interval value repeated control_points number of times."""
+
         return [self.interval] * self.control_points
 
 
@@ -140,15 +153,18 @@ class Options:
     """General options for controlling falsification behavior.
 
     Attributes:
+        static_parameters: Parameters that will be provided to the system at the beginning and are
+                           time invariant (initial conditions)
+        signals: System inputs that will vary over time
+        seed: The initial seed of the random number generator
         iterations: The number of search iterations to perform in a run
         runs: The number times to run the optimizer
         interval: The time interval of the system simulation
         behavior: The behavior of the system when a falsifying case is found
-        static_parameters: Parameters that will be provided to the system at the beginning and are
-                           time invariant (initial conditions)
-        signals: System inputs that will vary over time
+        parallelization: Number of processes to use to parallelize runs of the optimizer.
+                         Acceptable values are: "cores" - all available cores, "all" - all runs,
+                         integer - number of processes.
         verbose: Print additional data during execution
-        bounds: The combined bounds from both the static_parameters and signals
     """
 
     static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
@@ -157,7 +173,6 @@ class Options:
     iterations: int = attrib(default=400, converter=int)
     runs: int = attrib(default=1, converter=int)
     interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
-    sampling_interval: float = attrib(default=0.1, converter=float)
     behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
     parallelization: _ParallelizationT = attrib(
         default=None, validator=optional(_parallelization_validator)
@@ -169,11 +184,6 @@ class Options:
         if value < 0:
             raise ValueError("runs must be greater than zero")
 
-    @sampling_interval.validator
-    def _validate_sampling_interval(self, attr: Attribute[float], value: float) -> None:
-        if value < 0:
-            raise ValueError("sampling interval must be greater than zero")
-
     @signals.validator
     def _validate_signals(
         self, attr: Attribute[List[SignalOptions]], signals: List[SignalOptions]
@@ -184,6 +194,8 @@ class Options:
 
     @property
     def bounds(self) -> List[Interval]:
+        """List of the static parameter bounds followed by the signal bounds."""
+
         signal_bounds = [bound for signal in self.signals for bound in signal.bounds]
         static_bounds = list(self.static_parameters)
 
@@ -191,6 +203,8 @@ class Options:
 
     @property
     def process_count(self) -> Optional[int]:
+        """Number of processes to use based on the value of the parallelization attribute."""
+
         if self.parallelization == "all":
             return self.runs
         elif self.parallelization == "cores":

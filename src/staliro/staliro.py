@@ -25,13 +25,13 @@ def staliro(
     provided specification represented by the formula phi and the predicates.
 
     Args:
-        model: The model of the system being tested
-        specification: The requirement for the system
-        options: General options to manipulate the behavior of the search
-        optimizer_cls: The class of the optimizer to use to search the sample space
+        model: The model of the system being tested.
+        specification: The requirement for the system.
+        optimizer: The optimizer to use to search the sample space.
+        options: General options to manipulate the behavior of the search.
 
     Returns:
-        results: A list of result objects corresponding to each run from the optimizer
+        An object containing the result of each optimization attempt.
     """
 
     return Scenario(model, specification, options).run(optimizer)

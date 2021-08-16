@@ -27,6 +27,12 @@ _Samples = Sequence[_Sample]
 
 @dataclass(frozen=True)
 class UniformRandomResult:
+    """Data class that represents the result of a uniform random optimization.
+
+    Attributes:
+        average_cost: The average cost of all the samples selected.
+    """
+
     average_cost: float
 
 
@@ -47,6 +53,19 @@ def _falsify(samples: _Samples, func: OptimizationFn) -> Iterable[float]:
 
 
 class UniformRandom(Optimizer[UniformRandomResult]):
+    """Optimizer that implements the uniform random optimization technique.
+
+    This optimizer picks samples randomly from the search space until the budget is exhausted.
+
+    Args:
+        parallelization: Value that indicates how many processes to use when evaluating each
+                            sample using the cost function. Acceptable values are a number,
+                            "cores", or None
+
+    Attributes:
+        processes: The number of processes to use when evaluating the samples.
+    """
+
     def __init__(self, parallelization: Union[Literal["cores"], int, None] = None):
         if isinstance(parallelization, int):
             self.processes: Optional[int] = parallelization

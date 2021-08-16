@@ -57,6 +57,18 @@ Trajectories = Union[NDArray[np.float_], NDArray[np.int_]]
 
 @attrs(auto_attribs=True, frozen=True, init=False)
 class SimulationResult(Generic[_ET], Evaluable):
+    """Data class that represents a successful simulation.
+
+    A successful simulation produces a vector of timestamps and a matrix of state values. The state
+    value matrix must be 2-dimensional and one of the dimensions must be equal to the length of the
+    timestamps vector.
+
+    Attributes:
+        trajectories: The time-varying state matrix
+        timestamps: Vector of time values that correspond to the states in the trajectories matrix
+        extra: User-defined data
+    """
+
     _trajectories: Trajectories = attrib(validator=_trajectories_validator, converter=np.array)
     timestamps: Timestamps = attrib(validator=_timestamp_validator, converter=np.array)
     extra: _ET
@@ -77,6 +89,17 @@ class SimulationResult(Generic[_ET], Evaluable):
 
     @property
     def trajectories(self) -> Trajectories:
+        """The time-varying state matrix.
+
+        The matrix is returned oriented so that the axis which matches the length of the timestamps
+        vector is the columns of the matrix. This implies that each state value over time is
+        available as a row.
+
+        Given: [t1, t2, t3...tn]
+        Matrix: [[s11, s12, s13...s1t],
+                 [s21, s22, s21...s2t]...]
+        """
+
         trajectories = np.atleast_2d(self._trajectories)
 
         if trajectories.shape[0] == self.timestamps.shape[0]:
@@ -89,6 +112,15 @@ class SimulationResult(Generic[_ET], Evaluable):
 
 @attrs(auto_attribs=True, frozen=True, init=False)
 class Falsification(Generic[_ET], Evaluable):
+    """Data class that represents a falsification of the requirement.
+
+    Some use-cases require manual falsification outside of the specification. This class always
+    returns a cost of minus infinity.
+
+    Attributes:
+        extra: User-defined data
+    """
+
     extra: _ET
 
     @overload
@@ -113,14 +145,35 @@ ModelResult = Union[SimulationResult[_ET], Falsification[_ET]]
 
 @attrs(auto_attribs=True, frozen=True)
 class SimulationParams:
+    """Data class that contains the required data for a simulation.
+
+    Attributes:
+        static_parameters: Time-invariant system inputs (often used as initial conditions).
+        interpolators: Time-varying inputs to the system represented as interpolated functions.
+        interval: The time interval over which the simulation should run.
+    """
+
     static_parameters: StaticParameters
     interpolators: SignalInterpolators
     interval: Interval
 
 
 class Model(ABC, Generic[_ET]):
+    """Representation of a system under test."""
+
     @abstractmethod
     def simulate(self, params: SimulationParams) -> ModelResult[_ET]:
+        """Given a set of time-invariant/varying inputs, simulate a system over an interval.
+
+        Args:
+            params: SimulationParams class containing the time-invariant/varying inputs to the
+                    system and the interval
+
+        Returns:
+            An instance of SimulationResult indicating success, or an instance of Falsification
+            indicating an manual falsification.
+        """
+
         raise NotImplementedError()
 
 
@@ -130,6 +183,16 @@ BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResu
 
 
 class Blackbox(Model[_ET]):
+    """General system model which does not make assumptions about the underlying system.
+
+    Attributes:
+        func: User-defined function which is given the static parameters, a vector of time values,
+              and a matrix of interpolated signal values and returns a SimulationResult or
+              Falsification
+        sampling_interval: Time-step to use for interpolating signal values over the simulation
+                           interval
+    """
+
     def __init__(self, func: BlackboxFunc[_ET], sampling_interval: float = 0.1):
         self.func = func
         self.sampling_interval = sampling_interval
@@ -163,6 +226,13 @@ class _IntegrationFunc:
 
 
 class ODE(Model[None]):
+    """Model which assumes the underlying system is modeled by an Ordinary Differential Equation.
+
+    Attributes:
+        func: User-defined function which is given a time value, a state, and a vector of signal
+              values and returns a new state.
+    """
+
     def __init__(self, func: ODEFunc):
         self.func = func
 
@@ -227,6 +297,17 @@ def ode(_func: ODEFunc) -> ODE:
 
 
 def ode(_func: Optional[ODEFunc] = None) -> Union[_ODEDecorator, ODE]:
+    """Decorate a function as an ODE model.
+
+    This decorator can be used with or without arguments.
+
+    Args:
+        _func: The function to wrap as an ODE model
+
+    Returns:
+        An ODE model
+    """
+
     def decorator(func: ODEFunc) -> ODE:
         return ODE(func)
 
