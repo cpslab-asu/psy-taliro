@@ -3,6 +3,8 @@ Models
 The core of S-TaLiRo's system representation is the system model. A system model is a callable object that S-TaLiRo
 can evaluate to attempt to find falsifying behavior. 
 
+.. _blackbox:
+
 Blackbox Model
 --------------
 A blackbox model is the most basic system model because it makes no underlying assumptions about the system under test.
@@ -17,6 +19,8 @@ Blackbox API
 .. autoclass:: staliro.models.Blackbox
     :members:
     :undoc-members:
+
+.. _ode:
 
 ODE Model
 ---------
