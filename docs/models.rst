@@ -14,7 +14,7 @@ can be anything as simple as calling an external application to a complex intern
 Blackbox API
 ------------
 
-.. autoclass:: pystaliro.models.Blackbox
+.. autoclass:: staliro.models.Blackbox
     :members:
     :undoc-members:
 
@@ -28,6 +28,6 @@ and return a state change vector.
 ODE API
 -------
 
-.. autoclass:: pystaliro.models.ODE
+.. autoclass:: staliro.models.ODE
     :members:
     :undoc-members:
