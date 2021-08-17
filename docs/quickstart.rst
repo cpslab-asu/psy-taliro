@@ -112,7 +112,8 @@ There models can be constructed using decorators provided by PSY-TaLiRo like so:
     def ode_model(time, state, signal_values):
         ...
 
-All models must return an array of states and a corresponding array of timestamps, both of which
+All models expose a method named ``simulate`` which must accept the static and time-varying system
+inputs and return an array of states and a corresponding array of timestamps which together
 represent the system state over time. 
 
 Specifications
@@ -123,7 +124,24 @@ different specifications implemented using two different libraries. The first li
 `TLTK <https://bitbucket.org/versyslab/tltk/src/master/>`_ which is used to implement the
 :ref:`TLTK <tltk>` specification. The second library is `RTAMT <https://github.com/nickovic/rtamt>`_
 which is used to implement the :ref:`RTAMT Dense <rtamt_dense>` and
-:ref:`RTAMT Discrete <rtamt_discrete>` optimizers.
+:ref:`RTAMT Discrete <rtamt_discrete>` optimizers. PSY-TaLiRo specifications are constructed using
+by providing a requirement and a dictionary that is used to map state columns to the requirement
+like so:
+
+.. code-block:: python
+
+    from staliro import TLTK, RTAMTDense, RTAMTDiscrete, PredicateProps
+
+    requirement = "[](altitude >= 0)"
+    pred_dict = {"altitude": PredicateProps(0, "float")}
+
+    tltk = TLTK(requirement, pred_dict)
+    rtamt_dense = RTAMTDense(requirement, pred_dict)
+    rtamt_discrete = RTAMTDiscrete(requirement, pred_dict)
+
+All specifications expose a method named ``evaluate`` which must accept the array of states and the
+array of times from the model and return a single scalar value that represents the "goodness" of
+the system output with respect to the trajectory. 
 
 Signal Temporal Logic
 ^^^^^^^^^^^^^^^^^^^^^
@@ -181,10 +199,114 @@ Some example requirements are written below:
 Optimizers
 ^^^^^^^^^^
 
-An optimizer is responsible for selecting samples that the model
+An optimizer is responsible for selecting samples that the model will use to execute a simulation.
+At its core an optimizer provides samples to a **cost function** which returns a single scalar
+value. The goal of the optimizer is to find the lowest cost value.  Different optimizers can have
+different strategies for selecting samples. Some optimizers will use the result of the last
+simulation to help guide the selection of the next sample, while some optimizers may not.
+Optimizers also have the option of vectorizing sample evaluation to call the cost function in
+parallel.
+
+The cost function for PSY-TaLiRo is a composition of the model and the specification. After the
+model executes a simulation, the output is passed to the specification for analysis. The result
+is a single value which is returned to the optimizer. 
+
+An optimizer exposes the ``optimize`` method which must accept the cost function and a
+parameter object that controls the optimization behavior, and return an arbitrary value.
+
+PSY-TaLiRo provides two optimizers: :ref:`Uniform Random <uniform_random>` and
+:ref:`Simulated Annealing <simulated_annealing>`. These optimizers can be easily constructed by
+calling them with no arguments like so:
+
+.. code-block:: python
+
+    from staliro import UniformRandom, DualAnnealing
+
+    ur_optimizer = UniformRandom()
+    da_optimizer = DualAnnealing()
+
+Options
+^^^^^^^
 
 Writing tests
 -------------
 
-Executing tests
----------------
+A typical PSY-TaLiRo script is composed of component definitions and then a call to the ``staliro``
+function. The ``staliro`` takes as input a model instance, a specification instance, an optimizer
+instance, and an options instance. As output, the ``staliro`` function returns a
+:ref:`Result <result>` object which contains the result data from each run of the optimizer, as
+well as an evaluation history from the cost function.
+
+Executable scripts 
+^^^^^^^^^^^^^^^^^^
+
+Keeping tests in executable scripts can be convienent if you plan on executing a test many times.
+Python has a few idioms for creating executable scripts which can make them much easier to work
+with. The first is a comment line called a
+`shebang <https://en.wikipedia.org/wiki/Shebang_(Unix)>`_. This instructs the system on how to
+select the python interpreter to use when executing the script. The second important idiom is the
+main guard. The purpose of the main guard is to avoid executing code unless the module is itself
+being executed as the top-level script. For more information about the main guard, you can
+consult the Python `documentation <https://docs.python.org/3/library/__main__.html>`_.
+
+Putting these together, we get a module that looks like the following:
+
+.. code-block:: python
+
+    #!/usr/bin/env python3
+
+    # Define test components
+    ...
+
+    if __name__ == "__main__":
+        result = staliro(model, specification, optimizers, options)
+        # Process result
+
+Analyzing test results
+----------------------
+
+The output of the ``staliro`` function is a result object, which has two attributes:
+
+- ``runs``
+- ``options``
+
+The ``runs`` attribute has the result of each run of the optimizer. Each result contains the output
+of the optimizer, as well as the evaluation history of the cost function for that run. The result
+from the optimizer is accessible as the ``result`` attribute, the history is available as the
+``history`` attribute, and the total runtime as the ``duration`` attribute. The result object also
+has the properties ``best_iter`` and ``fastest_iter`` that correspond to evaluations in the history.
+Each element of the history is an :ref:`Evaluation <evaluation>` instance which contains the
+``sample``, ``cost``, ``extra`` and ``timing`` information from the evaluation.
+
+The ``options`` attribute of the result object contains the options object that was provided to the
+``staliro`` function to be used as reference or for storage.
+
+One method of processing the result of the ``staliro`` function could be as follows:
+
+.. code-block:: python
+
+    result = staliro(model, specification, optimizer, options)
+
+    print(result.options)
+
+    for run in result.runs:
+        print(run.duration)
+
+        print(run.best_iter)
+        print(run.fastest_iter)
+
+        for evaluation in run.history:
+            print(evaluation.sample)
+            print(evaluation.cost)
+            print(evaluation.extra)
+            
+            print(evaluation.timing.model)
+            print(evaluation.timing.specification)
+
+        print(run.model.average_time)
+        print(run.model.total_time)
+        print(run.model.longest_duration)
+
+        print(run.specification.average_time)
+        print(run.specification.total_time)
+        print(run.specification.longest_duration)
