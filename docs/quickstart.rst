@@ -228,6 +228,33 @@ calling them with no arguments like so:
 Options
 ^^^^^^^
 
+The options object is provided to configure the behavior of the other components. After the
+``staliro`` function has finished running, the options object is attached to the result so that
+it can be included in analysis. The options object requires that either the ``static_parameters``
+or ``signals`` properties be filled, but all other properties are optional. Some common options are
+
++-------------------+----------------------------------------------------------------------------------------+
+| Option            | Description                                                                            |
++===================+========================================================================================+
+| static_parameters | Time-invariant model inputs. Often used to represent initial conditions of the system. |
++-------------------+----------------------------------------------------------------------------------------+
+| signals           | Time-varying model inputs                                                              |
++-------------------+----------------------------------------------------------------------------------------+
+| runs              | Number of times to execute the optimizer                                               |
++-------------------+----------------------------------------------------------------------------------------+
+| iterations        | Number of samples to evaluate per run                                                  |
++-------------------+----------------------------------------------------------------------------------------+
+| seed              | Initial seed of the random number generator. Necessary for repeatability               |
++-------------------+----------------------------------------------------------------------------------------+
+
+The options object is constructed like so:
+
+.. code-block:: python
+
+    from staliro import Options
+
+    options = Options(static_parameters=[(0, 10), (100, 101)], runs=10, iterations=1000)
+
 Writing tests
 -------------
 
