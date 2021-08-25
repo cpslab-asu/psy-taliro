@@ -86,15 +86,10 @@ on the following pages:
 .. toctree::
    :maxdepth: 2
 
+   architecture
    models
+   signals
    specifications
    optimizers
    options
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   results
