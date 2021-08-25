@@ -14,13 +14,12 @@ else:
 import numpy as np
 from numpy.typing import NDArray
 
-from .models import Model, SimulationParams, StaticParameters, SignalInterpolator
+from .models import Model, Sample, SystemInputs
 from .options import Options
 from .specification import Specification
 
 _ET = TypeVar("_ET")
 
-Sample = Union[Sequence[float], NDArray[np.int_], NDArray[np.float_]]
 Samples = Union[
     Sequence[Sequence[float]],
     Sequence[NDArray[np.float_]],
@@ -33,35 +32,11 @@ SpecificationFactory = Callable[[Sample], Specification]
 SpecificationOrFactory = Union[Specification, SpecificationFactory]
 
 
-def _static_parameters(sample: Sample, options: Options) -> StaticParameters:
-    return sample[0 : len(options.static_parameters)]  # type: ignore
-
-
-def _signal_interpolators(sample: Sample, options: Options) -> List[SignalInterpolator]:
-    start = len(options.static_parameters)
-    interpolators: List[SignalInterpolator] = []
-
-    for signal in options.signals:
-        factory = signal.factory
-        end = start + signal.control_points
-        interpolators.append(factory.create(signal.interval.astuple(), sample[start:end]))  # type: ignore
-        start = end
-
-    return interpolators
-
-
 def _specification(sample: Sample, specification: SpecificationOrFactory) -> Specification:
     if callable(specification):
         return specification(sample)
 
     return specification
-
-
-def _simulation_params(sample: Sample, options: Options) -> SimulationParams:
-    static_params = _static_parameters(sample, options)
-    interpolators = _signal_interpolators(sample, options)
-
-    return SimulationParams(static_params, interpolators, options.interval)
 
 
 @dataclass(frozen=True)
@@ -131,9 +106,9 @@ class Thunk(Generic[_ET]):
             An Evaluation instance representing the result of the computation pipeline.
         """
 
-        simulation_params = _simulation_params(self.sample, self.options)
+        system_inputs = SystemInputs(self.sample, self.options)
         model_start = time.perf_counter()
-        model_result = self.model.simulate(simulation_params)
+        model_result = self.model.simulate(system_inputs, self.options.interval)
         model_stop = time.perf_counter()
 
         spec_start = time.perf_counter()
@@ -192,8 +167,10 @@ class CostFn(Generic[_ET]):
 
         return evaluation.cost
 
-    def eval_samples(self, samples: Samples) -> List[float]:
+    def eval_samples(self, samples: Sequence[Sample]) -> List[float]:
         """Compute the cost of multiple samples sequentially.
+
+        Samples are evaluated row-wise, so each row is considered a different sample.
 
         Args:
             samples: Samples to evaluate
@@ -206,6 +183,8 @@ class CostFn(Generic[_ET]):
 
     def eval_samples_parallel(self, samples: Samples, processes: int) -> List[float]:
         """Compute the cost of multiple samples in parallel.
+
+        Samples are evaluated row-wise, so each row is considered a different sample.
 
         Args:
             samples: The samples to evaluate
