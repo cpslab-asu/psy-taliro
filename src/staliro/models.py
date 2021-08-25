@@ -63,8 +63,12 @@ class SimulationResult(Generic[_ET], Evaluable):
     value matrix must be 2-dimensional and one of the dimensions must be equal to the length of the
     timestamps vector.
 
+    Args:
+        trajectories: Array of state values
+        timestamps: Array of time values corresponding to each set of state values
+        extra: User-defined data related to the simulation
+
     Attributes:
-        trajectories: The time-varying state matrix
         timestamps: Vector of time values that correspond to the states in the trajectories matrix
         extra: User-defined data
     """
@@ -116,6 +120,9 @@ class Falsification(Generic[_ET], Evaluable):
 
     Some use-cases require manual falsification outside of the specification. This class always
     returns a cost of minus infinity.
+
+    Args:
+        extra: User-defined data
 
     Attributes:
         extra: User-defined data
