@@ -85,10 +85,26 @@ There are many other environment managers for python like Conda or flit which ca
 install python packages in isolation. Covering all of the tools is out of the scope of this
 documentation, but the pipenv and poetry tools have been used extensively by PSY-TaLiRo.
 
-Basic concepts
---------------
+Components
+----------
 
-A PSY-TaLiRo test is defined using four components, which can be defined in any order.
+A PSY-TaLiRo test is defined using four components, which can be defined in any order. These
+components are the:
+
+- model
+- specification
+- optimizer
+- options
+
+Very simply, the optimizer is called with the model, specification and options objects.  Using the
+sample space defined in the options object, the optimizer selects samples and passes them to the
+model. The model separates the sample into time invariant and time-varying system inputs according
+to the values defined in the options object. The time-varying inputs are used to create
+interpolator functions which represent the signal over the simulation interval. The separated
+system inputs are used to set up and execute the system simulation and the model returns an array of
+states and an array of time values. The model outputs are passed to the specification which uses
+them to generate a single scalar value. The specification output is returned to the optimizer,
+where it can be used to inform the selection of another sample.
 
 Models
 ^^^^^^
@@ -270,9 +286,17 @@ Executable scripts
 Keeping tests in executable scripts can be convienent if you plan on executing a test many times.
 Python has a few idioms for creating executable scripts which can make them much easier to work
 with. The first is a comment line called a
-`shebang <https://en.wikipedia.org/wiki/Shebang_(Unix)>`_. This instructs the system on how to
-select the python interpreter to use when executing the script. The second important idiom is the
-main guard. The purpose of the main guard is to avoid executing code unless the module is itself
+`shebang <https://en.wikipedia.org/wiki/Shebang_(Unix)>`_.::
+
+    #!/usr/bin/env python3
+
+This instructs the system on how to select the python interpreter to use when executing the script.
+The second important idiom is the main guard.::
+
+    if __name__ == "__main__":
+        ...
+
+The purpose of the main guard is to avoid executing code unless the module is itself
 being executed as the top-level script. For more information about the main guard, you can
 consult the Python `documentation <https://docs.python.org/3/library/__main__.html>`_.
 
@@ -283,7 +307,10 @@ Putting these together, we get a module that looks like the following:
     #!/usr/bin/env python3
 
     # Define test components
-    ...
+    model = ...
+    specification = ...
+    optimizer = ...
+    options = ...
 
     if __name__ == "__main__":
         result = staliro(model, specification, optimizers, options)
@@ -314,11 +341,8 @@ One method of processing the result of the ``staliro`` function could be as foll
 
     result = staliro(model, specification, optimizer, options)
 
-    print(result.options)
-
     for run in result.runs:
         print(run.duration)
-
         print(run.best_iter)
         print(run.fastest_iter)
 
@@ -326,14 +350,3 @@ One method of processing the result of the ``staliro`` function could be as foll
             print(evaluation.sample)
             print(evaluation.cost)
             print(evaluation.extra)
-            
-            print(evaluation.timing.model)
-            print(evaluation.timing.specification)
-
-        print(run.model.average_time)
-        print(run.model.total_time)
-        print(run.model.longest_duration)
-
-        print(run.specification.average_time)
-        print(run.specification.total_time)
-        print(run.specification.longest_duration)
