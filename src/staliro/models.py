@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar, Union, Optional, Type, List, TYPE_CHECKING
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Sequence, Callable
+    from collections.abc import Sequence, Callable, Iterator
 else:
-    from typing import Sequence, Callable
+    from typing import Sequence, Callable, Iterator
 
 import numpy as np
 from attr import Attribute, attrs, attrib
@@ -16,8 +16,9 @@ from numpy.typing import NDArray
 from scipy import integrate
 from typing_extensions import overload
 
-from .options import Interval, Options
+from .options import Interval, Options, SignalOptions
 from .signals import SignalInterpolator
+from .sample import Sample
 from .specification import Specification
 
 if TYPE_CHECKING:
@@ -145,8 +146,7 @@ class Falsification(Generic[_ET], Evaluable):
         return -math.inf
 
 
-Sample = Union[Sequence[float], NDArray[np.int_], NDArray[np.float_]]
-StaticParameters = NDArray[np.float_]
+StaticParameters = List[float]
 
 
 @attrs(auto_attribs=True, frozen=True)
@@ -159,22 +159,26 @@ class SystemInputs:
     _sample: Sample
     _options: Options
 
+    def __attrs_post_init__(self) -> None:
+        if len(self._sample) != len(self._options.bounds):
+            raise ValueError()
+
     @property
     def static(self) -> StaticParameters:
-        return self._sample[0 : len(self._options.static_parameters)]  # type: ignore
+        return self._sample[0 : len(self._options.static_parameters)]
 
     @property
     def signals(self) -> List[SignalInterpolator]:
-        start = len(self._options.static_parameters)
-        interpolators: List[SignalInterpolator] = []
+        def interpolator(it: Iterator[float], opts: SignalOptions) -> SignalInterpolator:
+            signal_values = [next(it) for _ in range(opts.control_points)]
+            signal_interval = opts.interval.astuple()
+            return opts.factory.create(signal_interval, signal_values)
 
-        for signal in self._options.signals:
-            factory = signal.factory
-            end = start + signal.control_points
-            interpolators.append(factory.create(signal.interval.astuple(), self._sample[start:end]))  # type: ignore
-            start = end
+        signal_value_start = len(self._options.static_parameters)
+        signal_values = self._sample[signal_value_start:]
+        signal_value_iter = iter(signal_values)
 
-        return interpolators
+        return [interpolator(signal_value_iter, signal) for signal in self._options.signals]
 
 
 ModelResult = Union[SimulationResult[_ET], Falsification[_ET]]
