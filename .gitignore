@@ -1,6 +1,7 @@
 # Tooling files
 .vscode/
 .idea/
+.mypy_cache/
 
 # Generated python files
 **/*.egg-info/
