@@ -4,16 +4,16 @@ import sys
 from typing import List, Union, overload
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Iterator, Sized
+    from collections.abc import Iterator, Sized, Iterable
 else:
-    from typing import Iterator, Sized
+    from typing import Iterator, Sized, Iterable
 
 from attr import frozen, field
 from attr.validators import deep_iterable, instance_of
 
 
 @frozen()
-class Sample(Sized):
+class Sample(Sized, Iterable[float]):
     values: List[float] = field(converter=list, validator=deep_iterable(instance_of(float)))
 
     def __len__(self) -> int:
