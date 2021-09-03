@@ -2,23 +2,23 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-from .cost import SpecificationOrFactory
-from .models import Model
+from .core.cost import SpecificationOrFactory
+from .core.model import Model
 from .options import Options
-from .optimizers import Optimizer
-from .results import Result
-from .scenarios import Scenario
+from .core.optimizer import Optimizer
+from .core.result import Result
+from .core.scenario import Scenario
 
-_RT = TypeVar("_RT")
-_ET = TypeVar("_ET")
+RT = TypeVar("RT")
+ET = TypeVar("ET")
 
 
 def staliro(
-    model: Model[_ET],
+    model: Model[ET],
     specification: SpecificationOrFactory,
-    optimizer: Optimizer[_RT],
+    optimizer: Optimizer[RT],
     options: Options,
-) -> Result[_RT, _ET]:
+) -> Result[RT, ET]:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
