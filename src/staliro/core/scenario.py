@@ -5,29 +5,24 @@ import sys
 import time
 from itertools import islice
 from multiprocessing import Pool
-from typing import Generic, TypeVar, List
-
-if sys.version_info >= (3, 9):
-    from collections.abc import Iterator
-else:
-    from typing import Iterator
+from typing import Generic, Iterator, List, TypeVar
 
 from numpy.random import default_rng
 
 from .cost import CostFn, SpecificationOrFactory
-from .models import Model
-from .optimizers import Optimizer, OptimizationParams
-from .options import Options
-from .results import Result, Run
+from .model import Model
+from .optimizer import Optimizer, OptimizationParams
+from ..options import Options
+from .result import Result, Run
 
-_RT = TypeVar("_RT")
-_ET = TypeVar("_ET")
+RT = TypeVar("RT")
+ET = TypeVar("ET")
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class CostFnGen(Generic[_ET], Iterator[CostFn[_ET]]):
+class CostFnGen(Generic[ET], Iterator[CostFn[ET]]):
     """Iterator class that generates new instances of CostFn.
 
     Attributes:
@@ -36,12 +31,12 @@ class CostFnGen(Generic[_ET], Iterator[CostFn[_ET]]):
         options: Configuration object to control behavior of the model and specification
     """
 
-    def __init__(self, model: Model[_ET], spec: SpecificationOrFactory, options: Options):
+    def __init__(self, model: Model[ET], spec: SpecificationOrFactory, options: Options):
         self.model = model
         self.spec = spec
         self.options = options
 
-    def __next__(self) -> CostFn[_ET]:
+    def __next__(self) -> CostFn[ET]:
         return CostFn(self.model, self.spec, self.options)
 
 
@@ -71,7 +66,7 @@ class OptimizationParamsGen(Iterator[OptimizationParams]):
         )
 
 
-class Experiment(Generic[_RT, _ET]):
+class Experiment(Generic[RT, ET]):
     """Class that represents a single optimization attempt.
 
     Attributes:
@@ -80,12 +75,12 @@ class Experiment(Generic[_RT, _ET]):
         params: OptimizationParams instance specific to this optimization attempt
     """
 
-    def __init__(self, cost_fn: CostFn[_ET], optimizer: Optimizer[_RT], params: OptimizationParams):
+    def __init__(self, cost_fn: CostFn[ET], optimizer: Optimizer[RT], params: OptimizationParams):
         self.cost_fn = cost_fn
         self.optimizer = optimizer
         self.params = params
 
-    def run(self) -> Run[_RT, _ET]:
+    def run(self) -> Run[RT, ET]:
         """Execute this optimization attempt.
 
         Returns:
@@ -101,11 +96,11 @@ class Experiment(Generic[_RT, _ET]):
         return Run(result, self.cost_fn.history, duration)
 
 
-def _run_experiment(experiment: Experiment[_RT, _ET]) -> Run[_RT, _ET]:
+def _run_experiment(experiment: Experiment[RT, ET]) -> Run[RT, ET]:
     return experiment.run()
 
 
-class Scenario(Generic[_ET]):
+class Scenario(Generic[ET]):
     """Class that represents a set of optimization attempts.
 
     Optimization attempts can be run sequentially or in parallel. When run in parallel, the same
@@ -118,12 +113,12 @@ class Scenario(Generic[_ET]):
                  optimizer
     """
 
-    def __init__(self, model: Model[_ET], specification: SpecificationOrFactory, options: Options):
+    def __init__(self, model: Model[ET], specification: SpecificationOrFactory, options: Options):
         self.cost_fns = CostFnGen(model, specification, options)
         self.params = OptimizationParamsGen(options)
         self.options = options
 
-    def run(self, optimizer: Optimizer[_RT]) -> Result[_RT, _ET]:
+    def run(self, optimizer: Optimizer[RT]) -> Result[RT, ET]:
         """Execute all optimization attempts given an optimizer.
 
         Args:
@@ -144,8 +139,8 @@ class Scenario(Generic[_ET]):
 
         if self.options.process_count is not None:
             with Pool(processes=self.options.process_count) as pool:
-                runs: List[Run[_RT, _ET]] = pool.map(_run_experiment, n_experiments)
+                runs: List[Run[RT, ET]] = pool.map(_run_experiment, n_experiments)
         else:
-            runs = [experiment.run() for experiment in n_experiments]
+            runs = [_run_experiment(experiment) for experiment in n_experiments]
 
         return Result(runs, self.options)
