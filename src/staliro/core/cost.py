@@ -1,45 +1,29 @@
 from __future__ import annotations
 
-import sys
+import logging
+import math
 import time
-from dataclasses import dataclass
 from multiprocessing import Pool
-from typing import Generic, List, TypeVar, Union
+from typing import Any, Callable, Generic, Iterable, Iterator, List, Sequence, TypeVar, Union
 
-if sys.version_info >= (3, 9):
-    from collections.abc import Sequence, Iterable, Callable
-else:
-    from typing import Sequence, Iterable, Callable
+from attr import frozen
 
-import numpy as np
-from numpy.typing import NDArray
-
-from .models import Model, Sample, SystemInputs
-from .options import Options
+from .model import Model, SimulationResult, SystemInputs, SystemData, SystemFailure
+from ..options import Options
+from .optimizer import ObjectiveFn
+from .sample import Sample
 from .specification import Specification
 
-_ET = TypeVar("_ET")
-
-Samples = Union[
-    Sequence[Sequence[float]],
-    Sequence[NDArray[np.float_]],
-    Sequence[NDArray[np.int_]],
-    NDArray[np.float_],
-    NDArray[np.float_],
-]
+ET = TypeVar("ET")
 
 SpecificationFactory = Callable[[Sample], Specification]
 SpecificationOrFactory = Union[Specification, SpecificationFactory]
 
-
-def _specification(sample: Sample, specification: SpecificationOrFactory) -> Specification:
-    if callable(specification):
-        return specification(sample)
-
-    return specification
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
-@dataclass(frozen=True)
+@frozen()
 class TimingData:
     """Storage class for execution durations of different PSY-TaLiRo components.
 
@@ -60,8 +44,8 @@ class TimingData:
         return self.model + self.specification
 
 
-@dataclass(frozen=True)
-class Evaluation(Generic[_ET]):
+@frozen()
+class Evaluation(Generic[ET]):
     """The result of applying the cost function to a sample.
 
     Attributes:
@@ -73,12 +57,12 @@ class Evaluation(Generic[_ET]):
 
     cost: float
     sample: Sample
-    extra: _ET
+    extra: ET
     timing: TimingData
 
 
-@dataclass(frozen=True)
-class Thunk(Generic[_ET]):
+@frozen()
+class Thunk(Generic[ET]):
     """Class which represents the deferred evaluation of the cost function.
 
     A Thunk contains all the necessary information to produce an Evaluation, but does not execute
@@ -92,11 +76,30 @@ class Thunk(Generic[_ET]):
     """
 
     sample: Sample
-    model: Model[_ET]
-    specification: Specification
+    model: Model[ET]
+    _specification: SpecificationOrFactory
     options: Options
 
-    def evaluate(self) -> Evaluation[_ET]:
+    @property
+    def system_inputs(self) -> SystemInputs:
+        return SystemInputs(self.sample, self.options)
+
+    @property
+    def specification(self) -> Specification:
+        if not callable(self._specification):
+            return self._specification
+
+        return self._specification(self.sample)
+
+    def result_cost(self, result: SimulationResult[Any]) -> float:
+        if isinstance(result, SystemData):
+            return self.specification.evaluate(result.states, result.times)
+        elif isinstance(result, SystemFailure):
+            return -math.inf
+
+        raise TypeError("unsupported type returned from model")
+
+    def evaluate(self) -> Evaluation[ET]:
         """Evaluate the sample using the specification and model.
 
         The computation is the following pipeline:
@@ -106,24 +109,37 @@ class Thunk(Generic[_ET]):
             An Evaluation instance representing the result of the computation pipeline.
         """
 
-        system_inputs = SystemInputs(self.sample, self.options)
         model_start = time.perf_counter()
-        model_result = self.model.simulate(system_inputs, self.options.interval)
+        model_result = self.model.simulate(self.system_inputs, self.options.interval)
         model_stop = time.perf_counter()
 
         spec_start = time.perf_counter()
-        cost = model_result.eval_using(self.specification)
+        cost = self.result_cost(model_result)
         spec_stop = time.perf_counter()
         timing_data = TimingData(model_stop - model_start, spec_stop - spec_start)
 
         return Evaluation(cost, self.sample, model_result.extra, timing_data)
 
 
-def _evaluate(thunk: Thunk[_ET]) -> Evaluation[_ET]:
+@frozen()
+class ThunkGenerator(Generic[ET], Iterable[Thunk[ET]]):
+    """Generate Thunk instances from a collection of samples."""
+
+    samples: Iterable[Sample]
+    model: Model[ET]
+    specification: SpecificationOrFactory
+    options: Options
+
+    def __iter__(self) -> Iterator[Thunk[ET]]:
+        for sample in self.samples:
+            yield Thunk(sample, self.model, self.specification, self.options)
+
+
+def _evaluate(thunk: Thunk[ET]) -> Evaluation[ET]:
     return thunk.evaluate()
 
 
-class CostFn(Generic[_ET]):
+class CostFn(ObjectiveFn, Generic[ET]):
     """Class which represents the composition of a Model and Specification.
 
     A Model is responsible for modeling the system and returning a trajectory given a sample, and a
@@ -138,16 +154,11 @@ class CostFn(Generic[_ET]):
         history: List of all evaluations produced by this instance
     """
 
-    def __init__(self, model: Model[_ET], specification: SpecificationOrFactory, options: Options):
+    def __init__(self, model: Model[ET], specification: SpecificationOrFactory, options: Options):
         self.model = model
         self.specification = specification
         self.options = options
-        self.history: List[Evaluation[_ET]] = []
-
-    def _thunks(self, samples: Samples) -> Iterable[Thunk[_ET]]:
-        for sample in samples:
-            specification = _specification(sample, self.specification)
-            yield Thunk(sample, self.model, specification, self.options)
+        self.history: List[Evaluation[ET]] = []
 
     def eval_sample(self, sample: Sample) -> float:
         """Compute the cost of a single sample.
@@ -159,9 +170,10 @@ class CostFn(Generic[_ET]):
             The sample cost
         """
 
-        specification = _specification(sample, self.specification)
-        thunk = Thunk(sample, self.model, specification, self.options)
-        evaluation = thunk.evaluate()
+        logger.debug(f"Evaluating sample {sample}")
+
+        thunk = Thunk(sample, self.model, self.specification, self.options)
+        evaluation = _evaluate(thunk)
 
         self.history.append(evaluation)
 
@@ -179,9 +191,16 @@ class CostFn(Generic[_ET]):
             The cost for each sample
         """
 
-        return [self.eval_sample(sample) for sample in samples]
+        logger.debug(f"Evaluating samples {samples}")
 
-    def eval_samples_parallel(self, samples: Samples, processes: int) -> List[float]:
+        thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
+        evaluations = [_evaluate(thunk) for thunk in thunks]
+
+        self.history.extend(evaluations)
+
+        return [evaluation.cost for evaluation in evaluations]
+
+    def eval_samples_parallel(self, samples: Sequence[Sample], processes: int) -> List[float]:
         """Compute the cost of multiple samples in parallel.
 
         Samples are evaluated row-wise, so each row is considered a different sample.
@@ -194,11 +213,13 @@ class CostFn(Generic[_ET]):
             The cost for each sample.
         """
 
-        with Pool(processes=processes) as pool:
-            evaluations: List[Evaluation[_ET]] = pool.map(_evaluate, self._thunks(samples))
+        logger.debug(f"Evaluating samples {samples} with {processes} processes")
 
-        costs = [evaluation.cost for evaluation in evaluations]
+        thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
+
+        with Pool(processes=processes) as pool:
+            evaluations: List[Evaluation[ET]] = pool.map(_evaluate, thunks)
 
         self.history.extend(evaluations)
 
-        return costs
+        return [evaluation.cost for evaluation in evaluations]
