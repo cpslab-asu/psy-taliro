@@ -139,8 +139,9 @@ class Scenario(Generic[ET]):
 
         if self.options.process_count is not None:
             with concurrent.futures.ProcessPoolExecutor(self.options.process_count) as executor:
-                results: Iterable[Run[RT, ET]] = executor.map(_run_experiment, n_experiments)
+                futures: Iterable[Run[RT, ET]] = executor.map(_run_experiment, n_experiments)
+                runs = list(futures)
         else:
-            results = map(_run_experiment, n_experiments)
+            runs = [_run_experiment(experiment) for experiment in n_experiments]
 
-        return Result(list(results), self.options)
+        return Result(runs, self.options)

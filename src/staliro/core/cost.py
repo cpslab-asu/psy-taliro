@@ -218,7 +218,8 @@ class CostFn(ObjectiveFn, Generic[ET]):
         thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=processes) as executor:
-            evaluations: Iterable[Evaluation[ET]] = executor.map(_evaluate, thunks)
+            futures: Iterable[Evaluation[ET]] = executor.map(_evaluate, thunks)
+            evaluations = list(futures)
 
         self.history.extend(evaluations)
 
