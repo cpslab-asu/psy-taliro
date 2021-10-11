@@ -13,8 +13,7 @@ from scipy import optimize
 from typing_extensions import Literal
 
 from .core.interval import Interval
-from .core.optimizer import Optimizer, OptimizationParams, ObjectiveFn
-from .options import Behavior
+from .core.optimizer import Optimizer, OptimizationParams, Behavior, ObjectiveFn
 from .core.sample import Sample
 
 Samples = Sequence[Sample]
