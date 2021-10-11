@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import sys
 import time
 from itertools import islice
-from multiprocessing import Pool
-from typing import Generic, Iterator, List, TypeVar
+from typing import Generic, Iterable, Iterator, TypeVar
 
 from numpy.random import default_rng
 
@@ -138,9 +138,9 @@ class Scenario(Generic[ET]):
         n_experiments = islice(experiments, self.options.runs)
 
         if self.options.process_count is not None:
-            with Pool(processes=self.options.process_count) as pool:
-                runs: List[Run[RT, ET]] = pool.map(_run_experiment, n_experiments)
+            with concurrent.futures.ProcessPoolExecutor(self.options.process_count) as executor:
+                results: Iterable[Run[RT, ET]] = executor.map(_run_experiment, n_experiments)
         else:
-            runs = [_run_experiment(experiment) for experiment in n_experiments]
+            results = map(_run_experiment, n_experiments)
 
-        return Result(runs, self.options)
+        return Result(list(results), self.options)

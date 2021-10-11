@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import math
 import time
-from multiprocessing import Pool
 from typing import Any, Callable, Generic, Iterable, Iterator, List, Sequence, TypeVar, Union
 
 from attr import frozen
@@ -217,8 +217,8 @@ class CostFn(ObjectiveFn, Generic[ET]):
 
         thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
 
-        with Pool(processes=processes) as pool:
-            evaluations: List[Evaluation[ET]] = pool.map(_evaluate, thunks)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=processes) as executor:
+            evaluations: Iterable[Evaluation[ET]] = executor.map(_evaluate, thunks)
 
         self.history.extend(evaluations)
 
