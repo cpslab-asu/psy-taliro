@@ -5,14 +5,15 @@ import logging
 import sys
 import time
 from itertools import islice
-from typing import Generic, Iterable, Iterator, TypeVar
+from typing import Generic, Iterable, Iterator, Optional, Sequence, TypeVar
 
-from numpy.random import default_rng
+from attr import frozen
+from numpy.random import default_rng, Generator
 
 from .cost import CostFn, SpecificationOrFactory
-from .model import Model
-from .optimizer import Optimizer, OptimizationParams
-from ..options import Options
+from .interval import Interval
+from .model import Model, SignalParameters
+from .optimizer import Optimizer
 from .result import Result, Run
 
 RT = TypeVar("RT")
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+@frozen()
 class CostFnGen(Generic[ET], Iterator[CostFn[ET]]):
     """Iterator class that generates new instances of CostFn.
 
@@ -31,41 +33,23 @@ class CostFnGen(Generic[ET], Iterator[CostFn[ET]]):
         options: Configuration object to control behavior of the model and specification
     """
 
-    def __init__(self, model: Model[ET], spec: SpecificationOrFactory, options: Options):
-        self.model = model
-        self.spec = spec
-        self.options = options
+    model: Model[ET]
+    specification: SpecificationOrFactory
+    interval: Interval
+    n_static_parameters: int
+    signal_parameters: Sequence[SignalParameters]
 
     def __next__(self) -> CostFn[ET]:
-        return CostFn(self.model, self.spec, self.options)
-
-
-class OptimizationParamsGen(Iterator[OptimizationParams]):
-    """Iterator class that generates new instances of OptimizationParams.
-
-    Upon instantiation, a random number generator is created using the seed value from the options
-    object. The generator attribute of each OptimizationParams object created by this class is
-    initialized using this class's RNG to generate an integer that serves as the seed for a new RNG.
-
-    Attributes:
-        rng: The random number generator used to make new seeds
-        bounds: Sequence of intervals use to generate samples
-        iterations: Number of samples to generate
-        behavior: Search behavior (FALSIFICATION or MINIMIZATION).
-    """
-
-    def __init__(self, options: Options):
-        self.rng = default_rng(options.seed)
-        self.bounds = options.bounds
-        self.iterations = options.iterations
-        self.behavior = options.behavior
-
-    def __next__(self) -> OptimizationParams:
-        return OptimizationParams(
-            self.bounds, self.iterations, self.behavior, self.rng.integers(low=0, high=sys.maxsize)
+        return CostFn(
+            self.model,
+            self.specification,
+            self.interval,
+            self.n_static_parameters,
+            self.signal_parameters,
         )
 
 
+@frozen()
 class Experiment(Generic[RT, ET]):
     """Class that represents a single optimization attempt.
 
@@ -75,10 +59,11 @@ class Experiment(Generic[RT, ET]):
         params: OptimizationParams instance specific to this optimization attempt
     """
 
-    def __init__(self, cost_fn: CostFn[ET], optimizer: Optimizer[RT], params: OptimizationParams):
-        self.cost_fn = cost_fn
-        self.optimizer = optimizer
-        self.params = params
+    cost_fn: CostFn[ET]
+    optimizer: Optimizer[RT]
+    bounds: Sequence[Interval]
+    iterations: int
+    seed: int
 
     def run(self) -> Run[RT, ET]:
         """Execute this optimization attempt.
@@ -89,17 +74,37 @@ class Experiment(Generic[RT, ET]):
         """
 
         start_time = time.perf_counter()
-        result = self.optimizer.optimize(self.cost_fn, self.params)
+        result = self.optimizer.optimize(self.cost_fn, self.bounds, self.iterations, self.seed)
         stop_time = time.perf_counter()
         duration = stop_time - start_time
 
-        return Run(result, self.cost_fn.history, duration)
+        return Run(result, self.cost_fn.history, duration, self.seed)
+
+
+@frozen()
+class ExperimentGenerator(Generic[RT, ET], Iterable[Experiment[RT, ET]]):
+    cost_fn_generator: CostFnGen[ET]
+    optimizer: Optimizer[RT]
+    bounds: Sequence[Interval]
+    iterations: int
+    rng: Generator
+
+    def __iter__(self) -> Iterator[Experiment[RT, ET]]:
+        for cost_fn in self.cost_fn_generator:
+            yield Experiment(
+                cost_fn,
+                self.optimizer,
+                self.bounds,
+                self.iterations,
+                self.rng.integers(0, sys.maxsize),
+            )
 
 
 def _run_experiment(experiment: Experiment[RT, ET]) -> Run[RT, ET]:
     return experiment.run()
 
 
+@frozen()
 class Scenario(Generic[ET]):
     """Class that represents a set of optimization attempts.
 
@@ -113,10 +118,16 @@ class Scenario(Generic[ET]):
                  optimizer
     """
 
-    def __init__(self, model: Model[ET], specification: SpecificationOrFactory, options: Options):
-        self.cost_fns = CostFnGen(model, specification, options)
-        self.params = OptimizationParamsGen(options)
-        self.options = options
+    model: Model[ET]
+    specification: SpecificationOrFactory
+    runs: int
+    iterations: int
+    seed: int
+    processes: Optional[int]
+    bounds: Sequence[Interval]
+    interval: Interval
+    n_static_parameters: int
+    signal_parameters: Sequence[SignalParameters]
 
     def run(self, optimizer: Optimizer[RT]) -> Result[RT, ET]:
         """Execute all optimization attempts given an optimizer.
@@ -129,19 +140,28 @@ class Scenario(Generic[ET]):
         """
 
         logger.debug("Beginning experiment")
-        logger.debug(f"{self.options.runs} runs of {self.options.iterations} iterations")
-        logger.debug(f"Initial seed: {self.options.seed}")
-        logger.debug(f"Parallelization: {self.options.parallelization}")
+        logger.debug(f"{self.runs} runs of {self.iterations} iterations")
+        logger.debug(f"Initial seed: {self.seed}")
+        logger.debug(f"Parallelization: {self.processes}")
 
-        fns_and_params = zip(self.cost_fns, self.params)
-        experiments = (Experiment(fn, optimizer, params) for fn, params in fns_and_params)
-        n_experiments = islice(experiments, self.options.runs)
+        rng = default_rng(self.seed)
+        cost_fns = CostFnGen(
+            self.model,
+            self.specification,
+            self.interval,
+            self.n_static_parameters,
+            self.signal_parameters,
+        )
+        experiment_generator = ExperimentGenerator(
+            cost_fns, optimizer, self.bounds, self.iterations, rng
+        )
+        experiments = islice(experiment_generator, self.runs)
 
-        if self.options.process_count is not None:
-            with concurrent.futures.ProcessPoolExecutor(self.options.process_count) as executor:
-                futures: Iterable[Run[RT, ET]] = executor.map(_run_experiment, n_experiments)
+        if self.processes is not None:
+            with concurrent.futures.ProcessPoolExecutor(self.processes) as executor:
+                futures: Iterable[Run[RT, ET]] = executor.map(_run_experiment, experiments)
                 runs = list(futures)
         else:
-            runs = [_run_experiment(experiment) for experiment in n_experiments]
+            runs = [_run_experiment(experiment) for experiment in experiments]
 
-        return Result(runs, self.options)
+        return Result(runs, self.seed, self.processes)
