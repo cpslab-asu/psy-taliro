@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import os
 import statistics as stats
 from itertools import takewhile
@@ -17,6 +18,19 @@ from .core.optimizer import Optimizer, OptimizationParams, Behavior, ObjectiveFn
 from .core.sample import Sample
 
 Samples = Sequence[Sample]
+
+
+class Behavior(enum.IntEnum):
+    """Behavior when falsifying case for system is encountered.
+
+    Attributes:
+        FALSIFICATION: Stop searching when the first falsifying case is encountered
+        MINIMIZATION: Continue searching after encountering a falsifying case until iteration
+                      budget is exhausted
+    """
+
+    FALSIFICATION = enum.auto()
+    MINIMIZATION = enum.auto()
 
 
 @frozen(slots=True)

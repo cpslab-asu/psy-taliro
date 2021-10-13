@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import enum
 from abc import ABC, abstractmethod
 from typing import Generic, Protocol, Sequence, TypeVar
 
@@ -21,19 +20,6 @@ class ObjectiveFn(Protocol):
 
     def eval_samples_parallel(self, samples: Sequence[Sample], processes: int) -> Sequence[float]:
         ...
-
-
-class Behavior(enum.IntEnum):
-    """Behavior when falsifying case for system is encountered.
-
-    Attributes:
-        FALSIFICATION: Stop searching when the first falsifying case is encountered
-        MINIMIZATION: Continue searching after encountering a falsifying case until iteration
-                      budget is exhausted
-    """
-
-    FALSIFICATION = enum.auto()
-    MINIMIZATION = enum.auto()
 
 
 @frozen(slots=True)
