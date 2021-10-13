@@ -1,16 +1,34 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import List, TypeVar
+
+import numpy as np
 
 from .core.cost import SpecificationOrFactory
-from .core.model import Model
-from .options import Options
+from .core.interval import Interval
+from .core.model import Model, SignalParameters
+from .options import Options, SignalOptions
 from .core.optimizer import Optimizer
 from .core.result import Result
 from .core.scenario import Scenario
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")
+
+
+def _signal_parameters(options: SignalOptions) -> SignalParameters:
+    if options.signal_times is not None:
+        times: List[float] = options.signal_times
+    else:
+        times_array = np.linspace(
+            start=options.bound.lower,
+            stop=options.bound.upper,
+            num=options.control_points,
+            dtype=np.float64,
+        )
+        times = times_array.tolist()
+
+    return SignalParameters(n_points=options.control_points, times=times, factory=options.factory)
 
 
 def staliro(
@@ -33,5 +51,22 @@ def staliro(
     Returns:
         An object containing the result of each optimization attempt.
     """
+    signal_parameters = [_signal_parameters(signal) for signal in options.signals]
+    signal_bounds: List[Interval] = sum(
+        ([signal.bound] * signal.control_points for signal in options.signals), []
+    )
 
-    return Scenario(model, specification, options).run(optimizer)
+    scenario = Scenario(
+        model=model,
+        specification=specification,
+        runs=options.runs,
+        iterations=options.iterations,
+        seed=options.seed,
+        processes=options.process_count,
+        bounds=options.static_parameters + signal_bounds,
+        interval=options.interval,
+        n_static_parameters=len(options.static_parameters),
+        signal_parameters=signal_parameters,
+    )
+
+    return scenario.run(optimizer)
