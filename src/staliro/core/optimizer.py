@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, Protocol, Sequence, TypeVar
 
-from attr import frozen
-
 from .interval import Interval
 from .sample import Sample
 
@@ -22,15 +20,7 @@ class ObjectiveFn(Protocol):
         ...
 
 
-@frozen(slots=True)
-class OptimizationParams:
-    bounds: Sequence[Interval]
-    iterations: int
-    behavior: Behavior
-    seed: int
-
-
 class Optimizer(Generic[T], ABC):
     @abstractmethod
-    def optimize(self, func: ObjectiveFn, params: OptimizationParams) -> T:
+    def optimize(self, func: ObjectiveFn, bounds: Sequence[Interval], budget: int, seed: int) -> T:
         ...
