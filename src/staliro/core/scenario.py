@@ -36,7 +36,7 @@ class CostFnGen(Generic[ET], Iterator[CostFn[ET]]):
     model: Model[ET]
     specification: SpecificationOrFactory
     interval: Interval
-    n_static_parameters: int
+    static_parameter_range: slice
     signal_parameters: Sequence[SignalParameters]
 
     def __next__(self) -> CostFn[ET]:
@@ -44,7 +44,7 @@ class CostFnGen(Generic[ET], Iterator[CostFn[ET]]):
             self.model,
             self.specification,
             self.interval,
-            self.n_static_parameters,
+            self.static_parameter_range,
             self.signal_parameters,
         )
 
@@ -126,7 +126,7 @@ class Scenario(Generic[ET]):
     processes: Optional[int]
     bounds: Sequence[Interval]
     interval: Interval
-    n_static_parameters: int
+    static_parameter_range: slice
     signal_parameters: Sequence[SignalParameters]
 
     def run(self, optimizer: Optimizer[RT]) -> Result[RT, ET]:
@@ -149,7 +149,7 @@ class Scenario(Generic[ET]):
             self.model,
             self.specification,
             self.interval,
-            self.n_static_parameters,
+            self.static_parameter_range,
             self.signal_parameters,
         )
         experiment_generator = ExperimentGenerator(
