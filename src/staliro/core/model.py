@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Iterator, List, TypeVar, Union, overload
+from typing import Any, Generic, Iterator, List, Sequence, TypeVar, Union, overload
 
 import numpy as np
 from attr import Attribute, field, frozen
@@ -9,11 +9,17 @@ from numpy.core.shape_base import atleast_1d
 from numpy.typing import NDArray
 
 from .interval import Interval
-from ..options import Options, SignalOptions
 from .sample import Sample
-from .signal import Signal
+from .signal import Signal, SignalFactory
 
 T = TypeVar("T")
+
+
+@frozen()
+class SignalParameters:
+    n_points: int
+    times: Sequence[float]
+    factory: SignalFactory
 
 
 @frozen(init=False)
@@ -31,14 +37,13 @@ class SystemInputs:
     static: List[float]
     signals: List[Signal]
 
-    def __init__(self, sample: Sample, options: Options):
-        def signal(it: Iterator[float], opts: SignalOptions) -> Signal:
-            return opts.factory(opts.signal_times, [next(it) for _ in range(opts.control_points)])
+    def __init__(self, sample: Sample, n_static: int, signal_params: Sequence[SignalParameters]):
+        def signal(it: Iterator[float], params: SignalParameters) -> Signal:
+            return params.factory(params.times, [next(it) for _ in range(params.n_points)])
 
-        static_param_count = len(options.static_parameters)
-        static_params = sample[0:static_param_count]
-        signal_values_iter = iter(sample[static_param_count:])
-        signals = [signal(signal_values_iter, sig_opts) for sig_opts in options.signals]
+        static_params = sample[0:n_static]
+        signal_values_iter = iter(sample[n_static:])
+        signals = [signal(signal_values_iter, params) for params in signal_params]
 
         object.__setattr__(self, "static", static_params)
         object.__setattr__(self, "signals", signals)
