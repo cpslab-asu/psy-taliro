@@ -14,7 +14,7 @@ from scipy import optimize
 from typing_extensions import Literal
 
 from .core.interval import Interval
-from .core.optimizer import Optimizer, OptimizationParams, Behavior, ObjectiveFn
+from .core.optimizer import Optimizer, ObjectiveFn
 from .core.sample import Sample
 
 Samples = Sequence[Sample]
@@ -58,7 +58,11 @@ class UniformRandom(Optimizer[UniformRandomResult]):
         processes: The number of processes to use when evaluating the samples.
     """
 
-    def __init__(self, parallelization: Union[Literal["cores"], int, None] = None):
+    def __init__(
+        self,
+        parallelization: Union[Literal["cores"], int, None] = None,
+        behavior: Behavior = Behavior.FALSIFICATION,
+    ):
         if isinstance(parallelization, int):
             self.processes: Optional[int] = parallelization
         elif parallelization == "cores":
@@ -66,7 +70,11 @@ class UniformRandom(Optimizer[UniformRandomResult]):
         else:
             self.processes = None
 
-    def optimize(self, func: ObjectiveFn, params: OptimizationParams) -> UniformRandomResult:
+        self.behavior = behavior
+
+    def optimize(
+        self, func: ObjectiveFn, bounds: Sequence[Interval], budget: int, seed: int
+    ) -> UniformRandomResult:
         def sample_uniform(bounds: Sequence[Interval], rng: Generator) -> Sample:
             return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
@@ -80,10 +88,10 @@ class UniformRandom(Optimizer[UniformRandomResult]):
             costs = map(func.eval_sample, samples)
             return takewhile(lambda c: c >= 0, costs)
 
-        rng = default_rng(params.seed)
-        samples = [sample_uniform(params.bounds, rng) for _ in range(params.iterations)]
+        rng = default_rng(seed)
+        samples = [sample_uniform(bounds, rng) for _ in range(budget)]
 
-        if params.behavior is Behavior.MINIMIZATION:
+        if self.behavior is Behavior.MINIMIZATION:
             costs = minimize(samples, func, self.processes)
         else:
             costs = falsify(samples, func)
@@ -117,22 +125,26 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
     with the no_local_search parameter set to True.
     """
 
-    def optimize(self, func: ObjectiveFn, options: OptimizationParams) -> DualAnnealingResult:
+    def __init__(self, behavior: Behavior = Behavior.FALSIFICATION):
+        self.behavior = behavior
+
+    def optimize(
+        self, func: ObjectiveFn, bounds: Sequence[Interval], budget: int, seed: int
+    ) -> DualAnnealingResult:
         def wrapper(values: NDArray[np.float_]) -> float:
             return func.eval_sample(Sample(values))
 
         def listener(sample: NDArray[np.float_], robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if robustness < 0 and options.behavior is Behavior.FALSIFICATION:
+            if robustness < 0 and self.behavior is Behavior.FALSIFICATION:
                 return True
 
             return False
 
-        bounds = [interval.bounds for interval in options.bounds]
         result: optimize.OptimizeResult = optimize.dual_annealing(
             wrapper,
-            bounds,
-            seed=options.seed,
-            maxiter=options.iterations,
+            [interval.bounds for interval in bounds],
+            seed=seed,
+            maxiter=budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
             callback=listener,
         )
