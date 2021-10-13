@@ -12,3 +12,8 @@ class Signal(Protocol):
 
     def at_times(self, times: Sequence[float]) -> List[float]:
         ...
+
+
+class SignalFactory(Protocol):
+    def __call__(self, __times: Sequence[float], __values: Sequence[float]) -> Signal:
+        ...
