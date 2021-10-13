@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, Sequence, TypeVar
+from typing import Generic, Iterable, Optional, Sequence, TypeVar
 
 from attr import frozen
 
 from .cost import Evaluation
-from ..options import Options
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")
@@ -56,6 +55,7 @@ class Run(Generic[RT, ET]):
     result: RT
     history: Sequence[Evaluation[ET]]
     duration: float
+    seed: int
 
     @property
     def worst_eval(self) -> Evaluation[ET]:
@@ -105,7 +105,8 @@ class Result(Generic[RT, ET]):
     """
 
     runs: Sequence[Run[RT, ET]]
-    options: Options
+    seed: int
+    processes: Optional[int]
 
     @property
     def worst_run(self) -> Run[RT, ET]:
