@@ -1,18 +1,29 @@
 from __future__ import annotations
 
-from importlib.util import find_spec
-from typing import Dict, Optional, TYPE_CHECKING, Union, Sequence
+from typing import Dict, Optional, Union, Sequence
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 
-if TYPE_CHECKING:
-    from tltk_mtl import Predicate
-
-    from .stlSpecification import StlSpecification
-
-    PredicateDict = Dict[str, Predicate]
+try:
+    import tltk_mtl as mtl
+except ImportError:
+    _has_tltk = False
+else:
+    _has_tltk = True
+    PredicateDict = Dict[str, mtl.Predicate]
     Predicates = Union[Sequence[str], PredicateDict]
+    StlSpecification = Union[
+        mtl.And,
+        mtl.Finally,
+        mtl.Global,
+        mtl.Implication,
+        mtl.Next,
+        mtl.Not,
+        mtl.Or,
+        mtl.Predicate,
+        mtl.Until,
+    ]
 
 
 def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
@@ -24,7 +35,7 @@ def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[S
         mode: The TLTk computation mode
     """
 
-    if find_spec("tltk_mtl") is None:
+    if not _has_tltk:
         raise RuntimeError("TLTK must be installed to use parser functionality")
 
     from .stlLexer import stlLexer as Lexer
