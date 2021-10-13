@@ -5,7 +5,7 @@ from typing import Any, Generic, Iterator, List, Sequence, TypeVar, Union, overl
 
 import numpy as np
 from attr import Attribute, field, frozen
-from numpy.core.shape_base import atleast_1d
+from numpy import atleast_1d
 from numpy.typing import NDArray
 
 from .interval import Interval
