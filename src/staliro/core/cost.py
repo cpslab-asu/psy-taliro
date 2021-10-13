@@ -86,12 +86,12 @@ class Thunk(Generic[ET]):
     model: Model[ET]
     _specification: SpecificationOrFactory
     interval: Interval
-    n_static_parameters: int
+    static_parameter_range: slice
     signal_parameters: Sequence[SignalParameters]
 
     @property
     def system_inputs(self) -> SystemInputs:
-        return SystemInputs(self.sample, self.n_static_parameters, self.signal_parameters)
+        return SystemInputs(self.sample, self.static_parameter_range, self.signal_parameters)
 
     @property
     def specification(self) -> Specification:
@@ -138,7 +138,7 @@ class ThunkGenerator(Generic[ET], Iterable[Thunk[ET]]):
     model: Model[ET]
     specification: SpecificationOrFactory
     interval: Interval
-    n_static_parameters: int
+    static_parameter_range: slice
     signal_parameters: Sequence[SignalParameters]
 
     def __iter__(self) -> Iterator[Thunk[ET]]:
@@ -148,7 +148,7 @@ class ThunkGenerator(Generic[ET], Iterable[Thunk[ET]]):
                 self.model,
                 self.specification,
                 self.interval,
-                self.n_static_parameters,
+                self.static_parameter_range,
                 self.signal_parameters,
             )
 
@@ -176,7 +176,7 @@ class CostFn(ObjectiveFn, Generic[ET]):
     model: Model[ET]
     specification: SpecificationOrFactory
     interval: Interval
-    n_static_parameters: int
+    static_parameter_range: slice
     signal_parameters: Sequence[SignalParameters]
     history: List[Evaluation[ET]] = field(init=False, factory=list)
 
@@ -197,7 +197,7 @@ class CostFn(ObjectiveFn, Generic[ET]):
             self.model,
             self.specification,
             self.interval,
-            self.n_static_parameters,
+            self.static_parameter_range,
             self.signal_parameters,
         )
         evaluation = _evaluate(thunk)
@@ -223,7 +223,7 @@ class CostFn(ObjectiveFn, Generic[ET]):
             self.model,
             self.specification,
             self.interval,
-            self.n_static_parameters,
+            self.static_parameter_range,
             self.signal_parameters,
         )
         evaluations = [_evaluate(thunk) for thunk in thunks]
@@ -252,7 +252,7 @@ class CostFn(ObjectiveFn, Generic[ET]):
             self.model,
             self.specification,
             self.interval,
-            self.n_static_parameters,
+            self.static_parameter_range,
             self.signal_parameters,
         )
 
