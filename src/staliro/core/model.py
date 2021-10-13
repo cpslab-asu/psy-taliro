@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Iterator, List, Sequence, TypeVar, Union, overload
+from typing import Any, Generic, List, Sequence, TypeVar, Union, overload
 
 import numpy as np
 from attr import Attribute, field, frozen
@@ -17,7 +17,7 @@ T = TypeVar("T")
 
 @frozen()
 class SignalParameters:
-    n_points: int
+    values_range: slice
     times: Sequence[float]
     factory: SignalFactory
 
@@ -37,13 +37,9 @@ class SystemInputs:
     static: List[float]
     signals: List[Signal]
 
-    def __init__(self, sample: Sample, n_static: int, signal_params: Sequence[SignalParameters]):
-        def signal(it: Iterator[float], params: SignalParameters) -> Signal:
-            return params.factory(params.times, [next(it) for _ in range(params.n_points)])
-
-        static_params = sample[0:n_static]
-        signal_values_iter = iter(sample[n_static:])
-        signals = [signal(signal_values_iter, params) for params in signal_params]
+    def __init__(self, sample: Sample, static_range: slice, params: Sequence[SignalParameters]):
+        static_params = sample[static_range]
+        signals = [signal.factory(signal.times, sample[signal.values_range]) for signal in params]
 
         object.__setattr__(self, "static", static_params)
         object.__setattr__(self, "signals", signals)
