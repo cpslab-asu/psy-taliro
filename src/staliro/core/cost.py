@@ -6,10 +6,17 @@ import math
 import time
 from typing import Any, Callable, Generic, Iterable, Iterator, List, Sequence, TypeVar, Union
 
-from attr import frozen
+from attr import frozen, field
 
-from .model import Model, SimulationResult, SystemInputs, SystemData, SystemFailure
-from ..options import Options
+from .model import (
+    Model,
+    SignalParameters,
+    SimulationResult,
+    SystemInputs,
+    SystemData,
+    SystemFailure,
+)
+from .interval import Interval
 from .optimizer import ObjectiveFn
 from .sample import Sample
 from .specification import Specification
@@ -78,11 +85,13 @@ class Thunk(Generic[ET]):
     sample: Sample
     model: Model[ET]
     _specification: SpecificationOrFactory
-    options: Options
+    interval: Interval
+    n_static_parameters: int
+    signal_parameters: Sequence[SignalParameters]
 
     @property
     def system_inputs(self) -> SystemInputs:
-        return SystemInputs(self.sample, self.options)
+        return SystemInputs(self.sample, self.n_static_parameters, self.signal_parameters)
 
     @property
     def specification(self) -> Specification:
@@ -110,7 +119,7 @@ class Thunk(Generic[ET]):
         """
 
         model_start = time.perf_counter()
-        model_result = self.model.simulate(self.system_inputs, self.options.interval)
+        model_result = self.model.simulate(self.system_inputs, self.interval)
         model_stop = time.perf_counter()
 
         spec_start = time.perf_counter()
@@ -128,17 +137,27 @@ class ThunkGenerator(Generic[ET], Iterable[Thunk[ET]]):
     samples: Iterable[Sample]
     model: Model[ET]
     specification: SpecificationOrFactory
-    options: Options
+    interval: Interval
+    n_static_parameters: int
+    signal_parameters: Sequence[SignalParameters]
 
     def __iter__(self) -> Iterator[Thunk[ET]]:
         for sample in self.samples:
-            yield Thunk(sample, self.model, self.specification, self.options)
+            yield Thunk(
+                sample,
+                self.model,
+                self.specification,
+                self.interval,
+                self.n_static_parameters,
+                self.signal_parameters,
+            )
 
 
 def _evaluate(thunk: Thunk[ET]) -> Evaluation[ET]:
     return thunk.evaluate()
 
 
+@frozen()
 class CostFn(ObjectiveFn, Generic[ET]):
     """Class which represents the composition of a Model and Specification.
 
@@ -154,11 +173,12 @@ class CostFn(ObjectiveFn, Generic[ET]):
         history: List of all evaluations produced by this instance
     """
 
-    def __init__(self, model: Model[ET], specification: SpecificationOrFactory, options: Options):
-        self.model = model
-        self.specification = specification
-        self.options = options
-        self.history: List[Evaluation[ET]] = []
+    model: Model[ET]
+    specification: SpecificationOrFactory
+    interval: Interval
+    n_static_parameters: int
+    signal_parameters: Sequence[SignalParameters]
+    history: List[Evaluation[ET]] = field(init=False, factory=list)
 
     def eval_sample(self, sample: Sample) -> float:
         """Compute the cost of a single sample.
@@ -172,17 +192,22 @@ class CostFn(ObjectiveFn, Generic[ET]):
 
         logger.debug(f"Evaluating sample {sample}")
 
-        thunk = Thunk(sample, self.model, self.specification, self.options)
+        thunk = Thunk(
+            sample,
+            self.model,
+            self.specification,
+            self.interval,
+            self.n_static_parameters,
+            self.signal_parameters,
+        )
         evaluation = _evaluate(thunk)
 
         self.history.append(evaluation)
 
         return evaluation.cost
 
-    def eval_samples(self, samples: Sequence[Sample]) -> List[float]:
+    def eval_samples(self, samples: Iterable[Sample]) -> List[float]:
         """Compute the cost of multiple samples sequentially.
-
-        Samples are evaluated row-wise, so each row is considered a different sample.
 
         Args:
             samples: Samples to evaluate
@@ -193,14 +218,21 @@ class CostFn(ObjectiveFn, Generic[ET]):
 
         logger.debug(f"Evaluating samples {samples}")
 
-        thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
+        thunks = ThunkGenerator(
+            samples,
+            self.model,
+            self.specification,
+            self.interval,
+            self.n_static_parameters,
+            self.signal_parameters,
+        )
         evaluations = [_evaluate(thunk) for thunk in thunks]
 
         self.history.extend(evaluations)
 
         return [evaluation.cost for evaluation in evaluations]
 
-    def eval_samples_parallel(self, samples: Sequence[Sample], processes: int) -> List[float]:
+    def eval_samples_parallel(self, samples: Iterable[Sample], processes: int) -> List[float]:
         """Compute the cost of multiple samples in parallel.
 
         Samples are evaluated row-wise, so each row is considered a different sample.
@@ -215,7 +247,14 @@ class CostFn(ObjectiveFn, Generic[ET]):
 
         logger.debug(f"Evaluating samples {samples} with {processes} processes")
 
-        thunks = ThunkGenerator(samples, self.model, self.specification, self.options)
+        thunks = ThunkGenerator(
+            samples,
+            self.model,
+            self.specification,
+            self.interval,
+            self.n_static_parameters,
+            self.signal_parameters,
+        )
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=processes) as executor:
             futures: Iterable[Evaluation[ET]] = executor.map(_evaluate, thunks)
