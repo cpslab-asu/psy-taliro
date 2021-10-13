@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import List, TypeVar
+from itertools import accumulate
+from typing import Iterable, List, Sequence, TypeVar, cast
 
 import numpy as np
 
@@ -16,9 +17,9 @@ RT = TypeVar("RT")
 ET = TypeVar("ET")
 
 
-def _signal_parameters(options: SignalOptions) -> SignalParameters:
+def _signal_times(options: SignalOptions) -> List[float]:
     if options.signal_times is not None:
-        times: List[float] = options.signal_times
+        return options.signal_times
     else:
         times_array = np.linspace(
             start=options.bound.lower,
@@ -26,9 +27,25 @@ def _signal_parameters(options: SignalOptions) -> SignalParameters:
             num=options.control_points,
             dtype=np.float64,
         )
-        times = times_array.tolist()
 
-    return SignalParameters(n_points=options.control_points, times=times, factory=options.factory)
+        return cast(List[float], times_array.tolist())
+
+
+def _signal_parameters(signals: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
+    control_points = map(lambda s: s.control_points, signals)
+    range_starts = accumulate(control_points, initial=offset)
+    values_ranges = [slice(start, end) for start, end in zip(range_starts, control_points)]
+
+    def parameters(signal: SignalOptions, values_range: slice) -> SignalParameters:
+        return SignalParameters(values_range, _signal_times(signal), signal.factory)
+
+    return [
+        parameters(signal, values_range) for signal, values_range in zip(signals, values_ranges)
+    ]
+
+
+def _signal_bounds(signals: Iterable[SignalOptions]) -> List[Interval]:
+    return sum(([signal.bound] * signal.control_points for signal in signals), [])
 
 
 def staliro(
@@ -51,10 +68,8 @@ def staliro(
     Returns:
         An object containing the result of each optimization attempt.
     """
-    signal_parameters = [_signal_parameters(signal) for signal in options.signals]
-    signal_bounds: List[Interval] = sum(
-        ([signal.bound] * signal.control_points for signal in options.signals), []
-    )
+    static_params_end = len(options.static_parameters)
+    signal_parameters = _signal_parameters(options.signals, static_params_end)
 
     scenario = Scenario(
         model=model,
@@ -63,9 +78,9 @@ def staliro(
         iterations=options.iterations,
         seed=options.seed,
         processes=options.process_count,
-        bounds=options.static_parameters + signal_bounds,
+        bounds=options.static_parameters + _signal_bounds(options.signals),
         interval=options.interval,
-        n_static_parameters=len(options.static_parameters),
+        static_parameter_range=slice(0, static_params_end),
         signal_parameters=signal_parameters,
     )
 
