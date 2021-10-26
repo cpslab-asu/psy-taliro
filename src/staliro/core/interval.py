@@ -1,31 +1,29 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Tuple, Union
+from typing import Iterable, Iterator, Tuple, Union
 
 from attr import Attribute, field, frozen
 
 
-def _int_to_float(value: Union[int, float]) -> float:
-    return float(value) if type(value) is int else value
+def _bound_converter(value: Union[int, float]) -> float:
+    if isinstance(value, int):
+        return float(value)
+
+    if isinstance(value, float):
+        return value
+
+    raise TypeError("bounds can only be specified as int or float")
 
 
-def _lower_validator(obj: Any, attr: Attribute[Any], lower: Any) -> None:
-    if type(lower) is not float:
-        raise TypeError(f"unknown type {type(lower)} given as lower bound")
-
-
-def _upper_validator(obj: Interval, attr: Attribute[Any], upper: Any) -> None:
-    if type(upper) is not float:
-        raise TypeError(f"unknown type {type(upper)} given as upper bound")
-
-    if upper == obj.lower:
+def _upper_validator(inst: Interval, _: Attribute[float], upper: float) -> None:
+    if upper == inst.lower:
         raise ValueError("interval cannot have zero length")
 
-    if upper < obj.lower:
+    if upper < inst.lower:
         raise ValueError("interval upper bound must be greater than lower bound")
 
 
-@frozen()
+@frozen(slots=True)
 class Interval(Iterable[float]):
     """Representation of an interval of values.
 
@@ -38,18 +36,17 @@ class Interval(Iterable[float]):
         length: The length of the interval
     """
 
-    lower: float = field(converter=_int_to_float, validator=_lower_validator)
-    upper: float = field(converter=_int_to_float, validator=_upper_validator)
+    lower: float = field(converter=_bound_converter)
+    upper: float = field(converter=_bound_converter, validator=_upper_validator)
 
     def __iter__(self) -> Iterator[float]:
-        return iter(self.bounds)
-
-    @property
-    def bounds(self) -> Tuple[float, float]:
-        return (self.lower, self.upper)
+        return iter(self.astuple())
 
     @property
     def length(self) -> float:
         """The length of the interval."""
 
         return self.upper - self.lower
+
+    def astuple(self) -> Tuple[float, float]:
+        return (self.lower, self.upper)
