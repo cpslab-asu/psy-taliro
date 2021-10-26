@@ -6,12 +6,13 @@ from typing import Generic, Iterable, Optional, Sequence, TypeVar
 from attr import frozen
 
 from .cost import Evaluation
+from .interval import Interval
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")
 
 
-@frozen()
+@frozen(slots=True)
 class TimeStats:
     """Data class that represents the standard statistics of a set of durations."""
 
@@ -42,7 +43,7 @@ class TimeStats:
         return min(self.durations)
 
 
-@frozen()
+@frozen(slots=True)
 class Run(Generic[RT, ET]):
     """Data class that represents one run of an optimizer.
 
@@ -94,7 +95,7 @@ class Run(Generic[RT, ET]):
         return TimeStats(iteration.timing.specification for iteration in self.history)
 
 
-@frozen()
+@frozen(slots=True)
 class Result(Generic[RT, ET]):
     """Data class that represents a set of successful runs of the optimizer.
 
@@ -105,6 +106,7 @@ class Result(Generic[RT, ET]):
     """
 
     runs: Sequence[Run[RT, ET]]
+    interval: Interval
     seed: int
     processes: Optional[int]
 
