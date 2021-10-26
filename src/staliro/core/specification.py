@@ -25,3 +25,7 @@ class Specification(Protocol):
             A value indicating the "goodness" of the trajectories according to the requirement.
         """
         ...
+
+
+class SpecificationError(Exception):
+    pass
