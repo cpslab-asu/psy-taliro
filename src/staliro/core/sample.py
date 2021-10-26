@@ -1,29 +1,34 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, List, Sized, Union, cast
+from typing import Any, Iterable, Iterator, List, Sized, Tuple, Union, cast
 
-from numpy import ndarray
+from attr import frozen, field
+from numpy import ndarray, float64
 from numpy.typing import NDArray
-from attr import Attribute, frozen, field
 from typing_extensions import overload
 
 
-def _int_to_float(value: Any) -> Any:
-    return float(value) if type(value) is int else value
+def _value_converter(value: Any) -> float:
+    if isinstance(value, int):
+        return float(value)
+
+    if isinstance(value, float):
+        return value
+
+    raise TypeError("only int and float are valid sample value types")
 
 
-def _to_float_list(value: Union[NDArray[Any], Iterable[float], Iterable[int]]) -> List[float]:
+ValuesT = Union[NDArray[Any], List[float], Tuple[float, ...], List[int], Tuple[int, ...]]
+
+
+def _values_converter(value: ValuesT) -> Tuple[float, ...]:
     if isinstance(value, ndarray):
-        value_list = cast(List[Any], value.tolist())
-    else:
-        value_list = list(value)
+        return cast(Tuple[float, ...], tuple(value.astype(float64).tolist()))
 
-    return [_int_to_float(value) for value in value_list]
+    if isinstance(value, (list, tuple)):
+        return tuple(_value_converter(v) for v in value)
 
-
-def _values_validator(obj: Any, attr: Attribute[Any], values: List[Any]) -> None:
-    if not all(type(value) is float for value in values):
-        raise TypeError("sample values must all be floats")
+    raise TypeError("only ndarray, list and tuple are valid collections to create a sample")
 
 
 @frozen(slots=True)
@@ -37,7 +42,7 @@ class Sample(Sized, Iterable[float]):
         values: The sample values
     """
 
-    values: List[float] = field(converter=_to_float_list, validator=_values_validator)
+    values: Tuple[float, ...] = field(converter=_values_converter)
 
     def __len__(self) -> int:
         return len(self.values)
@@ -50,10 +55,10 @@ class Sample(Sized, Iterable[float]):
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> List[float]:
+    def __getitem__(self, index: slice) -> Tuple[float, ...]:
         ...
 
-    def __getitem__(self, index: Union[int, slice]) -> Union[float, List[float]]:
+    def __getitem__(self, index: Union[int, slice]) -> Union[float, Tuple[float, ...]]:
         if isinstance(index, (int, slice)):
             return self.values[index]
         else:
