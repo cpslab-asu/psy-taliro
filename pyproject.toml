@@ -37,6 +37,7 @@ tltk-mtl = "^0.0.27"
 sphinx-autobuild = "^2021.3.14"
 furo = "^2021.8.11-beta.42"
 rstcheck = "^3.3.1"
+plotly = "^5.3.1"
 
 [tool.black]
 line-length = 100
