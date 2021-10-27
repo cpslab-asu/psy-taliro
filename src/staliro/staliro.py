@@ -5,22 +5,22 @@ from typing import Iterable, List, Sequence, TypeVar, cast
 
 import numpy as np
 
-from .core.cost import SpecificationOrFactory
+from .core.cost import SpecificationOrFactory, SignalParameters, decompose_sample
 from .core.interval import Interval
-from .core.model import Model, SignalParameters
-from .options import Options, SignalOptions
+from .core.model import Model, ModelResult
 from .core.optimizer import Optimizer
 from .core.result import Result
+from .core.sample import Sample
 from .core.scenario import Scenario
+from .options import Options, SignalOptions
 
-RT = TypeVar("RT")
-ET = TypeVar("ET")
+StateT = TypeVar("StateT")
+ResultT = TypeVar("ResultT")
+ExtraT = TypeVar("ExtraT")
 
 
 def _signal_times(options: SignalOptions) -> List[float]:
-    if options.signal_times is not None:
-        return options.signal_times
-    else:
+    if options.signal_times is None:
         times_array = np.linspace(
             start=options.bound.lower,
             stop=options.bound.upper,
@@ -29,18 +29,20 @@ def _signal_times(options: SignalOptions) -> List[float]:
         )
 
         return cast(List[float], times_array.tolist())
+    else:
+        return options.signal_times
 
 
-def _signal_parameters(signals: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
-    control_points = map(lambda s: s.control_points, signals)
+def _signal_parameters(opts_seq: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
+    control_points = map(lambda opts: opts.control_points, opts_seq)
     range_starts = accumulate(control_points, initial=offset)
     values_ranges = [slice(start, end) for start, end in zip(range_starts, control_points)]
 
-    def parameters(signal: SignalOptions, values_range: slice) -> SignalParameters:
-        return SignalParameters(values_range, _signal_times(signal), signal.factory)
+    def parameters(opts: SignalOptions, values_range: slice) -> SignalParameters:
+        return SignalParameters(values_range, _signal_times(opts), opts.factory)
 
     return [
-        parameters(signal, values_range) for signal, values_range in zip(signals, values_ranges)
+        parameters(signal, values_range) for signal, values_range in zip(opts_seq, values_ranges)
     ]
 
 
@@ -49,11 +51,11 @@ def _signal_bounds(signals: Iterable[SignalOptions]) -> List[Interval]:
 
 
 def staliro(
-    model: Model[ET],
-    specification: SpecificationOrFactory,
-    optimizer: Optimizer[RT],
+    model: Model[StateT, ExtraT],
+    specification: SpecificationOrFactory[StateT],
+    optimizer: Optimizer[ResultT],
     options: Options,
-) -> Result[RT, ET]:
+) -> Result[ResultT, ExtraT]:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
@@ -70,18 +72,30 @@ def staliro(
     """
     static_params_end = len(options.static_parameters)
     signal_parameters = _signal_parameters(options.signals, static_params_end)
+    signal_bounds = _signal_bounds(options.signals)
+    bounds = options.static_parameters + signal_bounds
 
-    scenario = Scenario(
+    scenario: Scenario[StateT, ResultT, ExtraT] = Scenario(
         model=model,
         specification=specification,
         runs=options.runs,
         iterations=options.iterations,
         seed=options.seed,
         processes=options.process_count,
-        bounds=options.static_parameters + _signal_bounds(options.signals),
+        bounds=bounds,
         interval=options.interval,
         static_parameter_range=slice(0, static_params_end),
         signal_parameters=signal_parameters,
     )
 
     return scenario.run(optimizer)
+
+
+def simulate_model(
+    model: Model[StateT, ExtraT], options: Options, sample: Sample
+) -> ModelResult[StateT, ExtraT]:
+    static_range = slice(0, len(options.static_parameters))
+    signal_params = _signal_parameters(options.signals, static_range.stop)
+    static_inputs, signals = decompose_sample(sample, static_range, signal_params)
+
+    return model.simulate(static_inputs, signals, options.interval)
