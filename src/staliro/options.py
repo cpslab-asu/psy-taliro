@@ -20,10 +20,10 @@ class OptionsError(Exception):
     pass
 
 
-IntervalValueT = Union[Interval, List[float], List[int], Tuple[float, float], Tuple[int, int]]
+_IntervalValueT = Union[Interval, List[float], List[int], Tuple[float, float], Tuple[int, int]]
 
 
-def _to_interval(value: IntervalValueT) -> Interval:
+def _to_interval(value: _IntervalValueT) -> Interval:
     """Convert a value to an interval.
 
     This function only supports ordered collections because the order of values in the iterable
@@ -49,8 +49,8 @@ def _to_interval(value: IntervalValueT) -> Interval:
     raise TypeError(f"unsupported type {type(value)} provided as interval")
 
 
-SignalTimesValueT = Union[Sequence[float], Sequence[int], NDArray[Any]]
-SignalTimesT = List[float]
+_SignalTimesValueT = Union[Sequence[float], Sequence[int], NDArray[Any]]
+_SignalTimesT = List[float]
 
 
 def _to_signal_time(value: Union[int, float]) -> float:
@@ -63,7 +63,7 @@ def _to_signal_time(value: Union[int, float]) -> float:
     raise OptionsError(f"signal times must be of type float or int. Got {type(value)}")
 
 
-def _to_signal_times(values: SignalTimesValueT) -> SignalTimesT:
+def _to_signal_times(values: _SignalTimesValueT) -> _SignalTimesT:
     if isinstance(values, np.ndarray):
         return cast(List[float], values.astype(np.float64).tolist())
 
@@ -89,7 +89,7 @@ class SignalOptions:
     bound: Interval = field(converter=_to_interval)
     factory: SignalFactory = field(default=Pchip)
     control_points: int = field(default=10, converter=int)
-    signal_times: Optional[SignalTimesT] = field(default=None, converter=_to_signal_times)
+    signal_times: Optional[_SignalTimesT] = field(default=None, converter=_to_signal_times)
     time_varying: bool = field(default=False)
 
     @property
@@ -110,10 +110,10 @@ def _seed_factory() -> int:
     return random.randint(0, sys.maxsize)
 
 
-ParallelizationT = Union[None, Literal["all", "cores"], int]
+_ParallelizationT = Union[None, Literal["all", "cores"], int]
 
 
-def _parallelization_validator(_: Any, attr: Attribute[Any], value: ParallelizationT) -> None:
+def _parallelization_validator(_: Any, attr: Attribute[Any], value: _ParallelizationT) -> None:
     is_none = value is None
     is_valid_str = value in {"all", "cores"}
     is_int = isinstance(value, int)
@@ -149,7 +149,7 @@ class Options:
     iterations: int = field(default=400, converter=int)
     runs: int = field(default=1, converter=int)
     interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
-    parallelization: ParallelizationT = field(default=None, validator=_parallelization_validator)
+    parallelization: _ParallelizationT = field(default=None, validator=_parallelization_validator)
 
     @property
     def process_count(self) -> Optional[int]:
