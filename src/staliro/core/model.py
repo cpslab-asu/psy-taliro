@@ -15,11 +15,14 @@ Times = NDArray[np.float_]
 
 
 def _times_validator(obj: Any, attr: Attribute[Any], times: Times) -> None:
-    if not np.issubdtype(times.dtype, np.float_):
-        raise TypeError()
+    if not isinstance(times, np.ndarray):
+        raise TypeError("timestamps must be provided as a NDArray")
+
+    if not np.issubdtype(times.dtype, np.floating):
+        raise TypeError("timestamp values must be floating point values")
 
     if times.ndim != 1:
-        raise ValueError()
+        raise ValueError("timestamps must be 1-dimensional")
 
 
 StateT = TypeVar("StateT")
