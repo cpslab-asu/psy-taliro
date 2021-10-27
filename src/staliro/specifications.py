@@ -2,40 +2,42 @@ from __future__ import annotations
 
 import statistics as stats
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, Literal, NamedTuple
+from typing import Dict, Iterable, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification, Semantics
-except:
+    from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification, LTLPastifyException
+    from rtamt import Semantics
+except ImportError:
     _has_rtamt = False
 else:
     _has_rtamt = True
 
-from .core import Specification
-from .parser import parse
+from .core import Specification, SpecificationError
 
+try:
+    from .parser import parse
+except ImportError:
+    _can_parse = False
+else:
+    _can_parse = True
+
+
+StateT = TypeVar("StateT")
 PredicateName = str
-PredicateDTypes = Literal["float", "float32", "float64"]
+ColumnT = int
+PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 
-class PredicateProps(NamedTuple):
-    column: int
-    dtype: PredicateDTypes = "float"
-
-
-PredicateMap = Dict[PredicateName, PredicateProps]
-
-
-class StlSpecification(Specification, ABC):
+class StlSpecification(Specification[StateT], ABC):
     @abstractmethod
-    def __init__(self, requirement: str, predicate_map: PredicateMap):
+    def __init__(self, requirement: str, column_map: PredicateColumnMap):
         ...
 
 
-class TLTK(StlSpecification):
+class TLTK(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses TLTK to compute robustness values.
 
     Attributes:
@@ -43,22 +45,27 @@ class TLTK(StlSpecification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicate_map: PredicateMap):
-        predicate_names = predicate_map.keys()
-        parsed = parse(phi, list(predicate_names))
+    def __init__(self, phi: str, column_map: PredicateColumnMap):
+        if not _can_parse:
+            raise RuntimeError(
+                "TLTK specifications require parsing functionality. Please refer to the documentation for how to enable parsing."
+            )
 
-        if parsed is None:
-            raise RuntimeError("Could not parse requirement")
+        tltk_obj = parse(phi, list(column_map.keys()))
 
-        self.tltk_obj = parsed
-        self.props = predicate_map
+        if tltk_obj is None:
+            raise SpecificationError("could not parse formula")
+
+        self.tltk_obj = tltk_obj
+        self.column_map = column_map
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        prop_map = self.props.items()
-        traces = {name: states[props.column].astype(props.dtype) for name, props in prop_map}
+        map_items = self.column_map.items()
+        traces = {name: np.array(states[column], dtype=np.float64) for name, column in map_items}
+        timestamps = np.array(times, dtype=np.float32)
 
         self.tltk_obj.reset()
-        self.tltk_obj.eval_interval(traces, np.array(times, dtype=np.float32))
+        self.tltk_obj.eval_interval(traces, timestamps)
 
         return self.tltk_obj.robustness
 
@@ -70,7 +77,7 @@ def _step_widths(times: NDArray[np.float_]) -> Iterable[float]:
         yield abs(times[i] - times[i + 1])
 
 
-class RTAMTDiscrete(StlSpecification):
+class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT discrete-time semantics to compute robustness.
 
     Attributes:
@@ -78,20 +85,20 @@ class RTAMTDiscrete(StlSpecification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicate_map: PredicateMap):
+    def __init__(self, phi: str, column_map: PredicateColumnMap):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
 
-        if "time" in predicate_map:
-            raise ValueError("'time' cannot be used as a predicate name for RTAMT")
+        if "time" in column_map:
+            raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
 
         self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
 
         self.rtamt_obj.spec = phi
-        self.props = {name: props.column for name, props in predicate_map.items()}
+        self.column_map = column_map
 
-        for name, options in predicate_map.items():
-            self.rtamt_obj.declare_var(name, options.dtype)
+        for name in column_map:
+            self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
         from rtamt import LTLPastifyException
@@ -110,7 +117,8 @@ class RTAMTDiscrete(StlSpecification):
             pass
 
         traces = {"time": times.tolist()}
-        for name, column in self.props.items():
+
+        for name, column in self.column_map.items():
             traces[name] = states[column].tolist()
 
         # traces: Dict['time': timestamps, 'variable'(s): trajectories]
@@ -119,7 +127,7 @@ class RTAMTDiscrete(StlSpecification):
         return robustness[-1][1]
 
 
-class RTAMTDense(StlSpecification):
+class RTAMTDense(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT dense-time semantics to compute robustness.
 
     Attributes:
@@ -127,21 +135,18 @@ class RTAMTDense(StlSpecification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicate_map: PredicateMap):
+    def __init__(self, phi: str, column_map: PredicateColumnMap):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
 
         self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
-
-        self.props = {name: predicate.column for name, predicate in predicate_map.items()}
+        self.column_map = column_map
         self.rtamt_obj.spec = phi
 
-        for name, options in predicate_map.items():
-            self.rtamt_obj.declare_var(name, options.dtype)
+        for name in column_map:
+            self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        from rtamt import LTLPastifyException
-
         self.rtamt_obj.reset()
 
         # parse AFTER declaring variables
@@ -152,10 +157,11 @@ class RTAMTDense(StlSpecification):
         except LTLPastifyException:
             pass
 
-        column_map = self.props.items()
-        traces = [(name, np.array([times, states[col]]).T.tolist()) for name, col in column_map]
+        map_items = self.column_map.items()
+        traces = [
+            (name, np.array([times, states[column]]).T.tolist()) for name, column in map_items
+        ]
 
-        # traces: List[Tuple[name, List[Tuple[timestamp, trajectory]]]
         robustness = self.rtamt_obj.evaluate(*traces)
 
         return robustness[-1][1]
