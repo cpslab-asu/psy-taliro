@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from itertools import islice
@@ -115,7 +114,7 @@ class ExperimentGenerator(
                 self.optimizer,
                 self.bounds,
                 self.iterations,
-                self.rng.integers(0, sys.maxsize),
+                self.rng.integers(0, 2 ** 32 - 1),
             )
 
 
