@@ -141,11 +141,11 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
 
             return False
 
-        result: optimize.OptimizeResult = optimize.dual_annealing(
+        result = optimize.dual_annealing(
             wrapper,
             [bound.astuple() for bound in bounds],
             seed=seed,
-            maxiter=budget,
+            maxfun=budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
             callback=listener,
         )
