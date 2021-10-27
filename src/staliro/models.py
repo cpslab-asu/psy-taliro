@@ -33,7 +33,7 @@ class Blackbox(Model[StateT, ExtraT]):
                            interval
     """
 
-    def __init__(self, func: BlackboxFunc[StateT, ExtraT], sampling_interval: float = 0.1):
+    def __init__(self, func: BlackboxFunc[StateT, ExtraT], sampling_interval: float):
         self.func = func
         self.sampling_interval = sampling_interval
 
