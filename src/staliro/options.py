@@ -99,7 +99,10 @@ class SignalOptions:
         return [self.bound] * self.control_points
 
 
-def _to_intervals(values: Sequence[Interval]) -> List[Interval]:
+_IntervalSeqT = Sequence[_IntervalValueT]
+
+
+def _to_intervals(values: _IntervalSeqT) -> List[Interval]:
     if isinstance(values, cabc.Sequence):
         return [_to_interval(value) for value in values]
 
