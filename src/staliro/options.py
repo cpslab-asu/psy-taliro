@@ -20,7 +20,15 @@ class OptionsError(Exception):
     pass
 
 
-_IntervalValueT = Union[Interval, List[float], List[int], Tuple[float, float], Tuple[int, int]]
+_IntervalValueT = Union[
+    Interval,
+    List[float],
+    List[int],
+    Tuple[float, float],
+    Tuple[int, int],
+    NDArray[np.float_],
+    NDArray[np.int_],
+]
 
 
 def _to_interval(value: _IntervalValueT) -> Interval:
@@ -39,6 +47,9 @@ def _to_interval(value: _IntervalValueT) -> Interval:
 
     if isinstance(value, Interval):
         return value
+
+    if isinstance(value, np.ndarray):
+        return _to_interval(value.tolist())
 
     if isinstance(value, (list, tuple)):
         if len(value) != 2:
