@@ -113,9 +113,9 @@ class DualAnnealingResult:
         hessian_evals: Number of times the hessian of the cost function was evaluated
     """
 
-    jacobian_value: NDArray[np.float_]
+    jacobian_value: Optional[NDArray[np.float_]]
     jacobian_evals: int
-    hessian_value: NDArray[np.float_]
+    hessian_value: Optional[NDArray[np.float_]]
     hessian_evals: int
 
 
@@ -150,4 +150,18 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
             callback=listener,
         )
 
-        return DualAnnealingResult(result.jac, result.njev, result.hess, result.nhev)
+        try:
+            jac: Optional[NDArray[np.float_]] = result.jac
+            njev = result.njev
+        except AttributeError:
+            jac = None
+            njev = 0
+
+        try:
+            hess: Optional[NDArray[np.float_]] = result.hess
+            nhev = result.nhev
+        except AttributeError:
+            hess = None
+            nhev = 0
+
+        return DualAnnealingResult(jac, njev, hess, nhev)
