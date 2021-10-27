@@ -5,18 +5,7 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from itertools import islice
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Generic, Iterable, Iterator, Optional, Sequence, TypeVar, Union
 
 from attr import Attribute, frozen, field
 from attr.validators import deep_iterable, instance_of, optional
@@ -135,7 +124,14 @@ def _run_experiment(experiment: Experiment[Any, ResultT, ExtraT]) -> Run[ResultT
 
 
 def _slice_length(s: slice) -> int:
-    return cast(int, (s.stop - s.start) // s.step)
+    diff: int = s.stop - s.start
+
+    if s.step is None:
+        step: int = 1
+    else:
+        step = s.step
+
+    return diff // step
 
 
 def _validate_specification(
