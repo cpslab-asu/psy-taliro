@@ -166,11 +166,7 @@ def _validate_signal_params(
         raise ValueError("signal values range is greater than the number of bounds")
 
 
-_ValueT = TypeVar("_ValueT")
-_Validator = Callable[[Any, Attribute[_ValueT], _ValueT], None]
-
-
-def _greater_than(bound: float) -> _Validator[Any]:
+def _greater_than(bound: float) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if float(value) <= bound:
             raise ValueError(f"{attr.name} must be greater than {bound}")
@@ -178,7 +174,7 @@ def _greater_than(bound: float) -> _Validator[Any]:
     return validator
 
 
-def _min_length(length: int) -> _Validator[Sequence[Any]]:
+def _min_length(length: int) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Sequence[Any]], value: Sequence[Any]) -> None:
         if len(value) < length:
             raise ValueError(f"{attr.name} must have minimum length of {length}")
@@ -186,7 +182,9 @@ def _min_length(length: int) -> _Validator[Sequence[Any]]:
     return validator
 
 
-def _subclass_of(class_t: Union[type, tuple[type, ...]]) -> _Validator[Any]:
+def _subclass_of(
+    class_t: Union[type, tuple[type, ...]]
+) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if not issubclass(type(value), class_t):
             raise TypeError(f"Expected {attr.name} to have type {class_t}. Got {type(value)}")
