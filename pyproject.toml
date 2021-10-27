@@ -38,6 +38,7 @@ sphinx-autobuild = "^2021.3.14"
 furo = "^2021.8.11-beta.42"
 rstcheck = "^3.3.1"
 plotly = "^5.3.1"
+aerobench = {git = "https://github.com/qthibeault/aerobenchvvpython.git"}
 
 [tool.black]
 line-length = 100
