@@ -36,7 +36,7 @@ def _signal_times(options: SignalOptions) -> List[float]:
 def _signal_parameters(opts_seq: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
     control_points = map(lambda opts: opts.control_points, opts_seq)
     range_starts = accumulate(control_points, initial=offset)
-    values_ranges = [slice(start, end) for start, end in zip(range_starts, control_points)]
+    values_ranges = [slice(start, end, 1) for start, end in zip(range_starts, control_points)]
 
     def parameters(opts: SignalOptions, values_range: slice) -> SignalParameters:
         return SignalParameters(values_range, _signal_times(opts), opts.factory)
@@ -84,7 +84,7 @@ def staliro(
         processes=options.process_count,
         bounds=bounds,
         interval=options.interval,
-        static_parameter_range=slice(0, static_params_end),
+        static_parameter_range=slice(0, static_params_end, 1),
         signal_parameters=signal_parameters,
     )
 
