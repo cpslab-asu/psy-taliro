@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, List, Optional, Sequence, TypeVar, Union
+from typing import Callable, List, Literal, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -67,6 +67,9 @@ class IntegrationFunc:
         return self.func(time, state, signal_values)
 
 
+_MethodT = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]
+
+
 class ODE(Model[NDArray[np.float_], None]):
     """Model which assumes the underlying system is modeled by an Ordinary Differential Equation.
 
@@ -75,12 +78,18 @@ class ODE(Model[NDArray[np.float_], None]):
               values and returns a new state.
     """
 
-    def __init__(self, func: ODEFunc):
+    def __init__(self, func: ODEFunc, method: _MethodT):
         self.func = func
+        self.method = method
 
-    def simulate(self, static: StaticInput, sigs: Signals, interval: Interval) -> ODEData:
-        integration_fn = IntegrationFunc(sigs, self.func)
-        integration = integrate.solve_ivp(integration_fn, interval.astuple(), static)
+    def simulate(self, static: StaticInput, signals: Signals, interval: Interval) -> ODEData:
+        integration_fn = IntegrationFunc(signals, self.func)
+        integration = integrate.solve_ivp(
+            fun=integration_fn,
+            t_span=interval.astuple(),
+            y0=static,
+            method=self.method,
+        )
 
         return ModelData(integration.y, integration.t)
 
@@ -129,7 +138,7 @@ _ODEDecorator = Callable[[ODEFunc], ODE]
 
 
 @overload
-def ode() -> _ODEDecorator:
+def ode(*, method: _MethodT = ...) -> _ODEDecorator:
     ...
 
 
@@ -138,7 +147,7 @@ def ode(_func: ODEFunc) -> ODE:
     ...
 
 
-def ode(_func: Optional[ODEFunc] = None) -> Union[_ODEDecorator, ODE]:
+def ode(_func: Optional[ODEFunc] = None, *, method: _MethodT = "RK45") -> Union[_ODEDecorator, ODE]:
     """Decorate a function as an ODE model.
 
     This decorator can be used with or without arguments.
@@ -151,7 +160,7 @@ def ode(_func: Optional[ODEFunc] = None) -> Union[_ODEDecorator, ODE]:
     """
 
     def decorator(func: ODEFunc) -> ODE:
-        return ODE(func)
+        return ODE(func, method)
 
     if _func is not None:
         return decorator(_func)
