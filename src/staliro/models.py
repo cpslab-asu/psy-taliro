@@ -9,18 +9,20 @@ from scipy import integrate
 from typing_extensions import overload
 
 from .core.interval import Interval
-from .core.model import Model, SystemInputs, Trajectories
+from .core.model import Model, ModelResult, ModelData, StaticInput
 from .core.signal import Signal
 
-T = TypeVar("T")
+StateT = TypeVar("StateT")
+ExtraT = TypeVar("ExtraT")
 
-StaticParameters = List[float]
+Signals = Sequence[Signal]
+StaticParameters = Sequence[float]
 SignalTimes = NDArray[np.float_]
 SignalValues = NDArray[np.float_]
-BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], Trajectories[T]]
+BlackboxFunc = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResult[StateT, ExtraT]]
 
 
-class Blackbox(Model[T]):
+class Blackbox(Model[StateT, ExtraT]):
     """General system model which does not make assumptions about the underlying system.
 
     Attributes:
@@ -31,25 +33,28 @@ class Blackbox(Model[T]):
                            interval
     """
 
-    def __init__(self, func: BlackboxFunc[T], sampling_interval: float = 0.1):
+    def __init__(self, func: BlackboxFunc[StateT, ExtraT], sampling_interval: float = 0.1):
         self.func = func
         self.sampling_interval = sampling_interval
 
-    def simulate(self, inputs: SystemInputs, interval: Interval) -> Trajectories[T]:
+    def simulate(
+        self, static: StaticInput, signals: Signals, interval: Interval
+    ) -> ModelResult[StateT, ExtraT]:
         duration = interval.upper - interval.lower
         step_count = math.floor(duration / self.sampling_interval)
         signal_times = np.linspace(start=interval.lower, stop=interval.upper, num=step_count)
         signal_times_list: List[float] = signal_times.tolist()
 
-        signal_traces = [signal.at_times(signal_times_list) for signal in inputs.signals]
+        signal_traces = [signal.at_times(signal_times_list) for signal in signals]
 
-        return self.func(inputs.static, signal_times, np.array(signal_traces))
+        return self.func(static, signal_times, np.array(signal_traces))
 
 
 Time = float
 State = NDArray[np.float_]
 IntegrationFn = Callable[[Time, State], State]
 ODEFunc = Callable[[Time, State, SignalValues], State]
+ODEData = ModelData[NDArray[np.float_], None]
 
 
 class IntegrationFunc:
@@ -62,7 +67,7 @@ class IntegrationFunc:
         return self.func(time, state, signal_values)
 
 
-class ODE(Model[None]):
+class ODE(Model[NDArray[np.float_], None]):
     """Model which assumes the underlying system is modeled by an Ordinary Differential Equation.
 
     Attributes:
@@ -73,29 +78,31 @@ class ODE(Model[None]):
     def __init__(self, func: ODEFunc):
         self.func = func
 
-    def simulate(self, inputs: SystemInputs, interval: Interval) -> Trajectories[None]:
-        integration_fn = IntegrationFunc(inputs.signals, self.func)
-        integration = integrate.solve_ivp(integration_fn, interval.bounds, inputs.static)
+    def simulate(self, static: StaticInput, sigs: Signals, interval: Interval) -> ODEData:
+        integration_fn = IntegrationFunc(sigs, self.func)
+        integration = integrate.solve_ivp(integration_fn, interval.astuple(), static)
 
-        return Trajectories(integration.y, integration.t)
+        return ModelData(integration.y, integration.t)
 
 
-_BlackboxDecorator = Callable[[BlackboxFunc[T]], Blackbox[T]]
+_BlackboxDecorator = Callable[[BlackboxFunc[StateT, ExtraT]], Blackbox[StateT, ExtraT]]
 
 
 @overload
-def blackbox(*, sampling_interval: float = ...) -> Callable[[BlackboxFunc[T]], Blackbox[T]]:
+def blackbox(
+    *, sampling_interval: float = ...
+) -> Callable[[BlackboxFunc[StateT, ExtraT]], Blackbox[StateT, ExtraT]]:
     ...
 
 
 @overload
-def blackbox(_func: BlackboxFunc[T]) -> Blackbox[T]:
+def blackbox(_func: BlackboxFunc[StateT, ExtraT]) -> Blackbox[StateT, ExtraT]:
     ...
 
 
 def blackbox(
-    _func: Optional[BlackboxFunc[T]] = None, *, sampling_interval: float = 0.1
-) -> Union[Blackbox[T], _BlackboxDecorator[T]]:
+    _func: Optional[BlackboxFunc[StateT, ExtraT]] = None, *, sampling_interval: float = 0.1
+) -> Union[Blackbox[StateT, ExtraT], _BlackboxDecorator[StateT, ExtraT]]:
     """Decorate a function as a blackbox model.
 
     This decorator can be used with or without arguments.
@@ -109,7 +116,7 @@ def blackbox(
         A blackbox model
     """
 
-    def decorator(func: BlackboxFunc[T]) -> Blackbox[T]:
+    def decorator(func: BlackboxFunc[StateT, ExtraT]) -> Blackbox[StateT, ExtraT]:
         return Blackbox(func, sampling_interval)
 
     if _func is not None:
