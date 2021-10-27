@@ -18,6 +18,7 @@ from .core.optimizer import Optimizer, ObjectiveFn
 from .core.sample import Sample
 
 Samples = Sequence[Sample]
+Bounds = Sequence[Interval]
 
 
 class Behavior(enum.IntEnum):
@@ -73,9 +74,9 @@ class UniformRandom(Optimizer[UniformRandomResult]):
         self.behavior = behavior
 
     def optimize(
-        self, func: ObjectiveFn, bounds: Sequence[Interval], budget: int, seed: int
+        self, func: ObjectiveFn, bounds: Bounds, budget: int, seed: int
     ) -> UniformRandomResult:
-        def sample_uniform(bounds: Sequence[Interval], rng: Generator) -> Sample:
+        def sample_uniform(bounds: Bounds, rng: Generator) -> Sample:
             return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
         def minimize(samples: Samples, func: ObjectiveFn, nprocs: Optional[int]) -> Iterable[float]:
@@ -129,7 +130,7 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
         self.behavior = behavior
 
     def optimize(
-        self, func: ObjectiveFn, bounds: Sequence[Interval], budget: int, seed: int
+        self, func: ObjectiveFn, bounds: Bounds, budget: int, seed: int
     ) -> DualAnnealingResult:
         def wrapper(values: NDArray[np.float_]) -> float:
             return func.eval_sample(Sample(values))
@@ -142,7 +143,7 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
 
         result: optimize.OptimizeResult = optimize.dual_annealing(
             wrapper,
-            [interval.bounds for interval in bounds],
+            [bound.astuple() for bound in bounds],
             seed=seed,
             maxiter=budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
