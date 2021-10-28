@@ -35,7 +35,8 @@ class BlackboxTestCase(TestCase):
 
         self.assertEqual(result, func.return_value)
 
-        self.assertListEqual(static_inputs, fn_static_inputs)
+        for value, fn_value in zip(static_inputs, fn_static_inputs):
+            self.assertEqual(value, fn_value)
 
         self.assertIsInstance(signal_times, ndarray)
         self.assertEqual(signal_times.ndim, 1)
