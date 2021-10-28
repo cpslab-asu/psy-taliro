@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from math import inf
 from typing import Any
-from unittest import TestCase, skip
+from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock
 
 from staliro.core.cost import (
@@ -188,22 +188,6 @@ class CostFnTestCase(TestCase):
         self.assertEqual(self.cost_fn.history[0].sample, samples[0])
         self.assertEqual(self.cost_fn.history[1].sample, samples[1])
 
-    def test_eval_samples_parallel(self) -> None:
-        samples = [Sample([1, 2, 3, 4]), Sample([5, 6, 7, 8])]
-        costs = self.cost_fn.eval_samples_parallel(samples, processes=1)
-
-        self.model.simulate.assert_called()
-        self.assertEqual(self.model.simulate.call_count, 2)
-
-        self.specification.evaluate.assert_called()
-        self.assertEqual(self.specification.evaluate.call_count, 2)
-
-        self.assertListEqual(costs, [self.specification.evaluate.return_value] * 2)
-
-        self.assertEqual(len(self.cost_fn.history), 2)
-        self.assertEqual(self.cost_fn.history[0].sample, samples[0])
-        self.assertEqual(self.cost_fn.history[1].sample, samples[1])
-
     def test_single_vs_many_samples(self) -> None:
         samples = [Sample([1, 2, 3, 4]), Sample([5, 6, 7, 8])]
         single_cost_fn: CostFn[Any, Any] = CostFn(
@@ -220,20 +204,13 @@ class CostFnTestCase(TestCase):
             self.static_parameter_range,
             self.signal_parameters,
         )
-        parallel_cost_fn: CostFn[Any, Any] = CostFn(
-            self.model,
-            self.specification,
-            self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
-        )
 
         single_costs = [single_cost_fn.eval_sample(sample) for sample in samples]
         many_costs = many_cost_fn.eval_samples(samples)
-        parallel_costs = parallel_cost_fn.eval_samples_parallel(samples, processes=1)
-
-        self.assertListEqual(single_cost_fn.history, many_cost_fn.history)
-        self.assertListEqual(many_cost_fn.history, parallel_cost_fn.history)
 
         self.assertListEqual(single_costs, many_costs)
-        self.assertListEqual(many_costs, parallel_costs)
+
+        for single_eval, many_eval in zip(single_cost_fn.history, many_cost_fn.history):
+            self.assertEqual(single_eval.sample, many_eval.sample)
+            self.assertEqual(single_eval.cost, many_eval.cost)
+            self.assertEqual(single_eval.extra, many_eval.extra)
