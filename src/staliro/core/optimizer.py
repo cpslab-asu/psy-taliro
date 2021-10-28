@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, Protocol, Sequence, TypeVar
+from typing import Generic, Sequence, TypeVar
+
+from typing_extensions import Protocol
 
 from .interval import Interval
 from .sample import Sample

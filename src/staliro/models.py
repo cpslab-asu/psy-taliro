@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, List, Literal, Optional, Sequence, TypeVar, Union
+from typing import Callable, List, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 from scipy import integrate
-from typing_extensions import overload
+from typing_extensions import Literal, overload
 
 from .core.interval import Interval
 from .core.model import Model, ModelResult, ModelData, StaticInput
