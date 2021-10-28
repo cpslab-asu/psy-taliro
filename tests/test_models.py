@@ -30,13 +30,12 @@ class BlackboxTestCase(TestCase):
 
         func.assert_called_once()
 
-        fn_static_inputs, signal_times, signal_traces = func.call_args.args
+        fn_args, fn_kwargs = func.call_args
+        fn_static_inputs, signal_times, signal_traces = fn_args
         expected_n_points = int(interval.length / sampling_interval)
 
         self.assertEqual(result, func.return_value)
-
-        for value, fn_value in zip(static_inputs, fn_static_inputs):
-            self.assertEqual(value, fn_value)
+        self.assertListEqual(static_inputs, fn_static_inputs)
 
         self.assertIsInstance(signal_times, ndarray)
         self.assertEqual(signal_times.ndim, 1)
