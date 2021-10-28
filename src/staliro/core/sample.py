@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, List, Sized, Tuple, Union, cast
+from typing import Any, Iterable, Iterator, Sequence, Sized, Tuple, Union, cast
 
 from attr import frozen, field
 from numpy import ndarray, float64
@@ -18,10 +18,10 @@ def _value_converter(value: Any) -> float:
     raise TypeError("only int and float are valid sample value types")
 
 
-ValuesT = Union[NDArray[Any], List[float], Tuple[float, ...], List[int], Tuple[int, ...]]
+_ValuesT = Union[NDArray[Any], Sequence[int], Sequence[float]]
 
 
-def _values_converter(value: ValuesT) -> Tuple[float, ...]:
+def _values_converter(value: _ValuesT) -> Tuple[float, ...]:
     if isinstance(value, ndarray):
         return cast(Tuple[float, ...], tuple(value.astype(float64).tolist()))
 
