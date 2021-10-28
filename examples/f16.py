@@ -1,5 +1,6 @@
 import logging
 import math
+from os import path
 
 import numpy as np
 import plotly.graph_objects as go
@@ -73,4 +74,4 @@ if __name__ == "__main__":
     )
     figure.update_layout(xaxis_title="time (s)", yaxis_title="alt (m)")
     figure.add_hline(y=0, line_color="red")
-    figure.show()
+    figure.write_image("f16.jpeg")

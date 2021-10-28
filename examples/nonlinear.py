@@ -81,4 +81,4 @@ if __name__ == "__main__":
             line=go.scatter.Line(color="blue", shape="spline"),
         )
     )
-    figure.show()
+    figure.write_image("nonlinear.jpeg")

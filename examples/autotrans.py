@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 import plotly.graph_objects as go
-import plotly.subplots as subp
+import plotly.subplots as sp
 from numpy.typing import NDArray
 from staliro.core.interval import Interval
 from staliro.core.model import Model, ModelData, Failure, StaticInput, Signals
@@ -81,9 +81,9 @@ if __name__ == "__main__":
 
     assert not isinstance(best_result, Failure)
 
-    figure = subp.make_subplots(rows=2, cols=1, shared_xaxes=True, x_title="Time (s)")
+    figure = sp.make_subplots(rows=2, cols=1, shared_xaxes=True, x_title="Time (s)")
     figure.add_trace(go.Scatter(x=best_result.times, y=best_result.states[0]), row=1, col=1)
     figure.add_trace(go.Scatter(x=best_result.times, y=best_result.states[1]), row=2, col=1)
     figure.update_yaxes(title_text="RPM", row=1, col=1)
     figure.update_yaxes(title_text="Speed", row=1, col=1)
-    figure.show()
+    figure.write_image("autotrans.jpeg")
