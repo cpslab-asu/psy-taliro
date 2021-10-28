@@ -345,18 +345,18 @@ Putting these together, we get a module that looks like the following:
 Analyzing test results
 ----------------------
 
-The output of the ``staliro`` function is a result object, which has two attributes:
+The output of the ``staliro`` function is a :ref:`Result <result>` object, which has two attributes:
 
 - ``runs``
 - ``options``
 
-The ``runs`` attribute has the result of each run of the optimizer. Each result contains the output
-of the optimizer, as well as the evaluation history of the cost function for that run. The result
-from the optimizer is accessible as the ``result`` attribute, the history is available as the
-``history`` attribute, and the total runtime as the ``duration`` attribute. The result object also
-has the properties ``best_iter`` and ``fastest_iter`` that correspond to evaluations in the history.
-Each element of the history is an :ref:`Evaluation <evaluation>` instance which contains the
-``sample``, ``cost``, ``extra`` and ``timing`` information from the evaluation.
+The ``runs`` attribute has the result of each run of the optimizer. Each :ref:`Run <run>` contains
+the output of the optimizer, as well as the evaluation history of the cost function for that run.
+The result from the optimizer is accessible as the ``result`` attribute, the history is available as
+the ``history`` attribute, and the total runtime as the ``duration`` attribute. The result object
+also has the properties ``best_iter`` and ``fastest_iter`` that correspond to evaluations in the
+history.  Each element of the history is an :ref:`Evaluation <evaluation>` instance which contains
+the ``sample``, ``cost``, ``extra`` and ``timing`` information from the evaluation.
 
 The ``options`` attribute of the result object contains the options object that was provided to the
 ``staliro`` function to be used as reference or for storage.
