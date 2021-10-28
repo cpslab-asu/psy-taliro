@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import random
 import collections.abc as cabc
-from typing import Any, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 from attr import Attribute, field, frozen
 from attr.validators import deep_iterable, instance_of
+from attr.converters import optional
 from numpy.typing import NDArray
+from typing_extensions import Literal
 
 from .core.interval import Interval
 from .core.signal import SignalFactory
@@ -28,6 +30,26 @@ _IntervalValueT = Union[
     NDArray[np.float_],
     NDArray[np.int_],
 ]
+
+
+def _strict_float(value: Union[int, float]) -> float:
+    if isinstance(value, int):
+        return float(value)
+
+    if isinstance(value, float):
+        return value
+
+    raise OptionsError(f"Expected float or int, received {type(value)}")
+
+
+def _strict_int(value: Union[int, float]) -> int:
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float):
+        return int(value)
+
+    raise OptionsError(f"Expected float or int, received {type(value)}")
 
 
 def _to_interval(value: _IntervalValueT) -> Interval:
@@ -63,22 +85,12 @@ _SignalTimesValueT = Union[Sequence[float], Sequence[int], NDArray[Any]]
 _SignalTimesT = List[float]
 
 
-def _to_signal_time(value: Union[int, float]) -> float:
-    if isinstance(value, int):
-        return float(value)
-
-    if isinstance(value, float):
-        return value
-
-    raise OptionsError(f"signal times must be of type float or int. Got {type(value)}")
-
-
 def _to_signal_times(values: _SignalTimesValueT) -> _SignalTimesT:
     if isinstance(values, np.ndarray):
         return cast(List[float], values.astype(np.float64).tolist())
 
     if isinstance(values, cabc.Sequence):
-        return [_to_signal_time(value) for value in values]
+        return [_strict_float(value) for value in values]
 
     raise OptionsError(f"signal times must be provided as an ordered sequence. Got {type(values)}")
 
@@ -98,8 +110,10 @@ class SignalOptions:
 
     bound: Interval = field(converter=_to_interval)
     factory: SignalFactory = field(default=Pchip)
-    control_points: int = field(default=10, converter=int)
-    signal_times: Optional[_SignalTimesT] = field(default=None, converter=_to_signal_times)
+    control_points: int = field(default=10, converter=_strict_int)
+    signal_times: Optional[_SignalTimesT] = field(
+        default=None, converter=optional(_to_signal_times)
+    )
     time_varying: bool = field(default=False)
 
     @property
@@ -158,9 +172,9 @@ class Options:
     signals: Sequence[SignalOptions] = field(
         factory=list, validator=deep_iterable(instance_of(SignalOptions))
     )
-    seed: int = field(factory=_seed_factory)
-    iterations: int = field(default=400, converter=int)
-    runs: int = field(default=1, converter=int)
+    seed: int = field(factory=_seed_factory, converter=_strict_int)
+    iterations: int = field(default=400, converter=_strict_int)
+    runs: int = field(default=1, converter=_strict_int)
     interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
     parallelization: _ParallelizationT = field(default=None, validator=_parallelization_validator)
 
