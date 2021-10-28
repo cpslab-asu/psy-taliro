@@ -14,13 +14,17 @@ Virtualenv
 
 The oldest of the virtual environment management tools, the virtualenv command is fairly primitive
 in comparison to the other tools described here. Virtual environments can be created by running the
-command::
+command
+
+.. code-block:: console
 
     virtualenv <directory name>
 
 Traditionally, virtual environments are stored in a directory named ``venv``, sometimes written
 ``.venv`` to hide it from command line tools. A virtual env can be activated by running the
-command::
+command
+
+.. code-block:: console
 
     source <virtualenv directory>/bin/activate
 
@@ -35,23 +39,33 @@ Pipenv
 tool creates a ``Pipfile.lock`` file which specifies the exact version of every dependency to
 install. The purpose of this file to ensure that running the install command on any machine results
 in the same exact environment. Pipenv manages the virtualenv folder for you in a special directory.
-Pipenv can be installed using pip::
+Pipenv can be installed using pip
+
+.. code-block:: console
 
     pip install pipenv
 
-Once installed, a pipenv-managed virtual environment can be created using the command::
+Once installed, a pipenv-managed virtual environment can be created using the command
+
+.. code-block:: console
 
     pipenv --three
 
-Packages can be installed using the ``install`` command::
+Packages can be installed using the ``install`` command
+
+.. code-block:: console
 
     pipenv install psy-taliro
 
-Finally, command can be run inside the virtual environment by prefixing the command with ``pipenv run``::
+Finally, command can be run inside the virtual environment by prefixing the command with ``pipenv run``
+
+.. code-block:: console
 
     pipenv run python3 myscript.py
 
-A virtual environment shell can be opened by using the command::
+A virtual environment shell can be opened by using the command
+
+.. code-block:: console
 
     pipenv shell
 
@@ -63,16 +77,22 @@ Poetry
 
 Like pipenv, poetry manages virtual environments using a lock file. Installation instructions for
 poetry can be found on its `website <https://python-poetry.org>`_. Once installed, a poetry managed
-virtual environment can be created by running the command::
+virtual environment can be created by running the command
+
+.. code-block:: console
 
     poetry init
 
-Packages can be installed using the ``add`` command::
+Packages can be installed using the ``add`` command
+
+.. code-block:: console
 
     poetry add psy-taliro
 
 Finally, a command can be run inside a virtual environment by prefixing the command with
-``poetry run``::
+``poetry run``
+
+.. code-block:: console
 
     poetry run python3 myscript.py
 
@@ -136,7 +156,7 @@ Specifications
 ^^^^^^^^^^^^^^
 
 A specification represents a requirement of the system being tested. PSY-TaLiRo provides three
-different specifications implemented using two different libraries. The first library is 
+different specifications implemented using two different backends. The first library is 
 `TLTK <https://bitbucket.org/versyslab/tltk/src/master/>`_ which is used to implement the
 :ref:`TLTK <tltk>` specification. The second library is `RTAMT <https://github.com/nickovic/rtamt>`_
 which is used to implement the :ref:`RTAMT Dense <rtamt_dense>` and
@@ -166,7 +186,9 @@ All specifications provided by PSY-TaLiRo express system requirements using Sign
 or STL. STL is a higher-order logic which provides operators that can quantify boolean expressions,
 referred to as **predicates**, over a time interval. 
 
-STL predicates are written in the following form::
+STL predicates are written in the following form
+
+.. code-block::
 
     name (<=|>=) (1|1.0|1e0)
 
@@ -286,12 +308,16 @@ Executable scripts
 Keeping tests in executable scripts can be convienent if you plan on executing a test many times.
 Python has a few idioms for creating executable scripts which can make them much easier to work
 with. The first is a comment line called a
-`shebang <https://en.wikipedia.org/wiki/Shebang_(Unix)>`_.::
+`shebang <https://en.wikipedia.org/wiki/Shebang_(Unix)>`_.
+
+.. code-block:: python
 
     #!/usr/bin/env python3
 
 This instructs the system on how to select the python interpreter to use when executing the script.
-The second important idiom is the main guard.::
+The second important idiom is the main guard.
+
+.. code-block:: python
 
     if __name__ == "__main__":
         ...
