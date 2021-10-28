@@ -4,7 +4,6 @@ from unittest import TestCase
 
 from staliro.core.interval import Interval
 from staliro.core.cost import Evaluation, TimingData
-from staliro.options import Options
 from staliro.core.result import Result, TimeStats, Run
 from staliro.core.sample import Sample
 
