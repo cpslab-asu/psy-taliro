@@ -40,8 +40,7 @@ class Blackbox(Model[StateT, ExtraT]):
     def simulate(
         self, static: StaticInput, signals: Signals, interval: Interval
     ) -> ModelResult[StateT, ExtraT]:
-        duration = interval.upper - interval.lower
-        step_count = math.floor(duration / self.sampling_interval)
+        step_count = math.floor(interval.length / self.sampling_interval)
         signal_times = np.linspace(start=interval.lower, stop=interval.upper, num=step_count)
         signal_times_list: List[float] = signal_times.tolist()
 
