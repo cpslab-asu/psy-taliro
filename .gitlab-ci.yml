@@ -2,7 +2,8 @@ image: python:3.9
 
 stages:
   - analyze
-  - test
+  - unit-test
+  - regression-test
   - build
   - publish
 
@@ -44,7 +45,7 @@ isort:
 
 
 .unittest:
-  stage: test
+  stage: unit-test
   script:
     - poetry install
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
@@ -62,6 +63,29 @@ unittest-cp38:
 unittest-cp39:
   extends: .unittest
   image: python:3.9
+
+.regressiontest:
+  stage: regression-test
+  script:
+  - poetry install
+  - poetry run pip install kaleido
+  - poetry run python3 examples/nonlinear.py
+  - poetry run python3 examples/f16.py
+
+regressiontest-cp37:
+  extends: .regressiontest
+  image: python:3.7
+  cache: {}
+
+regressiontest-cp38:
+  extends: .regressiontest
+  image: python:3.8
+  cache: {}
+
+regressiontest-cp39:
+  extends: .regressiontest
+  image: python:3.9
+  cache: {}
 
 wheel:
   stage: build
