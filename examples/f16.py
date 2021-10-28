@@ -1,6 +1,5 @@
 import logging
 import math
-from os import path
 
 import numpy as np
 import plotly.graph_objects as go
