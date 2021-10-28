@@ -20,17 +20,17 @@ For convience, a class can inherit from Model to guide implementation of the ``s
 
 .. _model:
 
-.. autoclass:: staliro.models.Model
+.. autoclass:: staliro.core.model.Model
     :members:
 
 .. _simulation_result:
 
-.. autoclass:: staliro.models.SimulationResult
+.. autoclass:: staliro.core.model.ModelData
     :members:
 
 .. _falsification:
 
-.. autoclass:: staliro.models.Falsification
+.. autoclass:: staliro.core.model.Failure
     :members:
 
 

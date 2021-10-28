@@ -6,7 +6,7 @@ Evaluation
 
 .. _evaluation:
 
-.. autoclass:: staliro.cost.Evaluation
+.. autoclass:: staliro.core.cost.Evaluation
     :members:
 
 Run
@@ -14,7 +14,7 @@ Run
 
 .. _run:
 
-.. autoclass:: staliro.results.Run
+.. autoclass:: staliro.core.result.Run
     :members:
 
 Result
@@ -22,5 +22,5 @@ Result
 
 .. _result:
 
-.. autoclass:: staliro.results.Result
+.. autoclass:: staliro.core.result.Result
     :members:
