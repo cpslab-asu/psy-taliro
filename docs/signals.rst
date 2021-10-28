@@ -13,25 +13,29 @@ Factories
 .. autoclass:: staliro.core.signal.SignalFactory
     :members:
 
-.. _pchip:
 
 Pchip
 ^^^^^
 
+.. _pchip:
+
 .. autoclass:: staliro.signals.Pchip
     :members:
 
-.. _piecewise-linear:
 
 Piece-wise Linear
 ^^^^^^^^^^^^^^^^^
 
-.. autoclass:: staliro.signals.PiecewiseLinear
+.. _piecewise-linear:
 
-.. _piecewise-constant:
+.. autoclass:: staliro.signals.PiecewiseLinear
+    :members:
+
 
 Piece-wise constant
 ^^^^^^^^^^^^^^^^^^^
+
+.. _piecewise-constant:
 
 .. autoclass:: staliro.signals.PiecewiseConstant
     :members:
