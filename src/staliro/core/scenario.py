@@ -169,6 +169,14 @@ def _greater_than(bound: float) -> Callable[[Any, Attribute[Any], Any], None]:
     return validator
 
 
+def _within_range(lower: float, upper: float) -> Callable[[Any, Attribute[Any], Any], None]:
+    def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
+        if not lower <= value <= upper:
+            raise ValueError(f"{attr.name} must be inside interval [{lower}, {upper}]")
+
+    return validator
+
+
 def _min_length(length: int) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Sequence[Any]], value: Sequence[Any]) -> None:
         if len(value) < length:
@@ -205,7 +213,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
     specification: SpecificationOrFactory[StateT] = field(validator=_validate_specification)
     runs: int = field(validator=[instance_of(int), _greater_than(0)])
     iterations: int = field(validator=[instance_of(int), _greater_than(0)])
-    seed: int = field(validator=instance_of(int))
+    seed: int = field(validator=[instance_of(int), _within_range(0, 2 ** 32 - 1)])
     processes: Optional[int] = field(validator=optional([instance_of(int), _greater_than(0)]))
     bounds: Sequence[Interval] = field(
         validator=deep_iterable(instance_of(Interval), iterable_validator=_min_length(1))
