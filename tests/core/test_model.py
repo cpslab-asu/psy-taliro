@@ -1,88 +1,47 @@
 from __future__ import annotations
 
-from typing import Sequence, cast
 from unittest import TestCase
 
-from staliro.core.interval import Interval
-from staliro.core.model import SystemInputs
-from staliro.core.sample import Sample
-from staliro.core.signal import Signal
-from staliro.options import Options, SignalOptions
+import numpy as np
+import numpy.testing
+import staliro.core.model as model
 
 
-class SystemInputsTestCase(TestCase):
-    def test_decomposition_static(self) -> None:
-        param_count = 4
-        static_params = [Interval(0.1, 2.0)] * param_count
-        options = Options(static_parameters=static_params)
-        sample = Sample(range(param_count))
-        inputs = SystemInputs(sample, options)
+class ModelData(TestCase):
+    def setUp(self) -> None:
+        self.timestamps = np.array([1, 2, 3], dtype=np.float32)
+        self.trajectories1d = np.array([1, 2, 3])
+        self.trajectories2d = np.array([self.trajectories1d, self.trajectories1d])
 
-        self.assertEqual(inputs.static, sample.values[0:param_count])
+    def test_without_extra(self) -> None:
+        data = model.ModelData(self.trajectories2d, self.timestamps)
 
-        sample = Sample(range(param_count + 1))
-        inputs = SystemInputs(sample, options)
+        self.assertIsInstance(data, model.ModelData)
+        np.testing.assert_equal(data.states, self.trajectories2d)  # type: ignore
+        np.testing.assert_equal(data.times, self.timestamps)  # type: ignore
+        self.assertIsNone(data.extra)
 
-        self.assertEqual(inputs.static, sample.values[0:param_count])
-        self.assertNotIn(sample.values[-1], inputs.static)
+    def test_with_extra(self) -> None:
+        data = model.ModelData(self.trajectories2d, self.timestamps, "foo")
 
-    def test_decomposition_signals(self) -> None:
-        class TestSignal(Signal):
-            def __init__(self, xs: Sequence[float], ys: Sequence[float]):
-                self.xs = xs
-                self.ys = ys
+        self.assertIsInstance(data, model.ModelData)
+        self.assertEqual(data.extra, "foo")
 
-        signals = [
-            SignalOptions(interval=Interval(0, 1), factory=TestSignal, control_points=10),
-            SignalOptions(interval=Interval(0, 1), factory=TestSignal, control_points=20),
-        ]
-        param_count = sum(signal.control_points for signal in signals)
-        options = Options(signals=signals)
-        sample = Sample(range(param_count))
-        inputs = SystemInputs(sample, options)
-        test_signal1 = cast(TestSignal, inputs.signals[0])
-        test_signal2 = cast(TestSignal, inputs.signals[1])
-
-        self.assertEqual(test_signal1.ys, sample.values[0:10])
-        self.assertEqual(test_signal2.ys, sample.values[10:30])
-
-        sample = Sample(range(param_count + 1))
-        inputs = SystemInputs(sample, options)
-        test_signal3 = cast(TestSignal, inputs.signals[0])
-        test_signal4 = cast(TestSignal, inputs.signals[1])
-
-        self.assertEqual(test_signal3.ys, sample.values[0:10])
-        self.assertEqual(test_signal4.ys, sample.values[10:30])
-        self.assertNotIn(sample.values[-1], test_signal3.ys)
-        self.assertNotIn(sample.values[-1], test_signal4.ys)
-
-
-class SystemDataTestCase(TestCase):
-    def test_1d_states(self) -> None:
-        pass
-
-    def test_2d_states(self) -> None:
-        pass
-
-    def test_wrong_dimensions_states(self) -> None:
-        pass
-
-    def test_wrong_dimensions_times(self) -> None:
-        pass
-
-    def test_extra_arg(self) -> None:
-        pass
-
-    def test_no_extra_arg(self) -> None:
-        pass
-
-    def test_get_states(self) -> None:
-        pass
+    def test_timestamp_types(self) -> None:
+        with self.assertRaises(TypeError):
+            model.ModelData(self.trajectories1d, [1, 2, 3])
+            model.ModelData(self.trajectories1d, (1, 2, 3))
 
 
 class SystemFailureTestCase(TestCase):
     def test_extra_arg(self) -> None:
-        pass
+        failure = model.Failure()
+
+        self.assertIsInstance(failure, model.Failure)
+        self.assertIsNone(failure.extra)
 
     def test_no_extra_arg(self) -> None:
-        pass
+        failure = model.Failure("foo")
+
+        self.assertIsInstance(failure, model.Failure)
+        self.assertEqual(failure.extra, "foo")
