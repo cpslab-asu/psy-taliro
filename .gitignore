@@ -2,6 +2,7 @@
 .vscode/
 .idea/
 .mypy_cache/
+.python-version
 
 # Generated python files
 **/*.egg-info/
