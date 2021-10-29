@@ -104,6 +104,7 @@ wheel:
     - poetry build
   rules:
     - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
       when: never
 
