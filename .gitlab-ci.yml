@@ -19,26 +19,34 @@ cache:
 before_script:
   - pip install poetry
 
-flake8:
+.analyze:
   stage: analyze
+  only:
+    - pushes
+    - branches
+    - merge_requests
+    - tags
+
+flake8:
+  extends: .analyze
   script:
     - poetry install
     - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run black --check src tests stubs examples
 
 mypy:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run mypy --pretty
 
 isort:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run isort .
@@ -49,6 +57,11 @@ isort:
   script:
     - poetry install
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
+  only:
+    - pushes
+    - branches
+    - merge_requests
+    - tags
 
 unittest-cp37:
   extends: .unittest
@@ -67,10 +80,11 @@ unittest-cp39:
 .regressiontest:
   stage: regression-test
   script:
-  - poetry install
-  - poetry run pip install kaleido
-  - poetry run python3 examples/nonlinear.py
-  - poetry run python3 examples/f16.py
+    - poetry install
+    - poetry run python3 examples/nonlinear.py
+    - poetry run python3 examples/f16.py
+  only:
+    - merge_requests
 
 regressiontest-cp37:
   extends: .regressiontest
@@ -91,6 +105,11 @@ wheel:
   stage: build
   script:
     - poetry build
+  only:
+    - pushes
+    - branches
+    - merge_requests
+    - tags
   except:
     variables:
       - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
@@ -101,10 +120,10 @@ pypi:
     - poetry build
     - poetry publish
   only:
+    refs:
+      - tags
     variables:
       - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
-
-    
   artifacts:
     paths:
       - dist/*.whl
@@ -116,6 +135,8 @@ pages:
     - poetry install
     - poetry run sphinx-build -b html docs public
   only:
+    refs:
+      - tags
     variables:
       - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
   artifacts:
