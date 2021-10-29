@@ -33,9 +33,13 @@ def _signal_times(options: SignalOptions) -> List[float]:
         return options.signal_times
 
 
+def _accumulate(values: Iterable[int], initial: int) -> accumulate[int]:
+    return accumulate(values, func=lambda a, e: a + e + initial)
+
+
 def _signal_parameters(opts_seq: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
     control_points = map(lambda opts: opts.control_points, opts_seq)
-    range_starts = accumulate(control_points, initial=offset)
+    range_starts = _accumulate(control_points, initial=offset)
     values_ranges = [slice(start, end, 1) for start, end in zip(range_starts, control_points)]
 
     def parameters(opts: SignalOptions, values_range: slice) -> SignalParameters:
