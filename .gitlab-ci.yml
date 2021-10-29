@@ -19,13 +19,16 @@ cache:
 before_script:
   - pip install poetry
 
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
 .analyze:
   stage: analyze
-  only:
-    - pushes
-    - branches
-    - merge_requests
-    - tags
 
 flake8:
   extends: .analyze
@@ -57,11 +60,6 @@ isort:
   script:
     - poetry install
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
-  only:
-    - pushes
-    - branches
-    - merge_requests
-    - tags
 
 unittest-cp37:
   extends: .unittest
@@ -83,8 +81,8 @@ unittest-cp39:
     - poetry install
     - poetry run python3 examples/nonlinear.py
     - poetry run python3 examples/f16.py
-  only:
-    - merge_requests
+  rules:
+    - if: "$CI_OPEN_MERGE_REQUESTS"
 
 regressiontest-cp37:
   extends: .regressiontest
@@ -105,25 +103,17 @@ wheel:
   stage: build
   script:
     - poetry build
-  only:
-    - pushes
-    - branches
-    - merge_requests
-    - tags
-  except:
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+      when: never
 
 pypi:
   stage: publish
   script:
     - poetry build
     - poetry publish
-  only:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
   artifacts:
     paths:
       - dist/*.whl
@@ -134,11 +124,8 @@ pages:
   script:
     - poetry install
     - poetry run sphinx-build -b html docs public
-  only:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
   artifacts:
     paths:
       - public
