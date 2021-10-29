@@ -1,131 +1,50 @@
 from __future__ import annotations
 
-import sys
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
-
-if sys.version_info >= (3, 9):
-    from collections.abc import Sequence
-else:
-    from typing import Sequence
-
+from typing import List, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
-from typing_extensions import Protocol, runtime_checkable, overload
+from typing_extensions import Protocol, overload
 
-_RealVector = Union[NDArray[np.int_], NDArray[np.float_]]
+from .core.signal import Signal
 
 
-class SignalInterpolator(Protocol):
-    """Interface for callable that provides interpolated signal values at given time t.
-
-    A signal interpolator should provide an interpolated value for the signal at any time t within
-    the simulation time interval. All signal interpolators should return their value synchonously.
-    """
-
+class ScipyInterpolator(Protocol):
     @overload
-    def interpolate(self, __value: float) -> float:
+    def __call__(self, x: float) -> float:
         ...
 
     @overload
-    def interpolate(
-        self, __value: Union[Sequence[float], _RealVector]
-    ) -> Union[Sequence[float], _RealVector]:
+    def __call__(self, x: Sequence[float]) -> NDArray[np.float_]:
         ...
 
 
-@runtime_checkable
-class InterpolatorFactory(Protocol):
-    """Interface for factory function to return signal interpolators."""
-
-    def create(self, interval: Tuple[float, float], y_values: _RealVector) -> SignalInterpolator:
-        ...
-
-
-class _ScipyFactory(ABC, InterpolatorFactory):
-    """Common base class for all interpolator generators wrapping scipy interpolators."""
+class ScipySignal(Signal, ABC):
+    interpolator: ScipyInterpolator
 
     @abstractmethod
-    def _create(self, x_values: _RealVector, y_values: _RealVector) -> SignalInterpolator:
-        raise NotImplementedError()
-
-    def _x_values(self, interval: Tuple[float, float], size: float) -> _RealVector:
-        return np.linspace(interval[0], interval[1], size, endpoint=True)  # type: ignore
-
-    def create(self, interval: Tuple[float, float], y_values: _RealVector) -> SignalInterpolator:
-        x_values = self._x_values(interval, y_values.size)
-        return self._create(x_values, y_values)
-
-
-_Interpolation = Union[float, _RealVector]
-
-
-class PchipWrapper(SignalInterpolator):
-    def __init__(self, x_values: _RealVector, y_values: _RealVector):
-        self.interpolator = PchipInterpolator(x_values, y_values)
-
-    @overload
-    def interpolate(self, x: float) -> float:
+    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
         ...
 
-    @overload
-    def interpolate(self, x: Union[Sequence[float], _RealVector]) -> _RealVector:
-        ...
+    def at_time(self, t: float) -> float:
+        return self.interpolator(t)
 
-    def interpolate(self, x: Union[float, _RealVector, Sequence[float]]) -> _Interpolation:
-        return self.interpolator(x)
-
-
-class PchipFactory(_ScipyFactory):
-    """Factory to return pchip interpolators."""
-
-    def _create(self, x_values: _RealVector, y_values: _RealVector) -> PchipWrapper:
-        return PchipWrapper(x_values, y_values)
+    def at_times(self, ts: Sequence[float]) -> List[float]:
+        return self.interpolator(ts).tolist()  # type: ignore
 
 
-class LinearWrapper(SignalInterpolator):
-    def __init__(self, x_values: _RealVector, y_values: _RealVector):
-        self.interpolater = interp1d(x_values, y_values)
-
-    @overload
-    def interpolate(self, x: float) -> float:
-        ...
-
-    @overload
-    def interpolate(self, x: Union[Sequence[float], _RealVector]) -> _RealVector:
-        ...
-
-    def interpolate(self, x: Union[float, _RealVector, Sequence[float]]) -> _Interpolation:
-        return self.interpolater(x)
+class Pchip(ScipySignal):
+    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
+        self.interpolator = PchipInterpolator(xs, ys)
 
 
-class LinearFactory(_ScipyFactory):
-    """Factory to create piecewise linear interpolators."""
-
-    def _create(self, x_values: _RealVector, y_values: _RealVector) -> LinearWrapper:
-        return LinearWrapper(x_values, y_values)
+class PiecewiseLinear(ScipySignal):
+    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
+        self.interpolator = interp1d(xs, ys)
 
 
-class ConstantWrapper(SignalInterpolator):
-    def __init__(self, x_values: _RealVector, y_values: _RealVector):
-        self.interpolater = interp1d(x_values, y_values, kind="zero", fill_value="extrapolate")
-
-    @overload
-    def interpolate(self, x: float) -> float:
-        ...
-
-    @overload
-    def interpolate(self, x: Union[Sequence[float], _RealVector]) -> _RealVector:
-        ...
-
-    def interpolate(self, x: Union[float, _RealVector, Sequence[float]]) -> _Interpolation:
-        return self.interpolater(x)
-
-
-class ConstantFactory(_ScipyFactory):
-    """Factory to create piecewise constant interpolators."""
-
-    def _create(self, x_values: _RealVector, y_values: _RealVector) -> ConstantWrapper:
-        return ConstantWrapper(x_values, y_values)
+class PiecewiseConstant(ScipySignal):
+    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
+        self.interpolator = interp1d(xs, ys, kind="zero", fill_value="extrapolate")

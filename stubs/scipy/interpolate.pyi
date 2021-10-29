@@ -6,11 +6,13 @@ from numpy.typing import ArrayLike, NDArray
 _Extrapolate = Union[bool, Literal["periodic"], None]
 _IntegralArray = NDArray[Union[float_, int_]]
 
+_Vector = Union[NDArray[float_], NDArray[int_], Sequence[float]]
+
 class PchipInterpolator:
     def __init__(
         self,
-        x: _IntegralArray,
-        y: _IntegralArray,
+        x: _Vector,
+        y: _Vector,
         axis: int = ...,
         extrapolate: Optional[bool] = ...,
     ) -> None: ...
@@ -19,7 +21,7 @@ class PchipInterpolator:
     @overload
     def __call__(
         self,
-        x: Union[_IntegralArray, Sequence[float]],
+        x: _Vector,
         nu: int = ...,
         extrapolate: _Extrapolate = ...,
     ) -> NDArray[float_]: ...

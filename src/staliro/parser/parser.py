@@ -1,21 +1,28 @@
 from __future__ import annotations
 
-from importlib.util import find_spec
-from typing import Dict, Optional, TYPE_CHECKING, Union, Sequence
+from typing import Dict, Optional, Union, Sequence
 
+import tltk_mtl as mtl
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 
-if TYPE_CHECKING:
-    from tltk_mtl import Predicate
+PredicateDict = Dict[str, mtl.Predicate]
+PredicateNameSeq = Sequence[str]
+Predicates = Union[PredicateNameSeq, PredicateDict]
+TltkObject = Union[
+    mtl.And,
+    mtl.Finally,
+    mtl.Global,
+    mtl.Implication,
+    mtl.Next,
+    mtl.Not,
+    mtl.Or,
+    mtl.Predicate,
+    mtl.Until,
+]
 
-    from .stlSpecification import StlSpecification
 
-    PredicateDict = Dict[str, Predicate]
-    Predicates = Union[Sequence[str], PredicateDict]
-
-
-def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[StlSpecification]:
+def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[TltkObject]:
     """TLTk parser parses a specification requirement into an equivalent TLTk structure
 
     Attributes:
@@ -23,9 +30,6 @@ def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[S
         predicates: The set of Predicate(s) used in the requirement
         mode: The TLTk computation mode
     """
-
-    if find_spec("tltk_mtl") is None:
-        raise RuntimeError("TLTK must be installed to use parser functionality")
 
     from .stlLexer import stlLexer as Lexer
     from .stlParser import stlParser as Parser

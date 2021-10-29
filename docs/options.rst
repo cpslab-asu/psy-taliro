@@ -4,10 +4,16 @@ There are multiple ways to customize the behavior of S-TaLiRo during falsificati
 
 S-TaLiRo options
 ----------------
-.. autoclass:: pystaliro.options.Options
+
+.. _options:
+
+.. autoclass:: staliro.options.Options
     :members:
 
 Signal options
 --------------
-.. autoclass:: pystaliro.options.SignalOptions
+
+.. _signal_options:
+
+.. autoclass:: staliro.options.SignalOptions
     :members:

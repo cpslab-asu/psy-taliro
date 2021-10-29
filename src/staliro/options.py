@@ -1,196 +1,187 @@
 from __future__ import annotations
 
-import enum
 import os
 import random
-import sys
-from typing import Any, List, Optional, Tuple, Union
+import collections.abc as cabc
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
-if sys.version_info >= (3, 9):
-    from collections.abc import Iterable, Sequence
-else:
-    from typing import Iterable, Sequence
-
-from attr import attrs, attrib, Attribute
-from attr.validators import optional
+import numpy as np
+from attr import Attribute, field, frozen
+from attr.validators import deep_iterable, instance_of
+from attr.converters import optional
+from numpy.typing import NDArray
 from typing_extensions import Literal
 
-from .signals import InterpolatorFactory, PchipFactory
+from .core.interval import Interval
+from .core.signal import SignalFactory
+from .signals import Pchip
 
 
-def _bounds_converter(value: Any) -> Any:
+class OptionsError(Exception):
+    pass
+
+
+_IntervalValueT = Union[
+    Interval,
+    List[float],
+    List[int],
+    Tuple[float, float],
+    Tuple[int, int],
+    NDArray[np.float_],
+    NDArray[np.int_],
+]
+
+
+def _strict_float(value: Union[int, float]) -> float:
+    if isinstance(value, int):
+        return float(value)
+
+    if isinstance(value, float):
+        return value
+
+    raise OptionsError(f"Expected float or int, received {type(value)}")
+
+
+def _strict_int(value: Union[int, float]) -> int:
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float):
+        return int(value)
+
+    raise OptionsError(f"Expected float or int, received {type(value)}")
+
+
+def _to_interval(value: _IntervalValueT) -> Interval:
+    """Convert a value to an interval.
+
+    This function only supports ordered collections because the order of values in the iterable
+    matters when trying to construct an interval. Iterables like Set do not guarantee the order of
+    iteration, which can lead to non-deterministic failures.
+
+    Arguments:
+        value: The value to convert to an interval. Must be an Interval instance, list or tuple
+
+    Returns:
+        An instance of Interval using the values provided in the ordered collection
+    """
+
     if isinstance(value, Interval):
-        return value.bounds
+        return value
 
-    return value
+    if isinstance(value, np.ndarray):
+        return _to_interval(value.tolist())
 
-
-@attrs(auto_attribs=True)
-class Interval:
-    bounds: Sequence[float] = attrib(converter=_bounds_converter)
-
-    @bounds.validator
-    def _validate_values(self, attr: Attribute[Sequence[float]], value: Sequence[float]) -> None:
+    if isinstance(value, (list, tuple)):
         if len(value) != 2:
-            raise ValueError("only 2 values may be passed to interval")
+            raise OptionsError("Interval value must have length 2")
 
-        if value[0] > value[1]:
-            raise ValueError("first value must be strictly less than second value")
+        return Interval(*value)
 
-    @property
-    def lower(self) -> float:
-        return self.bounds[0]
-
-    @property
-    def upper(self) -> float:
-        return self.bounds[1]
-
-    def astuple(self) -> Tuple[float, float]:
-        return (self.lower, self.upper)
+    raise TypeError(f"unsupported type {type(value)} provided as interval")
 
 
-SignalTimes = Sequence[float]
+_SignalTimesValueT = Union[Sequence[float], Sequence[int], NDArray[Any]]
+_SignalTimesT = List[float]
 
 
-@attrs
+def _to_signal_times(values: _SignalTimesValueT) -> _SignalTimesT:
+    if isinstance(values, np.ndarray):
+        return cast(List[float], values.astype(np.float64).tolist())
+
+    if isinstance(values, cabc.Sequence):
+        return [_strict_float(value) for value in values]
+
+    raise OptionsError(f"signal times must be provided as an ordered sequence. Got {type(values)}")
+
+
+@frozen()
 class SignalOptions:
     """Options for signal generation.
 
     Attributes:
-        bound: The interval the signal should be generated for
-        control_points: The number of points the optimizer should generate for the signal
+        interval: The interval the signal should be generated for
         factory: Factory to produce interpolators for the signal
-        step: The step size when evaluating the signal
+        control_points: The number of points the optimizer should generate for the signal
         signal_times: Time values for the generated control points
         time_varying: Flag that indicates that the signal times should be considered a search
                       variable (EXPERIMENTAL)
     """
 
-    interval: Interval = attrib(converter=Interval)
-    factory: InterpolatorFactory = attrib(factory=PchipFactory)
-    control_points: int = attrib(default=10, converter=int)
-    step: float = attrib(default=0.1, converter=float)
-    signal_times: Optional[SignalTimes] = attrib(default=None)
-    time_varying: bool = False  # Boolean flag for turning control point times into search variables
-
-    @control_points.validator
-    def _validate_control_points(self, attr: Attribute[int], value: int) -> None:
-        if value < 0:
-            raise ValueError("control points must be greater than zero")
-
-    @step.validator
-    def _validate_step(self, attr: Attribute[float], value: float) -> None:
-        if value < 0:
-            raise ValueError("step must be greater than zero")
-
-    @factory.validator
-    def _validate_factory(
-        self, attr: Attribute[InterpolatorFactory], value: InterpolatorFactory
-    ) -> None:
-        if not isinstance(value, InterpolatorFactory):
-            raise ValueError("factory must implement InterpolatorFactory protocol")
-
-    @signal_times.validator
-    def _validate_signal_times(
-        self, attr: Attribute[Optional[SignalTimes]], value: Optional[SignalTimes]
-    ) -> None:
-        if value is not None and len(value) != self.control_points:
-            raise ValueError("must specify as many signal times as control points")
+    bound: Interval = field(converter=_to_interval)
+    factory: SignalFactory = field(default=Pchip)
+    control_points: int = field(default=10, converter=_strict_int)
+    signal_times: Optional[_SignalTimesT] = field(
+        default=None, converter=optional(_to_signal_times)
+    )
+    time_varying: bool = field(default=False)
 
     @property
     def bounds(self) -> List[Interval]:
-        return [self.interval] * self.control_points
+        """The interval value repeated control_points number of times."""
+
+        return [self.bound] * self.control_points
 
 
-class Behavior(enum.IntEnum):
-    """Behavior when falsifying case for system is encountered.
-
-    Attributes:
-        FALSIFICATION: Stop searching when the first falsifying case is encountered
-        MINIMIZATION: Continue searching after encountering a falsifying case until iteration
-                      budget is exhausted
-    """
-
-    FALSIFICATION = enum.auto()
-    MINIMIZATION = enum.auto()
+_IntervalSeqT = Sequence[_IntervalValueT]
 
 
-def _static_parameter_converter(obj: Any) -> List[Interval]:
-    return [Interval(elem) for elem in obj]
+def _to_intervals(values: _IntervalSeqT) -> List[Interval]:
+    if isinstance(values, cabc.Sequence):
+        return [_to_interval(value) for value in values]
+
+    raise OptionsError(f"Intervals must be provided as an ordered sequence. Got {type(values)}")
 
 
 def _seed_factory() -> int:
-    return random.randint(0, sys.maxsize)
+    return random.randint(0, 2 ** 32 - 1)
 
 
-_ParallelizationT = Union[int, Literal["all", "cores"], None]
+_ParallelizationT = Union[None, Literal["all", "cores"], int]
 
 
-def _parallelization_validator(
-    _: Any, attr: Attribute[_ParallelizationT], value: _ParallelizationT
-) -> None:
-    if isinstance(value, str) and value != "cores" and value != "all":
-        raise ValueError()
-    elif not isinstance(value, int):
-        raise TypeError()
+def _parallelization_validator(_: Any, attr: Attribute[Any], value: _ParallelizationT) -> None:
+    is_none = value is None
+    is_valid_str = value in {"all", "cores"}
+    is_int = isinstance(value, int)
+
+    if not is_none and not is_valid_str and not is_int:
+        raise OptionsError(
+            "invalid parallelization value. Allowed types are: [None, 'all', 'cores', int]"
+        )
 
 
-@attrs
+@frozen()
 class Options:
     """General options for controlling falsification behavior.
 
     Attributes:
+        static_parameters: Parameters that will be provided to the system at the beginning and are
+            time invariant (initial conditions)
+        signals: System inputs that will vary over time
+        seed: The initial seed of the random number generator
         iterations: The number of search iterations to perform in a run
         runs: The number times to run the optimizer
         interval: The time interval of the system simulation
-        behavior: The behavior of the system when a falsifying case is found
-        static_parameters: Parameters that will be provided to the system at the beginning and are
-                           time invariant (initial conditions)
-        signals: System inputs that will vary over time
-        verbose: Print additional data during execution
-        bounds: The combined bounds from both the static_parameters and signals
+        parallelization: Number of processes to use to parallelize runs of the optimizer. Acceptable
+            values are: "cores" (all available cores), "all" (all runs), int (number of processes),
+            None (no parallelization).
     """
 
-    static_parameters: List[Interval] = attrib(factory=list, converter=_static_parameter_converter)
-    signals: Iterable[SignalOptions] = attrib(factory=list)
-    seed: int = attrib(factory=_seed_factory)
-    iterations: int = attrib(default=400, converter=int)
-    runs: int = attrib(default=1, converter=int)
-    interval: Interval = attrib(default=Interval([0, 1]), converter=Interval)
-    sampling_interval: float = attrib(default=0.1, converter=float)
-    behavior: Behavior = attrib(default=Behavior.FALSIFICATION)
-    parallelization: _ParallelizationT = attrib(
-        default=None, validator=optional(_parallelization_validator)
+    static_parameters: List[Interval] = field(factory=list, converter=_to_intervals)
+    signals: Sequence[SignalOptions] = field(
+        factory=list, validator=deep_iterable(instance_of(SignalOptions))
     )
-    verbose: bool = False
-
-    @runs.validator
-    def _validate_runs(self, attr: Attribute[int], value: int) -> None:
-        if value < 0:
-            raise ValueError("runs must be greater than zero")
-
-    @sampling_interval.validator
-    def _validate_sampling_interval(self, attr: Attribute[float], value: float) -> None:
-        if value < 0:
-            raise ValueError("sampling interval must be greater than zero")
-
-    @signals.validator
-    def _validate_signals(
-        self, attr: Attribute[List[SignalOptions]], signals: List[SignalOptions]
-    ) -> None:
-        for signal in signals:
-            if not isinstance(signal, SignalOptions):
-                raise ValueError("can only provide SignalOptions objects to signals attribute")
-
-    @property
-    def bounds(self) -> List[Interval]:
-        signal_bounds = [bound for signal in self.signals for bound in signal.bounds]
-        static_bounds = list(self.static_parameters)
-
-        return static_bounds + signal_bounds
+    seed: int = field(factory=_seed_factory, converter=_strict_int)
+    iterations: int = field(default=400, converter=_strict_int)
+    runs: int = field(default=1, converter=_strict_int)
+    interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
+    parallelization: _ParallelizationT = field(default=None, validator=_parallelization_validator)
 
     @property
     def process_count(self) -> Optional[int]:
+        """Number of processes to use based on the value of the parallelization attribute."""
+
         if self.parallelization == "all":
             return self.runs
         elif self.parallelization == "cores":

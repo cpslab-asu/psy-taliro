@@ -2,7 +2,8 @@ image: python:3.9
 
 stages:
   - analyze
-  - test
+  - unit-test
+  - regression-test
   - build
   - publish
 
@@ -18,33 +19,43 @@ cache:
 before_script:
   - pip install poetry
 
-flake8:
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+.analyze:
   stage: analyze
+
+flake8:
+  extends: .analyze
   script:
     - poetry install
     - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run black --check src tests stubs examples
 
 mypy:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run mypy --pretty
 
 isort:
-  stage: analyze
+  extends: .analyze
   script:
     - poetry install
     - poetry run isort .
 
 
 .unittest:
-  stage: test
+  stage: unit-test
   script:
     - poetry install
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
@@ -63,24 +74,47 @@ unittest-cp39:
   extends: .unittest
   image: python:3.9
 
+.regressiontest:
+  stage: regression-test
+  script:
+    - poetry install
+    - poetry run python3 examples/nonlinear.py
+    - poetry run python3 examples/f16.py
+  rules:
+    - if: "$CI_OPEN_MERGE_REQUESTS"
+
+regressiontest-cp37:
+  extends: .regressiontest
+  image: python:3.7
+  cache: {}
+
+regressiontest-cp38:
+  extends: .regressiontest
+  image: python:3.8
+  cache: {}
+
+regressiontest-cp39:
+  extends: .regressiontest
+  image: python:3.9
+  cache: {}
+
 wheel:
   stage: build
   script:
     - poetry build
-  except:
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_MERGE_REQUEST_ID'
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
+      when: never
 
 pypi:
   stage: publish
   script:
     - poetry build
     - poetry publish
-  only:
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
-
-    
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
   artifacts:
     paths:
       - dist/*.whl
@@ -91,9 +125,8 @@ pages:
   script:
     - poetry install
     - poetry run sphinx-build -b html docs public
-  only:
-    variables:
-      - $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
   artifacts:
     paths:
       - public
