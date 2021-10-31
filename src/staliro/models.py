@@ -43,7 +43,6 @@ class Blackbox(Model[StateT, ExtraT]):
         step_count = math.floor(interval.length / self.sampling_interval)
         signal_times = np.linspace(start=interval.lower, stop=interval.upper, num=step_count)
         signal_times_list: List[float] = signal_times.tolist()
-
         signal_traces = [signal.at_times(signal_times_list) for signal in signals]
 
         return self.func(static, signal_times, np.array(signal_traces))
