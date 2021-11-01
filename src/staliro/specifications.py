@@ -83,6 +83,16 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         self.column_map = column_map
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
+        timestamps_err = _valid_timestamp_array(times)
+
+        if timestamps_err is not None:
+            raise SpecificationError(timestamps_err)
+
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if timestamps_err is not None:
+            raise SpecificationError(trajectories_err)
+
         map_items = self.column_map.items()
         traces = {name: np.array(states[column], dtype=np.float64) for name, column in map_items}
         timestamps = np.array(times, dtype=np.float32)
