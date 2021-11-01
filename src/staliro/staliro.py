@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import accumulate
 from typing import Iterable, List, Sequence, TypeVar, cast
 
 import numpy as np
@@ -33,14 +32,22 @@ def _signal_times(options: SignalOptions) -> List[float]:
         return options.signal_times
 
 
-def _accumulate(values: Iterable[int], initial: int) -> accumulate[int]:
-    return accumulate(values, func=lambda a, e: a + e + initial)
+def _accumulate(values: Iterable[int], initial: int) -> Iterable[int]:
+    current = initial
+
+    for value in values:
+        yield current
+        current = current + value
+
+    yield current
 
 
 def _signal_parameters(opts_seq: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
-    control_points = map(lambda opts: opts.control_points, opts_seq)
+    control_points = [opts.control_points for opts in opts_seq]
     range_starts = _accumulate(control_points, initial=offset)
-    values_ranges = [slice(start, end, 1) for start, end in zip(range_starts, control_points)]
+    values_ranges = [
+        slice(start, start + length, 1) for start, length in zip(range_starts, control_points)
+    ]
 
     def parameters(opts: SignalOptions, values_range: slice) -> SignalParameters:
         return SignalParameters(values_range, _signal_times(opts), opts.factory)
