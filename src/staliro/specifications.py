@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import statistics as stats
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, TypeVar
+from typing import Any, Dict, Iterable, Optional, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -29,6 +29,16 @@ StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
+
+
+def _valid_timestamp_array(timestamps: NDArray[Any]) -> Optional[str]:
+    if not isinstance(timestamps, np.ndarray):
+        return "timestamps must be provided as an NDArray"
+
+    if not timestamps.ndim == 1:
+        return "timestamps array must be 1-dimensional"
+
+    return None
 
 
 class StlSpecification(Specification[StateT], ABC):
