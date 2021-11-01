@@ -134,7 +134,15 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        from rtamt import LTLPastifyException
+        timestamps_err = _valid_timestamp_array(times)
+
+        if timestamps_err is not None:
+            raise SpecificationError(timestamps_err)
+
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if timestamps_err is not None:
+            raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
 
@@ -180,6 +188,16 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
+        timestamps_err = _valid_timestamp_array(times)
+
+        if timestamps_err is not None:
+            raise SpecificationError(timestamps_err)
+
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if timestamps_err is not None:
+            raise SpecificationError(trajectories_err)
+
         self.rtamt_obj.reset()
 
         # parse AFTER declaring variables
