@@ -75,7 +75,7 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
         trajectories_err = _valid_trajectories_array(states, times.size)
 
-        if timestamps_err is not None:
+        if trajectories_err is not None:
             raise SpecificationError(trajectories_err)
 
         map_items = self.column_map.items()
@@ -121,7 +121,7 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
         trajectories_err = _valid_trajectories_array(states, times.size)
 
-        if timestamps_err is not None:
+        if trajectories_err is not None:
             raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
@@ -170,7 +170,7 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
         trajectories_err = _valid_trajectories_array(states, times.size)
 
-        if timestamps_err is not None:
+        if trajectories_err is not None:
             raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
