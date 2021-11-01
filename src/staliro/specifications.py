@@ -31,16 +31,6 @@ ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 
-def _valid_timestamp_array(timestamps: NDArray[Any]) -> Optional[str]:
-    if not isinstance(timestamps, np.ndarray):
-        return "timestamps must be provided as an NDArray"
-
-    if not timestamps.ndim == 1:
-        return "timestamps array must be 1-dimensional"
-
-    return None
-
-
 def _valid_trajectories_array(trajectories: NDArray[Any], row_len: int) -> Optional[str]:
     if not isinstance(trajectories, np.ndarray):
         return "trajectories must be provided as an NDArray"
@@ -83,11 +73,6 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         self.column_map = column_map
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        timestamps_err = _valid_timestamp_array(times)
-
-        if timestamps_err is not None:
-            raise SpecificationError(timestamps_err)
-
         trajectories_err = _valid_trajectories_array(states, times.size)
 
         if timestamps_err is not None:
@@ -134,11 +119,6 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        timestamps_err = _valid_timestamp_array(times)
-
-        if timestamps_err is not None:
-            raise SpecificationError(timestamps_err)
-
         trajectories_err = _valid_trajectories_array(states, times.size)
 
         if timestamps_err is not None:
@@ -188,11 +168,6 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        timestamps_err = _valid_timestamp_array(times)
-
-        if timestamps_err is not None:
-            raise SpecificationError(timestamps_err)
-
         trajectories_err = _valid_trajectories_array(states, times.size)
 
         if timestamps_err is not None:
