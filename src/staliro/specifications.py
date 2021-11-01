@@ -41,6 +41,19 @@ def _valid_timestamp_array(timestamps: NDArray[Any]) -> Optional[str]:
     return None
 
 
+def _valid_trajectories_array(trajectories: NDArray[Any], row_len: int) -> Optional[str]:
+    if not isinstance(trajectories, np.ndarray):
+        return "trajectories must be provided as an NDArray"
+
+    if not trajectories.ndim == 2:
+        return "trajectories array must be 2-dimensional"
+
+    if not trajectories.shape[1] == row_len:
+        return f"trajectory array must have {row_len} columns"
+
+    return None
+
+
 class StlSpecification(Specification[StateT], ABC):
     @abstractmethod
     def __init__(self, requirement: str, column_map: PredicateColumnMap):
