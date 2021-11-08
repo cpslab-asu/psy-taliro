@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import statistics as stats
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, TypeVar
+from typing import Any, Dict, Iterable, Optional, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -29,6 +29,19 @@ StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
+
+
+def _valid_trajectories_array(trajectories: NDArray[Any], row_len: int) -> Optional[str]:
+    if not isinstance(trajectories, np.ndarray):
+        return "trajectories must be provided as an NDArray"
+
+    if not trajectories.ndim == 2:
+        return "trajectories array must be 2-dimensional"
+
+    if not trajectories.shape[1] == row_len:
+        return f"trajectory array must have {row_len} columns"
+
+    return None
 
 
 class StlSpecification(Specification[StateT], ABC):
@@ -60,6 +73,11 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         self.column_map = column_map
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if trajectories_err is not None:
+            raise SpecificationError(trajectories_err)
+
         map_items = self.column_map.items()
         traces = {name: np.array(states[column], dtype=np.float64) for name, column in map_items}
         timestamps = np.array(times, dtype=np.float32)
@@ -101,7 +119,10 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        from rtamt import LTLPastifyException
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if trajectories_err is not None:
+            raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
 
@@ -147,6 +168,11 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
             self.rtamt_obj.declare_var(name, "float")
 
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
+        trajectories_err = _valid_trajectories_array(states, times.size)
+
+        if trajectories_err is not None:
+            raise SpecificationError(trajectories_err)
+
         self.rtamt_obj.reset()
 
         # parse AFTER declaring variables
