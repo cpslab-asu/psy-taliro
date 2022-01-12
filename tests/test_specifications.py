@@ -1,9 +1,17 @@
 from os import path
-from unittest import TestCase
+from unittest import TestCase, skipIf
 
 import numpy as np
 import pandas as pd
 from staliro.specifications import TLTK, RTAMTDiscrete, RTAMTDense
+
+try:
+    import tltk_mtl as mtl  # noqa: F401
+except ImportError:
+    _has_tltk = False
+else:
+    _has_tltk = True
+
 
 SIG_FIGS = 3
 
@@ -19,6 +27,7 @@ class SpecificationTestCase(TestCase):
         testdir = path.dirname(path.realpath(__file__))
         self._data = pd.read_csv(path.join(testdir, "data", "trajectory.csv"))
 
+    @skipIf(not _has_tltk, "TLTK library must be installed to run TLTK specification test")
     def test_tltk_specification(self) -> None:
         predicates = {"x1": 0}
         specification = TLTK(self._requirement, predicates)
