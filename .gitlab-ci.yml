@@ -75,6 +75,11 @@ unittest-cp39:
   extends: .unittest
   image: python:3.9
 
+unittest-cp310:
+  extends: .unittest
+  image: python:3.10
+  cache: {}
+
 .regressiontest:
   stage: regression-test
   script:
@@ -95,6 +100,10 @@ regressiontest-cp38:
   cache: {}
 
 regressiontest-cp39:
+  extends: .regressiontest
+  image: python:3.9
+
+regressiontest-cp310:
   extends: .regressiontest
   image: python:3.9
   cache: {}
