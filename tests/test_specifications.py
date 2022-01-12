@@ -3,15 +3,15 @@ from unittest import TestCase, skipIf
 
 import numpy as np
 import pandas as pd
+from staliro.specifications import TLTK, RTAMTDiscrete, RTAMTDense
 
 try:
-    import tltk_mtl as mtl
+    import tltk_mtl as mtl  # noqa: F401
 except ImportError:
     _has_tltk = False
 else:
     _has_tltk = True
 
-from staliro.specifications import TLTK, RTAMTDiscrete, RTAMTDense
 
 SIG_FIGS = 3
 
