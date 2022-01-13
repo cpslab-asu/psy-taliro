@@ -6,11 +6,11 @@ import pandas as pd
 from staliro.specifications import TLTK, RTAMTDiscrete, RTAMTDense
 
 try:
-    import tltk_mtl as mtl  # noqa: F401
-except ImportError:
-    _has_tltk = False
+    import staliro.parser
+except:
+    _can_parse = False
 else:
-    _has_tltk = True
+    _can_parse = True
 
 
 SIG_FIGS = 3
@@ -27,7 +27,7 @@ class SpecificationTestCase(TestCase):
         testdir = path.dirname(path.realpath(__file__))
         self._data = pd.read_csv(path.join(testdir, "data", "trajectory.csv"))
 
-    @skipIf(not _has_tltk, "TLTK library must be installed to run TLTK specification test")
+    @skipIf(_can_parse is False, "TLTK specification test is not available without parsing functionality")
     def test_tltk_specification(self) -> None:
         predicates = {"x1": 0}
         specification = TLTK(self._requirement, predicates)

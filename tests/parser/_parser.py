@@ -1,12 +1,17 @@
-from unittest import TestCase
+from unittest import TestCase, SkipTest
 
 import numpy as np
-import tltk_mtl as mtl
 
 
 class ParserTestCase(TestCase):
-    def setUp(self) -> None:
-        self._preds = {
+    @classmethod
+    def setUpClass(cls) -> None:
+        try:
+            import tltk_mtl as mtl
+        except ImportError:
+            raise SkipTest("TLTK library is unavailable")
+
+        cls._preds = {
             "pred1": mtl.Predicate("pred1", np.array([1]), np.array([2])),
             "pred2": mtl.Predicate("pred2", np.array([1]), np.array([4])),
             "pred3": mtl.Predicate("pred3", np.array([1]), np.array([8])),
@@ -18,7 +23,7 @@ class ParserTestCase(TestCase):
             "pred9": mtl.Predicate("pred9", np.array([1]), np.array([0.0000112])),
         }
 
-        self._vars = [
+        cls._vars = [
             "pred1",
             "pred2",
             "pred3",
