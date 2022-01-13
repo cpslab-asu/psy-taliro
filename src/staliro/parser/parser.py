@@ -6,8 +6,12 @@ import tltk_mtl as mtl
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 
-PredicateDict = Dict[str, mtl.Predicate]
+from .stlLexer import stlLexer as Lexer
+from .stlParser import stlParser as Parser
+from .stlParserVisitor import stlParserVisitor as Visitor
+
 PredicateNameSeq = Sequence[str]
+PredicateDict = Dict[str, mtl.Predicate]
 Predicates = Union[PredicateNameSeq, PredicateDict]
 TltkObject = Union[
     mtl.And,
@@ -30,11 +34,6 @@ def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[T
         predicates: The set of Predicate(s) used in the requirement
         mode: The TLTk computation mode
     """
-
-    from .stlLexer import stlLexer as Lexer
-    from .stlParser import stlParser as Parser
-    from .stlParserVisitor import stlParserVisitor as Visitor
-
     input_stream = InputStream(formula)
 
     lexer = Lexer(input_stream)
