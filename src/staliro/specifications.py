@@ -19,7 +19,7 @@ from .core import Specification, SpecificationError
 
 try:
     from .parser import parse
-except ImportError:
+except:
     _can_parse = False
 else:
     _can_parse = True
