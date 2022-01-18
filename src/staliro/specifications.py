@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import Dict, Iterable, List, NewType, Sequence, Tuple, TypedDict, TypeVar
+from typing import Dict, List, NewType, Sequence, Tuple, TypedDict, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -38,8 +38,8 @@ PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 class TaliroPredicate(TypedDict):
     name: str
-    a: Iterable[float]
-    b: Iterable[float]
+    a: NDArray[np.float_]
+    b: NDArray[np.float_]
 
 
 TaliroPredicateMap = List[TaliroPredicate]
