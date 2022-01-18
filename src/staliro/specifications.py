@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import Dict, NewType, Sequence, Tuple, TypeVar
+from typing import Dict, Iterable, List, NewType, Sequence, Tuple, TypedDict, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -23,11 +23,26 @@ except:
 else:
     _can_parse = True
 
+try:
+    from pytaliro import tptaliro as tp
+except ImportError:
+    _has_tptaliro = False
+else:
+    _has_tptaliro = True
 
 StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
+
+
+class TaliroPredicate(TypedDict):
+    name: str
+    a: Iterable[float]
+    b: Iterable[float]
+
+
+TaliroPredicateMap = List[TaliroPredicate]
 
 
 class StlSpecificationException(Exception):
@@ -177,5 +192,41 @@ class RTAMTDense(StlSpecification):
         ]
 
         robustness = self.rtamt_obj.evaluate(*traces)
-
         return robustness[0][1]
+
+
+class TPTaliro(StlSpecification):
+    """TPTL logic specification that uses TP-TaLiRo to compute robustness values.
+
+    Attributes:
+        phi: The specification requirement
+        predicates: A set of Predicate(s) used in the requirement
+    """
+
+    def __init__(self, phi: str, predicate_map: TaliroPredicateMap):
+        if not _has_tptaliro:
+            raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
+
+        self.spec = phi
+
+        self.pmap = []
+        for predicate in predicate_map:
+            self.pmap.append(
+                {
+                    "name": predicate["name"],
+                    "a": np.array(predicate["a"], dtype=np.double, ndmin=2),
+                    "b": np.array(predicate["b"], dtype=np.double, ndmin=2),
+                }
+            )
+
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        times_, states_ = _parse_times_states(times, states)
+
+        robustness = tp.tptaliro(
+            spec=self.spec,
+            preds=self.pmap,
+            st=np.array(states_, dtype=np.double, ndmin=2),
+            ts=np.array(times_, dtype=np.double, ndmin=2),
+        )
+
+        return robustness
