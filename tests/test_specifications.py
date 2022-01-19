@@ -100,8 +100,8 @@ class SpecificationTestCase(TestCase):
         ]
         specification = TPTaliro(requirement, predicates)
 
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        trajectories = self._data["x1"].to_numpy(dtype=np.float32)
+        timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
+        trajectories = self._data["x1"].to_numpy(dtype=np.float32).tolist()
         robustness = specification.evaluate(trajectories, timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
