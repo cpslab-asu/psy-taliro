@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import Dict, List, NewType, Sequence, Tuple, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Dict, List, Mapping, NewType, Sequence, Tuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -24,22 +24,21 @@ else:
     _can_parse = True
 
 try:
-    from pytaliro import tptaliro as tp
+    from taliro import tptaliro as tp
 except ImportError:
     _has_tptaliro = False
 else:
     _has_tptaliro = True
 
+
+if TYPE_CHECKING:
+    from taliro.tptaliro import TaliroPredicate
+
+
 StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
-
-
-class TaliroPredicate(TypedDict):
-    name: str
-    a: NDArray[np.float_]
-    b: NDArray[np.float_]
 
 
 TaliroPredicateMap = List[TaliroPredicate]
@@ -203,21 +202,24 @@ class TPTaliro(StlSpecification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicate_map: TaliroPredicateMap):
+    def __init__(self, phi: str, predicate_map: Sequence[TaliroPredicate]):
         if not _has_tptaliro:
             raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
 
-        self.spec = phi
+        def into_taliro_predicate(user_data: Mapping[str, object]) -> TaliroPredicate:
+            name = user_data.get("name")
 
-        self.pmap = []
-        for predicate in predicate_map:
-            self.pmap.append(
-                {
-                    "name": predicate["name"],
-                    "a": np.array(predicate["a"], dtype=np.double, ndmin=2),
-                    "b": np.array(predicate["b"], dtype=np.double, ndmin=2),
-                }
-            )
+            if not isinstance(name, str):
+                raise ValueError("TP-TaLiRo predicate name must be a string")
+
+            return {
+                "name": name,
+                "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
+                "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
+            }
+
+        self.spec = phi
+        self.pmap = [into_taliro_predicate(user_dict) for user_dict in predicate_map]
 
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         times_, states_ = _parse_times_states(times, states)
@@ -229,4 +231,4 @@ class TPTaliro(StlSpecification):
             ts=np.array(times_, dtype=np.double, ndmin=2),
         )
 
-        return float(robustness)
+        return robustness
