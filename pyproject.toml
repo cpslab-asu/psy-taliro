@@ -45,8 +45,10 @@ line-length = 100
 
 [tool.isort]
 profile = "black"
-line_length = 100
-multi_line_output = 3
+line_length=100
+skip_gitignore = true
+src_paths = ["src"]
+extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
