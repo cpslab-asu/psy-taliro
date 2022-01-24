@@ -26,12 +26,14 @@ workflow:
       - .venv/
 
 .analyze-job:
+  extends: .poetry-job
   stage: analyze
   image: python:3.9
   cache:
     key: cache-cp39
 
 .unittest-job:
+  extends: .poetry-job
   stage: unit-test
   script:
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
@@ -46,6 +48,7 @@ workflow:
     - if: "$CI_OPEN_MERGE_REQUESTS"
 
 .build-job:
+  extends: .poetry-job
   stage: build
   image: python:3.9
   before_script:
