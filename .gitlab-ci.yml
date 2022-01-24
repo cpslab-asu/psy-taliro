@@ -29,31 +29,28 @@ workflow:
 
 .analyze:
   stage: analyze
+  before_script:
+    - poetry install -vv
 
 flake8:
   extends: .analyze
   script:
-    - poetry install
     - poetry run flake8 -j 1 --statistics src stubs examples tests
 
 black:
   extends: .analyze
   script:
-    - poetry install
     - poetry run black --check src tests stubs examples
 
 mypy:
   extends: .analyze
   script:
-    - poetry install
     - poetry run mypy --pretty
 
 isort:
   extends: .analyze
   script:
-    - poetry install
-    - poetry run isort .
-
+    - poetry run isort --check .
 
 .unittest:
   stage: unit-test
@@ -82,8 +79,9 @@ unittest-cp310:
 
 .regressiontest:
   stage: regression-test
-  script:
+  before_script:
     - poetry install
+  script:
     - poetry run python3 examples/nonlinear.py
     - poetry run python3 examples/f16.py
   rules:
