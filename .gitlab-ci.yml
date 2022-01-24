@@ -1,4 +1,5 @@
 stages:
+  - setup
   - analyze
   - unit-test
   - regression-test
@@ -24,6 +25,12 @@ workflow:
     paths:
       - .cache/pip/
       - .venv/
+
+.setup-job:
+  extends: .poetry-job
+  stage: setup
+  script:
+    - poetry env info
 
 .analyze-job:
   extends: .poetry-job
@@ -63,6 +70,12 @@ workflow:
     - pip install poetry
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
+  cache:
+    key: cache-cp39
+
+virtualenv-cp39:
+  extends: .setup-job
+  image: python:3.9
   cache:
     key: cache-cp39
 
