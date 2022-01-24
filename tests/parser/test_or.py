@@ -21,9 +21,7 @@ class OrTestCase(ParserTestCase):
         self.assertIsOr(parse(r"pred1 || pred1", self._preds))
 
     def test_or_alternate_syntax(self) -> None:
-        self.assertIsOr(
-            parse(r"pred1 | pred1 || pred1 \/ pred1 or pred1", self._preds)
-        )
+        self.assertIsOr(parse(r"pred1 | pred1 || pred1 \/ pred1 or pred1", self._preds))
 
     def test_or_with_negation(self) -> None:
         self.assertIsOr(parse(r"pred1 or !pred2 || pred3", self._preds))
@@ -32,6 +30,4 @@ class OrTestCase(ParserTestCase):
         self.assertIsOr(parse(r"pred1 and pred2 or pred3", self._preds))
 
     def test_or_with_and_alternate_syntax(self) -> None:
-        self.assertIsOr(
-            parse(r"pred2 and pred3 & pred2 and pred2 or pred1", self._preds)
-        )
+        self.assertIsOr(parse(r"pred2 and pred3 & pred2 and pred2 or pred1", self._preds))

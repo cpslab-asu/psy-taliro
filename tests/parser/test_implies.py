@@ -10,7 +10,9 @@ else:
 from ._parser import ParserTestCase
 
 
-@skipIf(_can_parse is False, "Implies parsing test case is not available without parsing functionality")
+@skipIf(
+    _can_parse is False, "Implies parsing test case is not available without parsing functionality"
+)
 class ImpliesTestCase(ParserTestCase):
     def assertIsOr(self, value):
         import tltk_mtl as mtl
@@ -30,6 +32,4 @@ class ImpliesTestCase(ParserTestCase):
         self.assertIsOr(parse(r"pred1 -> (pred1 && pred2 && pred3)", self._preds))
 
     def test_implication_with_or_and_literal(self) -> None:
-        self.assertIsOr(
-            parse(r"pred1 -> pred2 -> (pred1 || pred2) -> pred3", self._preds)
-        )
+        self.assertIsOr(parse(r"pred1 -> pred2 -> (pred1 || pred2) -> pred3", self._preds))

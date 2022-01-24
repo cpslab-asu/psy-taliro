@@ -10,7 +10,9 @@ else:
 from ._parser import ParserTestCase
 
 
-@skipIf(_can_parse is False, "Negation parsing test case is not available without parsing functionality")
+@skipIf(
+    _can_parse is False, "Negation parsing test case is not available without parsing functionality"
+)
 class NegationTestCase(ParserTestCase):
     def assertIsNot_(self, value):
         import tltk_mtl as mtl

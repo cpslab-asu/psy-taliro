@@ -10,7 +10,10 @@ else:
 from ._parser import ParserTestCase
 
 
-@skipIf(_can_parse is False, "Predicate parsing test case is not available without parsing functionality")
+@skipIf(
+    _can_parse is False,
+    "Predicate parsing test case is not available without parsing functionality",
+)
 class PredicateTestCase(ParserTestCase):
     def _do_test(self, phi: str, expected) -> None:
         import tltk_mtl as mtl

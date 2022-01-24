@@ -10,7 +10,9 @@ else:
 from ._parser import ParserTestCase
 
 
-@skipIf(_can_parse is False, "Finally parsing test case is not available without parsing functionality")
+@skipIf(
+    _can_parse is False, "Finally parsing test case is not available without parsing functionality"
+)
 class FinallyTestCase(ParserTestCase):
     def assertIsFinally(self, value):
         import tltk_mtl as mtl
