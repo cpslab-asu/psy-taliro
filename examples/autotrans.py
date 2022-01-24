@@ -4,12 +4,13 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.subplots as sp
 from numpy.typing import NDArray
+
 from staliro.core.interval import Interval
-from staliro.core.model import Model, ModelData, Failure, StaticInput, Signals
+from staliro.core.model import Failure, Model, ModelData, Signals, StaticInput
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options, SignalOptions
 from staliro.specifications import TLTK
-from staliro.staliro import staliro, simulate_model
+from staliro.staliro import simulate_model, staliro
 
 try:
     import matlab

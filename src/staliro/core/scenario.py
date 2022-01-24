@@ -6,11 +6,11 @@ from concurrent.futures import ProcessPoolExecutor
 from itertools import islice
 from typing import Any, Callable, Generic, Iterable, Iterator, Optional, Sequence, TypeVar, Union
 
-from attr import Attribute, frozen, field
+from attr import Attribute, field, frozen
 from attr.validators import deep_iterable, instance_of, optional
-from numpy.random import default_rng, Generator
+from numpy.random import Generator, default_rng
 
-from .cost import CostFn, SpecificationOrFactory, SignalParameters
+from .cost import CostFn, SignalParameters, SpecificationOrFactory
 from .interval import Interval
 from .model import Model
 from .optimizer import Optimizer

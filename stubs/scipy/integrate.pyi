@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Union, Literal, Any, Optional, List
+from typing import Any, Callable, List, Literal, Optional, Tuple, Union
 
 from numpy import float_
 from numpy.typing import ArrayLike, NDArray

@@ -1,4 +1,4 @@
-from typing import Optional, Union, Literal, overload, Sequence
+from typing import Literal, Optional, Sequence, Union, overload
 
 from numpy import float_, int_
 from numpy.typing import ArrayLike, NDArray

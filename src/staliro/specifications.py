@@ -8,8 +8,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification, LTLPastifyException
-    from rtamt import Semantics
+    from rtamt import (
+        LTLPastifyException,
+        Semantics,
+        STLDenseTimeSpecification,
+        STLDiscreteTimeSpecification,
+    )
 except ImportError:
     _has_rtamt = False
 else:

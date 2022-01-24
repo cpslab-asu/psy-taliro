@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 class RTAMTException(Exception): ...
 class LTLException(RTAMTException): ...

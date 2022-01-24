@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 import numpy.testing
+
 import staliro.core.model as model
 
 

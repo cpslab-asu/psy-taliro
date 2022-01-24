@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Optional, Union, Sequence
+from typing import Dict, Optional, Sequence, Union
 
 import tltk_mtl as mtl
 from antlr4.CommonTokenStream import CommonTokenStream

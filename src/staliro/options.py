@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import collections.abc as cabc
 import os
 import random
-import collections.abc as cabc
 from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 from attr import Attribute, field, frozen
-from attr.validators import deep_iterable, instance_of
 from attr.converters import optional
+from attr.validators import deep_iterable, instance_of
 from numpy.typing import NDArray
 from typing_extensions import Literal
 

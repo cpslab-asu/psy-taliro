@@ -1,6 +1,6 @@
 from .interval import Interval
-from .model import Model, ModelData, Failure, ModelError
-from .optimizer import Optimizer, ObjectiveFn
+from .model import Failure, Model, ModelData, ModelError
+from .optimizer import ObjectiveFn, Optimizer
 from .result import Result
 from .sample import Sample
 from .scenario import Scenario

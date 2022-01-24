@@ -4,9 +4,10 @@ from os import path
 from unittest import TestCase
 
 import numpy as np
-import numpy.testing
 import numpy.random
+import numpy.testing
 import pandas as pd
+
 from staliro.core.interval import Interval
 from staliro.signals import Pchip, PiecewiseConstant
 

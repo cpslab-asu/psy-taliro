@@ -14,7 +14,7 @@ from scipy import optimize
 from typing_extensions import Literal
 
 from .core.interval import Interval
-from .core.optimizer import Optimizer, ObjectiveFn
+from .core.optimizer import ObjectiveFn, Optimizer
 from .core.sample import Sample
 
 Samples = Sequence[Sample]

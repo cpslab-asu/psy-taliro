@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Iterator, Sequence, Sized, Tuple, Union, cast
 
-from attr import frozen, field
-from numpy import ndarray, float64
+from attr import field, frozen
+from numpy import float64, ndarray
 from numpy.typing import NDArray
 from typing_extensions import overload
 
