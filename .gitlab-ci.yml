@@ -50,7 +50,7 @@ mypy:
 isort:
   extends: .analyze
   script:
-    - poetry run isort --check .
+    - poetry run isort --check src stubs tests examples
 
 .unittest:
   stage: unit-test
