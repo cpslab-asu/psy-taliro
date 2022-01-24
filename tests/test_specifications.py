@@ -7,7 +7,7 @@ import pandas as pd
 from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete
 
 try:
-    import staliro.parser
+    import staliro.parser  # noqa: F401
 except:
     _can_parse = False
 else:
