@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 import math
 import time
-from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
 from concurrent.futures import ProcessPoolExecutor
+from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
 
-from attr import frozen, field
-from attr.validators import instance_of, deep_iterable, is_callable
+from attr import field, frozen
+from attr.validators import deep_iterable, instance_of, is_callable
 
-from .model import Model, ModelError, ModelResult, ModelData, Failure
 from .interval import Interval
+from .model import Failure, Model, ModelData, ModelError, ModelResult
 from .optimizer import ObjectiveFn
 from .sample import Sample
 from .signal import Signal, SignalFactory

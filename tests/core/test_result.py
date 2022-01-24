@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from unittest import TestCase
 
-from staliro.core.interval import Interval
 from staliro.core.cost import Evaluation, TimingData
-from staliro.core.result import Result, TimeStats, Run
+from staliro.core.interval import Interval
+from staliro.core.result import Result, Run, TimeStats
 from staliro.core.sample import Sample
 
 

@@ -10,7 +10,6 @@ from numpy.typing import NDArray
 from .interval import Interval
 from .signal import Signal
 
-
 Times = NDArray[np.float_]
 
 

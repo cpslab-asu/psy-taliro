@@ -24,7 +24,6 @@ flake8-pyi = "^20.10.0"
 flake8-return = "^1.1.2"
 pep8-naming = "^0.11.1"
 flake8-use-fstring = "^1.1"
-flake8-import-order = "^0.18.1"
 flake8-annotations-complexity = "^0.0.6"
 flake8-todo = "^0.7"
 black = "^21.5b1"
@@ -46,8 +45,10 @@ line-length = 100
 
 [tool.isort]
 profile = "black"
-line_length = 100
-multi_line_output = 3
+line_length=100
+skip_gitignore = true
+src_paths = ["src"]
+extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

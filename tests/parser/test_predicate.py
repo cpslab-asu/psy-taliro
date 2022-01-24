@@ -1,14 +1,26 @@
-from staliro.parser import parse
-from tltk_mtl import Predicate
+from unittest import skipIf
+
+try:
+    from staliro.parser import parse
+except:
+    _can_parse = False
+else:
+    _can_parse = True
 
 from ._parser import ParserTestCase
 
 
+@skipIf(
+    _can_parse is False,
+    "Predicate parsing test case is not available without parsing functionality",
+)
 class PredicateTestCase(ParserTestCase):
-    def _do_test(self, phi: str, expected: Predicate) -> None:
+    def _do_test(self, phi: str, expected) -> None:
+        import tltk_mtl as mtl
+
         predicate = parse(phi, self._vars)
 
-        assert isinstance(predicate, Predicate)
+        assert isinstance(predicate, mtl.Predicate)
 
         self.assertEqual(predicate.variable_name, expected.variable_name)
         self.assertEqual(predicate.A_Matrix, expected.A_Matrix)

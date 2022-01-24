@@ -4,7 +4,7 @@ from typing import Iterable, List, Sequence, TypeVar, cast
 
 import numpy as np
 
-from .core.cost import SpecificationOrFactory, SignalParameters, decompose_sample
+from .core.cost import SignalParameters, SpecificationOrFactory, decompose_sample
 from .core.interval import Interval
 from .core.model import Model, ModelResult
 from .core.optimizer import Optimizer

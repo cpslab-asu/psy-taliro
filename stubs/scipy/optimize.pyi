@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Tuple, Dict, Optional, Literal, Any
+from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple
 
 from numpy import float_
 from numpy.typing import NDArray

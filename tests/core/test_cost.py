@@ -7,11 +7,11 @@ from unittest.mock import Mock, NonCallableMock
 
 from staliro.core.cost import (
     CostFn,
+    Evaluation,
+    SignalParameters,
     SpecificationFactory,
     Thunk,
-    Evaluation,
     TimingData,
-    SignalParameters,
     decompose_sample,
 )
 from staliro.core.interval import Interval

@@ -4,12 +4,13 @@ from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
+
 from staliro.core import Failure
-from staliro.models import ode, State
-from staliro.options import Options
+from staliro.models import State, ode
 from staliro.optimizers import UniformRandom
+from staliro.options import Options
 from staliro.specifications import RTAMTDense
-from staliro.staliro import staliro, simulate_model
+from staliro.staliro import simulate_model, staliro
 
 
 @ode()

@@ -8,8 +8,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import STLDiscreteTimeSpecification, STLDenseTimeSpecification, LTLPastifyException
-    from rtamt import Semantics
+    from rtamt import (
+        LTLPastifyException,
+        Semantics,
+        STLDenseTimeSpecification,
+        STLDiscreteTimeSpecification,
+    )
 except ImportError:
     _has_rtamt = False
 else:
@@ -19,7 +23,7 @@ from .core import Specification, SpecificationError
 
 try:
     from .parser import parse
-except ImportError:
+except:
     _can_parse = False
 else:
     _can_parse = True

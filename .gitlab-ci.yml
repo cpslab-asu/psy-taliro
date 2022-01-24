@@ -1,23 +1,10 @@
-image: python:3.9
-
 stages:
+  - setup
   - analyze
   - unit-test
   - regression-test
   - build
   - publish
-
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  POETRY_VIRTUALENVS_IN_PROJECT: "true"
-
-cache:
-  paths:
-    - .cache/pip/
-    - .venv/
-
-before_script:
-  - pip install poetry
 
 workflow:
   rules:
@@ -27,89 +14,138 @@ workflow:
     - if: '$CI_COMMIT_BRANCH'
     - if: '$CI_COMMIT_TAG'
 
-.analyze:
+.poetry-job:
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  before_script:
+    - pip install poetry
+    - poetry install -vv
+  cache:
+    paths:
+      - .cache/pip/
+      - .venv/
+
+.setup-job:
+  extends: .poetry-job
+  stage: setup
+  script:
+    - poetry env info
+
+.analyze-job:
+  extends: .poetry-job
   stage: analyze
+  image: python:3.9
+  cache:
+    key: cache-cp39
 
-flake8:
-  extends: .analyze
-  script:
-    - poetry install
-    - poetry run flake8 -j 1 --statistics src stubs examples tests
-
-black:
-  extends: .analyze
-  script:
-    - poetry install
-    - poetry run black --check src tests stubs examples
-
-mypy:
-  extends: .analyze
-  script:
-    - poetry install
-    - poetry run mypy --pretty
-
-isort:
-  extends: .analyze
-  script:
-    - poetry install
-    - poetry run isort .
-
-
-.unittest:
+.unittest-job:
+  extends: .poetry-job
   stage: unit-test
   script:
-    - poetry install
     - poetry run python -m unittest discover -v -s "tests" -p "test_*.py"
 
-unittest-cp37:
-  extends: .unittest
-  image: python:3.7
-  cache: {}
-
-unittest-cp38:
-  extends: .unittest
-  image: python:3.8
-  cache: {}
-
-unittest-cp39:
-  extends: .unittest
-  image: python:3.9
-
-unittest-cp310:
-  extends: .unittest
-  image: python:3.10
-  cache: {}
-
-.regressiontest:
+.regressiontest-job:
+  extends: .poetry-job
   stage: regression-test
   script:
-    - poetry install
     - poetry run python3 examples/nonlinear.py
     - poetry run python3 examples/f16.py
   rules:
     - if: "$CI_OPEN_MERGE_REQUESTS"
 
-regressiontest-cp37:
-  extends: .regressiontest
+.build-job:
+  extends: .poetry-job
+  stage: build
+  image: python:3.9
+  before_script:
+    - pip install poetry
+  cache:
+    key: cache-cp39
+
+.publish-job:
+  stage: publish
+  image: python:3.9
+  before_script:
+    - pip install poetry
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
+  cache:
+    key: cache-cp39
+
+virtualenv-cp39:
+  extends: .setup-job
+  image: python:3.9
+  cache:
+    key: cache-cp39
+
+flake8:
+  extends: .analyze-job
+  script:
+    - poetry run flake8 -j 1 --statistics src stubs examples tests
+
+black:
+  extends: .analyze-job
+  script:
+    - poetry run black --check src tests stubs examples
+
+mypy:
+  extends: .analyze-job
+  script:
+    - poetry run mypy --pretty
+
+isort:
+  extends: .analyze-job
+  script:
+    - poetry run isort --check src stubs tests examples
+
+unittest-cp37:
+  extends: .unittest-job
   image: python:3.7
-  cache: {}
+  cache:
+    key: cache-cp37
+
+unittest-cp38:
+  extends: .unittest-job
+  image: python:3.8
+  cache:
+    key: cache-cp38
+
+unittest-cp39:
+  extends: .unittest-job
+  image: python:3.9
+  cache:
+    key: cache-cp39
+
+unittest-cp310:
+  extends: .unittest-job
+  image: python:3.10
+  cache:
+    key: cache-cp310
+
+regressiontest-cp37:
+  extends: .regressiontest-job
+  image: python:3.7
+  cache:
+    key: cache-cp37
 
 regressiontest-cp38:
-  extends: .regressiontest
+  extends: .regressiontest-job
   image: python:3.8
-  cache: {}
+  cache:
+    key: cache-cp38
 
 regressiontest-cp39:
-  extends: .regressiontest
+  extends: .regressiontest-job
   image: python:3.9
 
 regressiontest-cp310:
-  extends: .regressiontest
+  extends: .regressiontest-job
   image: python:3.9
   cache: {}
 
 wheel:
-  stage: build
+  extends: .build-job
   script:
     - poetry build
   rules:
@@ -118,24 +154,20 @@ wheel:
     - when: on_success
 
 pypi:
-  stage: publish
+  extends: .publish-job
   script:
     - poetry build
     - poetry publish
-  rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
   artifacts:
     paths:
       - dist/*.whl
       - dist/*.tar.gz
 
 pages:
-  stage: publish
+  extends: .publish-job
   script:
     - poetry install
     - poetry run sphinx-build -b html docs public
-  rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v*/'
   artifacts:
     paths:
       - public

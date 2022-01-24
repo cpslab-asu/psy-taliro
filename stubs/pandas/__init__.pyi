@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from typing import (
-    Optional,
-    Union,
-    List,
-    Literal,
+    Any,
     Callable,
     Dict,
-    Any,
     Iterable,
     Iterator,
+    List,
+    Literal,
+    Optional,
     Tuple,
+    Union,
     overload,
 )
 

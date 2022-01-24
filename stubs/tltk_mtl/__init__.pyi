@@ -1,6 +1,6 @@
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
-from numpy import float_, float32
+from numpy import float32, float_
 from numpy.typing import NDArray
 
 _Traces = Dict[str, NDArray[float_]]

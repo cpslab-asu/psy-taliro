@@ -4,11 +4,20 @@ from unittest.mock import Mock, NonCallableMock
 
 from numpy import ndarray
 from numpy.typing import NDArray
+
 from staliro.core.interval import Interval
 from staliro.core.model import ModelData
 from staliro.core.signal import Signal
-from staliro.models import Blackbox, ODE, StaticInput, SignalTimes, SignalValues, State
-from staliro.models import blackbox, ode
+from staliro.models import (
+    ODE,
+    Blackbox,
+    SignalTimes,
+    SignalValues,
+    State,
+    StaticInput,
+    blackbox,
+    ode,
+)
 
 AnyData = ModelData[Any, Any]
 

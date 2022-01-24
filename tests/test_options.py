@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
+
 from staliro.core import Interval
 from staliro.options import Options, OptionsError, SignalOptions
 

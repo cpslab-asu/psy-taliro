@@ -9,7 +9,7 @@ from scipy import integrate
 from typing_extensions import Literal, overload
 
 from .core.interval import Interval
-from .core.model import Model, ModelResult, ModelData, StaticInput
+from .core.model import Model, ModelData, ModelResult, StaticInput
 from .core.signal import Signal
 
 StateT = TypeVar("StateT")
