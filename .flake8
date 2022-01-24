@@ -14,8 +14,6 @@ select =
     FS,
     # Annotation complexity plugin
     TAE,
-    # Import order plugin
-    I1, I2,
     # TODO plugin
     T000
 
@@ -42,7 +40,4 @@ per-file-ignores =
     # W605: Invalid escape sequence
     test_*.py: W605
 
-import-order-style = pep8
-
 max-annotations-complexity = 3
-
