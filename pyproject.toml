@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PSY-TaLiRo"
-version = "1.0.0b2"
+version = "1.0.0b3"
 description = "System-level verification library using STL"
 authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <andersonjwan@asu.edu>"]
 license = "BSD-3-Clause"
