@@ -1,4 +1,4 @@
-pystaliro
+psy-taliro
 =========
 
 Python implementation of s-taliro. The original implementation can be found
