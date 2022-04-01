@@ -33,14 +33,23 @@ def f16_model(static: StaticInput, times: SignalTimes, signals: SignalValues) ->
     autopilot = GcasAutopilot(init_mode="roll", stdout=False)
 
     result = run_f16_sim(initial_state, max(times), autopilot, step, extended_states=True)
-    trajectories: NDArray[np.float_] = result["states"][:, 12:13]
+
+    trajectories: NDArray[np.float_] = np.asarray([
+        [0 if x == "standby" else 1 for x in result["modes"]],  # GCAS: autopilot (ap)
+        result["states"][:, 4].T,                               # roll
+        result["states"][:, 5].T,                               # pitch
+        result["states"][:, 6].T,                               # yaw
+        result["states"][:, 12].T                               # altitude
+    ])
+
     timestamps: NDArray[np.float_] = result["times"]
+    return ModelData(trajectories, timestamps)
 
-    return ModelData(trajectories.T, timestamps)
 
+phi_01 = "always[0:15] (alt > 0)"
+phi_02 = "always[0:15] (((ap >= 0.5) and (next (ap <= 0.5))) implies (next ((roll >= 0.02 and roll <= 0.04) and (pitch >= 0.28 and pitch <= 0.28))))"
 
-phi = "always[0:15] (alt >= 0)"
-specification = RTAMTDense(phi, {"alt": 0})
+specification = RTAMTDense(phi_01, {"ap": 0, "roll": 1, "pitch": 2, "yaw": 3, "alt": 4})
 
 optimizer = DualAnnealing()
 
