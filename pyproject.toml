@@ -2,7 +2,7 @@
 name = "PSY-TaLiRo"
 version = "1.0.0b3"
 description = "System-level verification library using STL"
-authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <andersonjwan@asu.edu>"]
+authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <jwande18@asu.edu>"]
 license = "BSD-3-Clause"
 packages = [
     {include = "staliro", from = "src"}
