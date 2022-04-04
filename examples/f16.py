@@ -34,13 +34,15 @@ def f16_model(static: StaticInput, times: SignalTimes, signals: SignalValues) ->
 
     result = run_f16_sim(initial_state, max(times), autopilot, step, extended_states=True)
 
-    trajectories: NDArray[np.float_] = np.asarray([
-        [0 if x == "standby" else 1 for x in result["modes"]],  # GCAS: autopilot (ap)
-        result["states"][:, 4].T,                               # roll
-        result["states"][:, 5].T,                               # pitch
-        result["states"][:, 6].T,                               # yaw
-        result["states"][:, 12].T                               # altitude
-    ])
+    trajectories: NDArray[np.float_] = np.asarray(
+        [
+            [0 if x == "standby" else 1 for x in result["modes"]],  # GCAS: autopilot (ap)
+            result["states"][:, 4].T,  # roll
+            result["states"][:, 5].T,  # pitch
+            result["states"][:, 6].T,  # yaw
+            result["states"][:, 12].T,  # altitude
+        ]
+    )
 
     timestamps: NDArray[np.float_] = result["times"]
     return ModelData(trajectories, timestamps)
