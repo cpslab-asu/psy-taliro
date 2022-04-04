@@ -47,7 +47,7 @@ def f16_model(static: StaticInput, times: SignalTimes, signals: SignalValues) ->
 
 
 phi_01 = "always[0:15] (alt > 0)"
-phi_02 = "always[0:15] (((ap >= 0.5) and (next (ap <= 0.5))) implies (next ((roll >= 0.02 and roll <= 0.04) and (pitch >= 0.28 and pitch <= 0.28))))"
+phi_02 = "always[0:15] (((ap >= 0.5) and (next (ap <= 0.5))) implies (next ((roll >= 0.02 and roll <= 0.04) and (pitch >= 0.20 and pitch <= 0.28))))"
 
 specification = RTAMTDense(phi_01, {"ap": 0, "roll": 1, "pitch": 2, "yaw": 3, "alt": 4})
 
