@@ -72,10 +72,9 @@ class SpecificationTestCase(TestCase):
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
 
-    @skip("TP-TaLiRo formula is not currently processable")
+    @skipIf(not _has_taliro, "Py-TaLiRo library must be installed to run TP-TaLiRo specification test")
     def test_tp_taliro_specification(self) -> None:
-        # Requirement: not (always[0.0, 4.0](x1_1 and x1_2) and eventually[3.5,4.0](x1_3 and x1_4))
-        requirement = "!(@ Var_t <>({Var_t >= 0} /\ {Var_t <= 4} /\ x1_1 /\ x1_2) /\ @ Var_t <>(x1_3 /\ x1_4 /\ {Var_t >= 3.5} /\ {Var_t <= 4}))"
+        requirement = "!(@Var_t1 ([](({ Var_t1 >= 0 } /\ { Var_t1 <= 4.0 }) -> x1_1 /\ x1_2)) /\ (@Var_t2 <>((({ Var_t2 >= 3.5 } /\ { Var_t2 <= 4.0 }) /\ (x1_3 /\ x1_4)))))"
         predicates: List[TaliroPredicate] = [
             {
                 "name": "x1_1",
