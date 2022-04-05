@@ -1,6 +1,6 @@
 from os import path
 from typing import TYPE_CHECKING, List
-from unittest import TestCase, skip, skipIf
+from unittest import TestCase, skipIf
 
 import numpy as np
 import pandas as pd
@@ -72,7 +72,9 @@ class SpecificationTestCase(TestCase):
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
 
-    @skipIf(not _has_taliro, "Py-TaLiRo library must be installed to run TP-TaLiRo specification test")
+    @skipIf(
+        not _has_taliro, "Py-TaLiRo library must be installed to run TP-TaLiRo specification test"
+    )
     def test_tp_taliro_specification(self) -> None:
         requirement = "!(@Var_t1 ([](({ Var_t1 >= 0 } /\ { Var_t1 <= 4.0 }) -> x1_1 /\ x1_2)) /\ (@Var_t2 <>((({ Var_t2 >= 3.5 } /\ { Var_t2 <= 4.0 }) /\ (x1_3 /\ x1_4)))))"
         predicates: List[TaliroPredicate] = [
