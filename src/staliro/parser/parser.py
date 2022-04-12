@@ -38,6 +38,10 @@ class TemporalLogic(Enum):
     STL = 1
     TPTL = 2
 
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+
 
 def parse(formula: str, predicates: Predicates, mode: str = "cpu") -> Optional[TltkObject]:
     """TLTk parser parses a specification requirement into an equivalent TLTk structure
@@ -90,4 +94,4 @@ def translate(formula: str, source: TemporalLogic, target: TemporalLogic) -> str
         return visitor.visit(tree)
 
     elif source == target:
-        return source
+        return formula
