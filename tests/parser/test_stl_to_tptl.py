@@ -25,7 +25,10 @@ class StlTptlTranslationTestCase(TestCase):
         self.assertEqual(source, translation)
 
     def test_translate_negation(self) -> None:
-        pass
+        source = r"not not not a"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("! ! ! a", translation)
 
     def test_translate_next(self) -> None:
         pass

@@ -12,10 +12,7 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
 
     # Visit a parse tree produced by stlParser#stlSpecification.
     def visitStlSpecification(self, ctx: stlParser.StlSpecificationContext):
-        translation = self.visitChildren(ctx)
-
-        print(translation)
-        return translation
+        return  self.visit(ctx.getRuleContext().getChild(0))
 
     # Visit a parse tree produced by stlParser#predicateExpr.
     def visitPredicateExpr(self, ctx: stlParser.PredicateExprContext):
@@ -55,11 +52,11 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
 
     # Visit a parse tree produced by stlParser#opNegExpr.
     def visitOpNegExpr(self, ctx: stlParser.OpNegExprContext):
-        return self.visitChildren(ctx)
+        return "! " + self.visit(ctx.getRuleContext().getChild(1))
 
     # Visit a parse tree produced by stlParser#predicate.
     def visitPredicate(self, ctx: stlParser.PredicateContext):
-        return self.visitChildren(ctx)
+        return ctx.getRuleContext().getChild(0).getText()
 
     # Visit a parse tree produced by stlParser#interval.
     def visitInterval(self, ctx: stlParser.IntervalContext):
