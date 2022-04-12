@@ -1,3 +1,6 @@
-from .parser import parse
+from .parser import parse, translate
 
-__all__ = ["parse"]
+__all__ = [
+    "parse",
+    "translate"
+]
