@@ -1,6 +1,7 @@
-from .parser import parse, translate
+from .parser import parse, TemporalLogic, translate
 
 __all__ = [
     "parse",
+    "TemporalLogic"
     "translate"
 ]
