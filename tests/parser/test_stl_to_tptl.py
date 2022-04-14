@@ -114,7 +114,7 @@ class StlTptlTranslationTestCase(TestCase):
 
         self.assertEqual("!(@Var_t0 (!a U (({ Var_t0 >= 0.0 } /\ { Var_t0 <= 5.0 }) /\ !b)))", translation)
 
-    def test_translate_unbounded_predicate(self) -> None:
+    def test_translate_predicate(self) -> None:
         source = r"globally (eventually a) /\ (eventually b)"
         translation = translate(source, TL.STL, TL.TPTL)
 
@@ -125,9 +125,3 @@ class StlTptlTranslationTestCase(TestCase):
         translation = translate(source, TL.STL, TL.TPTL)
 
         self.assertEqual("@Var_t0 [](({ Var_t0 >= 0.0 } /\ { Var_t0 <= 10.0 }) -> ( a /\ ( @Var_t1 <>(({ Var_t1 >= 0.0 } /\ { Var_t1 <= 3.0 }) /\ b) ) ))", translation)
-
-    # def test_translate_complex_requirement_01(self) -> None:
-    #     pass
-
-    # def test_translate_complex_requirement_02(self) -> None:
-    #     pass
