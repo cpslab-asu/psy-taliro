@@ -31,40 +31,73 @@ class StlTptlTranslationTestCase(TestCase):
         self.assertEqual("! ! ! a", translation)
 
     def test_translate_next(self) -> None:
-        pass
+        source = r"next a"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("X a", translation)
 
     def test_translate_eventually(self) -> None:
-        pass
+        source = r"eventually a"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("<> a", translation)
 
     def test_translate_always(self) -> None:
-        pass
+        source = r"always a"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("[] a", translation)
 
     def test_translate_until(self) -> None:
-        pass
+        source = r"a until b"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a U b", translation)
 
     def test_translate_release(self) -> None:
-        pass
+        source = r"a release b"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a R b", translation)
 
     def test_translate_implication(self) -> None:
-        pass
+        source = r"a implies (next b)"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a -> ( X b )", translation)
 
     def test_translate_equivalence(self) -> None:
-        pass
+        source = r"a iff (always b)"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a <-> ( [] b )", translation)
 
     def test_translate_conjunction(self) -> None:
-        pass
+        source = r"a and b and c"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a /\ b /\ c", translation)
 
     def test_translate_disjunction(self) -> None:
-        pass
+        source = r"a or b or c"
+        translation = translate(source, TL.STL, TL.TPTL)
+
+        self.assertEqual("a \/ b \/ c", translation)
 
     def test_translate_unbounded_predicate(self) -> None:
-        pass
+        source = r"globally (eventually a) /\ (eventually b)"
+        translation = translate(source, TL.STL, TL.TPTL)
 
-    def test_translate_bounded_predicate(self) -> None:
-        pass
+        self.assertEqual("[] ( <> a ) /\ ( <> b )", translation)
 
-    def test_translate_complex_requirement_01(self) -> None:
-        pass
+    # def test_translate_bounded_predicate(self) -> None:
+    #     source = r"always[0, 10] (a /\ (eventually[0, 3] b))"
+    #     translation = translate(source, TL.STL, TL.TPTL)
 
-    def test_translate_complex_requirement_01(self) -> None:
-        pass
+    #     self.assertEqual("@Var_t1 (({ Var_t1 >= 0 } /\ { Var_t1 <= 10}) -> (a /\ (@Var_t2 <>(({ Var_t2 >= 0 } /\ { Var_t2 <= 3 }) /\ b))))", translation)
+
+    # def test_translate_complex_requirement_01(self) -> None:
+    #     pass
+
+    # def test_translate_complex_requirement_02(self) -> None:
+    #     pass
