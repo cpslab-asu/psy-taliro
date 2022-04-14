@@ -12,6 +12,32 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
 
     def __init__(self, lexer):
         self.lexer = lexer
+        self.freeze = 0
+
+    def freezeTime(self, freeze, lower, upper, subformulas, token_type):
+        translation = ""
+        if token_type == self.lexer.FUTUREOP:
+            translation = (f"@Var_t{freeze} <>"
+                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                           f"/\\ {subformulas[0]})")
+        elif token_type == self.lexer.GLOBALLYOP:
+            translation = (f"@Var_t{freeze} []"
+                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                           f"-> {subformulas[0]})")
+        elif token_type == self.lexer.NEXTOP:
+            translation = (f"@Var_t{freeze} X"
+                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                           f"/\\ {subformulas[0]})")
+        elif token_type == self.lexer.UNTILOP:
+            translation = (f"@Var_t{freeze} ( {subformulas[0]} U "
+                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                           f"/\\ {subformulas[1]}))")
+        elif token_type == self.lexer.RELEASEOP:
+            translation = (f"!(@Var_t{freeze} (!{subformulas[0]} U "
+                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                           f"/\ !{subformulas[1]})))")
+
+        return translation
 
     # Visit a parse tree produced by stlParser#stlSpecification.
     def visitStlSpecification(self, ctx: stlParser.StlSpecificationContext) -> str:
@@ -26,12 +52,18 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
         child_count = ctx.getRuleContext().getChildCount()
 
         phi = ""
-        if child_count == 2:
-            phi = self.visit(ctx.getRuleContext().getChild(1))
-        else:
-            phi = self.visit(ctx.getRuleContext().getChild(2))
+        if child_count == 3:
+            index = self.freeze
+            self.freeze += 1
 
-        return "<> " + phi
+            bounds = self.visit(ctx.getRuleContext().getChild(1))
+            phi = self.visit(ctx.getRuleContext().getChild(2))
+            token_type = ctx.getRuleContext().getChild(0).getSymbol().type
+
+            return self.freezeTime(index, bounds[0], bounds[1], [phi], token_type)
+        else:
+            phi = self.visit(ctx.getRuleContext().getChild(1))
+            return "<> " + phi
 
     # Visit a parse tree produced by stlParser#parenPhiExpr.
     def visitParenPhiExpr(self, ctx: stlParser.ParenPhiExprContext) -> str:
@@ -44,26 +76,40 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
         phi_1 = ""
         phi_2 = ""
 
-        if child_count == 3:
-            phi_1 = self.visit(ctx.getRuleContext().getChild(0))
-            phi_2 = self.visit(ctx.getRuleContext().getChild(2))
-        else:
+        if child_count == 4:
+            index = self.freeze
+            self.freeze += 1
+
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(3))
 
-        return phi_1 + " U " + phi_2
+            bounds = self.visit(ctx.getRuleContext().getChild(2))
+            token_type = ctx.getRuleContext().getChild(1).getSymbol().type
+
+            return self.freezeTime(index, bounds[0], bounds[1], [phi_1, phi_2], token_type)
+        else:
+            phi_1 = self.visit(ctx.getRuleContext().getChild(0))
+            phi_2 = self.visit(ctx.getRuleContext().getChild(2))
+
+            return phi_1 + " U " + phi_2
 
     # Visit a parse tree produced by stlParser#opGloballyExpr.
     def visitOpGloballyExpr(self, ctx: stlParser.OpGloballyExprContext) -> str:
         child_count = ctx.getRuleContext().getChildCount()
 
         phi = ""
-        if child_count == 2:
-            phi = self.visit(ctx.getRuleContext().getChild(1))
-        else:
-            phi = self.visit(ctx.getRuleContext().getChild(2))
+        if child_count == 3:
+            index = self.freeze
+            self.freeze += 1
 
-        return "[] " + phi
+            bounds = self.visit(ctx.getRuleContext().getChild(1))
+            phi = self.visit(ctx.getRuleContext().getChild(2))
+            token_type = ctx.getRuleContext().getChild(0).getSymbol().type
+
+            return self.freezeTime(index, bounds[0], bounds[1], [phi], token_type)
+        else:
+            phi = self.visit(ctx.getRuleContext().getChild(1))
+            return "[] " + phi
 
     # Visit a parse tree produced by stlParser#opLogicalExpr.
     def visitOpLogicalExpr(self, ctx: stlParser.OpLogicalExprContext) -> str:
@@ -77,38 +123,56 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(2))
 
-            return phi_1 + " /\ " + phi_2
+            return phi_1 + r" /\ " + phi_2
         elif token_type == self.lexer.OROP:
             # disjunction
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(2))
 
-            return phi_1 + " \/ " + phi_2
+            return phi_1 + r" \/ " + phi_2
 
 
     # Visit a parse tree produced by stlParser#opReleaseExpr.
     def visitOpReleaseExpr(self, ctx: stlParser.OpReleaseExprContext) -> str:
         child_count = ctx.getRuleContext().getChildCount()
 
-        if child_count == 3:
-            phi_1 = self.visit(ctx.getRuleContext().getChild(0))
-            phi_2 = self.visit(ctx.getRuleContext().getChild(2))
-        else:
+        phi_1 = ""
+        phi_2 = ""
+
+        if child_count == 4:
+            index = self.freeze
+            self.freeze += 1
+
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(3))
 
-        return phi_1 + " R " + phi_2
+            bounds = self.visit(ctx.getRuleContext().getChild(2))
+            token_type = ctx.getRuleContext().getChild(1).getSymbol().type
+
+            return self.freezeTime(index, bounds[0], bounds[1], [phi_1, phi_2], token_type)
+        else:
+            phi_1 = self.visit(ctx.getRuleContext().getChild(0))
+            phi_2 = self.visit(ctx.getRuleContext().getChild(2))
+
+            return phi_1 + " R " + phi_2
 
     # Visit a parse tree produced by stlParser#opNextExpr.
     def visitOpNextExpr(self, ctx: stlParser.OpNextExprContext) -> str:
         child_count = ctx.getRuleContext().getChildCount()
 
-        if child_count == 2:
-            phi = self.visit(ctx.getRuleContext().getChild(1))
-        else:
-            phi = self.visit(ctx.getRuleContext().getChild(2))
+        phi = ""
+        if child_count == 3:
+            index = self.freeze
+            self.freeze += 1
 
-        return "X " + phi
+            bounds = self.visit(ctx.getRuleContext().getChild(1))
+            phi = self.visit(ctx.getRuleContext().getChild(2))
+            token_type = ctx.getRuleContext().getChild(0).getSymbol().type
+
+            return self.freezeTime(index, bounds[0], bounds[1], [phi], token_type)
+        else:
+            phi = self.visit(ctx.getRuleContext().getChild(1))
+            return "X " + phi
 
     # Visit a parse tree produced by stlParser#opPropExpr.
     def visitOpPropExpr(self, ctx: stlParser.OpPropExprContext) -> str:
