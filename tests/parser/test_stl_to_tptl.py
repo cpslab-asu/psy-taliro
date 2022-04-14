@@ -3,7 +3,6 @@ from unittest import TestCase
 from staliro.parser import TemporalLogic, translate
 
 
-
 class StlTptlTranslationTestCase(TestCase):
     """Test the equivalency translations from STL to TPTL."""
 
