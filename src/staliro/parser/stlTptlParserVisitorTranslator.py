@@ -73,13 +73,13 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
         phi_2 = ""
 
         if token_type == self.lexer.ANDOP:
-            # implication
+            # conjunction
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(2))
 
             return phi_1 + " /\ " + phi_2
         elif token_type == self.lexer.OROP:
-            # equivalency
+            # disjunction
             phi_1 = self.visit(ctx.getRuleContext().getChild(0))
             phi_2 = self.visit(ctx.getRuleContext().getChild(2))
 
