@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum, auto
-from typing import Dict, Optional, Sequence, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 import tltk_mtl as mtl
 from antlr4.CommonTokenStream import CommonTokenStream
@@ -38,11 +38,13 @@ class TemporalLogic(IntEnum):
     STL = auto()
     TPTL = auto()
 
-    def __lt__(self, other):
-        if self.__class__ is other.__class__:
-            return self.value < other.value
+    def __lt__(self, other: int) -> Any:
+        if not isinstance(other, TemporalLogic):
+            return NotImplemented
 
-    def __str__(self):
+        return self.value < other.value
+
+    def __str__(self) -> str:
         return self.name
 
 
@@ -94,7 +96,7 @@ def _stl_to_tptl(stream: InputStream) -> str:
         tree = parser.stlSpecification()
         visitor = Visitor(lexer)
 
-        return visitor.visit(tree)
+        return visitor.visit(tree)  # type: ignore
     except:
         raise SpecificationSyntaxError("STL formula has a syntax error")
 
