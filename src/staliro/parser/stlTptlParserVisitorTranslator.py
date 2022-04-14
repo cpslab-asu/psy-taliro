@@ -17,31 +17,41 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
     def freezeTime(self, freeze, lower, upper, subformulas, token_type):
         translation = ""
         if token_type == self.lexer.FUTUREOP:
-            translation = (f"@Var_t{freeze} <>"
-                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                           f"/\\ {subformulas[0]})")
+            translation = (
+                f"@Var_t{freeze} <>"
+                f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                f"/\\ {subformulas[0]})"
+            )
         elif token_type == self.lexer.GLOBALLYOP:
-            translation = (f"@Var_t{freeze} []"
-                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                           f"-> {subformulas[0]})")
+            translation = (
+                f"@Var_t{freeze} []"
+                f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                f"-> {subformulas[0]})"
+            )
         elif token_type == self.lexer.NEXTOP:
-            translation = (f"@Var_t{freeze} X"
-                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                           f"/\\ {subformulas[0]})")
+            translation = (
+                f"@Var_t{freeze} X"
+                f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                f"/\\ {subformulas[0]})"
+            )
         elif token_type == self.lexer.UNTILOP:
-            translation = (f"@Var_t{freeze} ( {subformulas[0]} U "
-                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                           f"/\\ {subformulas[1]}))")
+            translation = (
+                f"@Var_t{freeze} ( {subformulas[0]} U "
+                f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                f"/\\ {subformulas[1]}))"
+            )
         elif token_type == self.lexer.RELEASEOP:
-            translation = (f"!(@Var_t{freeze} (!{subformulas[0]} U "
-                           f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                           f"/\ !{subformulas[1]})))")
+            translation = (
+                f"!(@Var_t{freeze} (!{subformulas[0]} U "
+                f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
+                f"/\ !{subformulas[1]})))"
+            )
 
         return translation
 
     # Visit a parse tree produced by stlParser#stlSpecification.
     def visitStlSpecification(self, ctx: stlParser.StlSpecificationContext) -> str:
-        return  self.visit(ctx.getRuleContext().getChild(0))
+        return self.visit(ctx.getRuleContext().getChild(0))
 
     # Visit a parse tree produced by stlParser#predicateExpr.
     def visitPredicateExpr(self, ctx: stlParser.PredicateExprContext) -> str:
@@ -67,7 +77,7 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
 
     # Visit a parse tree produced by stlParser#parenPhiExpr.
     def visitParenPhiExpr(self, ctx: stlParser.ParenPhiExprContext) -> str:
-        return  "( " + self.visit(ctx.getRuleContext().getChild(1)) + " )"
+        return "( " + self.visit(ctx.getRuleContext().getChild(1)) + " )"
 
     # Visit a parse tree produced by stlParser#opUntilExpr.
     def visitOpUntilExpr(self, ctx: stlParser.OpUntilExprContext) -> str:
@@ -130,7 +140,6 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
             phi_2 = self.visit(ctx.getRuleContext().getChild(2))
 
             return phi_1 + r" \/ " + phi_2
-
 
     # Visit a parse tree produced by stlParser#opReleaseExpr.
     def visitOpReleaseExpr(self, ctx: stlParser.OpReleaseExprContext) -> str:
@@ -209,5 +218,6 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
         bounds.append(float(ctx.getRuleContext().getChild(3).getText()))
 
         return bounds
+
 
 del stlParser

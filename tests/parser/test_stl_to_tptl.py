@@ -106,13 +106,17 @@ class StlTptlTranslationTestCase(TestCase):
         source = r"a until[0, 2] b"
         translation = translate(source, TL.STL, TL.TPTL)
 
-        self.assertEqual("@Var_t0 ( a U (({ Var_t0 >= 0.0 } /\ { Var_t0 <= 2.0 }) /\ b))", translation)
+        self.assertEqual(
+            "@Var_t0 ( a U (({ Var_t0 >= 0.0 } /\ { Var_t0 <= 2.0 }) /\ b))", translation
+        )
 
     def test_translate_bounded_release(self) -> None:
         source = r"a release[0, 5] b"
         translation = translate(source, TL.STL, TL.TPTL)
 
-        self.assertEqual("!(@Var_t0 (!a U (({ Var_t0 >= 0.0 } /\ { Var_t0 <= 5.0 }) /\ !b)))", translation)
+        self.assertEqual(
+            "!(@Var_t0 (!a U (({ Var_t0 >= 0.0 } /\ { Var_t0 <= 5.0 }) /\ !b)))", translation
+        )
 
     def test_translate_predicate(self) -> None:
         source = r"globally (eventually a) /\ (eventually b)"
@@ -124,4 +128,7 @@ class StlTptlTranslationTestCase(TestCase):
         source = r"always[0, 10] (a /\ (eventually[0, 3] b))"
         translation = translate(source, TL.STL, TL.TPTL)
 
-        self.assertEqual("@Var_t0 [](({ Var_t0 >= 0.0 } /\ { Var_t0 <= 10.0 }) -> ( a /\ ( @Var_t1 <>(({ Var_t1 >= 0.0 } /\ { Var_t1 <= 3.0 }) /\ b) ) ))", translation)
+        self.assertEqual(
+            "@Var_t0 [](({ Var_t0 >= 0.0 } /\ { Var_t0 <= 10.0 }) -> ( a /\ ( @Var_t1 <>(({ Var_t1 >= 0.0 } /\ { Var_t1 <= 3.0 }) /\ b) ) ))",
+            translation,
+        )
