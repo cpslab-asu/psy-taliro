@@ -536,8 +536,8 @@ tenacity = ">=6.2.0"
 
 [[package]]
 name = "py-taliro"
-version = "0.1.1"
-description = "Py-TaLiRo is the Python interface for TP/DP-TaLiRo"
+version = "0.2.1"
+description = "Py-TaLiRo is the Python interface for TP/DP-TaLiRo."
 category = "main"
 optional = false
 python-versions = ">=3.8"
@@ -932,7 +932,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <3.11"
-content-hash = "56599894b5590a473661622fe30ace06c99b3176a28d764763e0897d242d8ff6"
+content-hash = "b3ad80e0b2196a5829e8efc5450f8d9315eb9344b48884dd1b96735926d503b3"
 
 [metadata.files]
 aerobench = []
@@ -1368,9 +1368,10 @@ plotly = [
     {file = "plotly-5.10.0.tar.gz", hash = "sha256:4d36d9859b7a153b273562deeed8c292587a472eb1fd57cd4158ec89d9defadb"},
 ]
 py-taliro = [
-    {file = "py_taliro-0.1.1-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:ff6f241e7a8a6e99a252c78f2a8051bda3b7e93b04170811def77c602bd62fc9"},
-    {file = "py_taliro-0.1.1-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:f76091d98ce13edef7da37bca18c22ca54ed546538e65bcbd95300d9f635b755"},
-    {file = "py_taliro-0.1.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:37cabbc4fe27ff9615765b499ad6c34253c8e5c3f7188ea631efa6c98699304e"},
+    {file = "py-taliro-0.2.1.zip", hash = "sha256:7b3c4c7ca1293983f452b5de40615daaf710694704781969e2b8ce240bf5f01c"},
+    {file = "py_taliro-0.2.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c6c40589a3124992f2320b64612f524330dcc0410e4f1afc7bc8e020620cd438"},
+    {file = "py_taliro-0.2.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bbebe006ab7fda67fe98402076e5b7e6e9c8b991979bd29adc921e38b0dd1336"},
+    {file = "py_taliro-0.2.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:076afdad25477e8ff19eacbee40c9a151275d39df59d8d3d04e0b5c267e309bb"},
 ]
 pycodestyle = [
     {file = "pycodestyle-2.8.0-py2.py3-none-any.whl", hash = "sha256:720f8b39dde8b293825e7ff02c475f3077124006db4f440dcbc9a20b76548a20"},
