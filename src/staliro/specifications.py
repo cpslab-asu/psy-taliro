@@ -231,4 +231,4 @@ class TPTaliro(StlSpecification):
             ts=np.array(times_, dtype=np.double, ndmin=2),
         )
 
-        return robustness
+        return robustness["ds"]
