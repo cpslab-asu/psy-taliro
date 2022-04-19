@@ -30,6 +30,12 @@ except ImportError:
 else:
     _has_tptaliro = True
 
+try:
+    from .parser import SpecificationSyntaxError, TemporalLogic, translate
+except ImportError:
+    _can_translate = False
+else:
+    _can_translate = True
 
 if TYPE_CHECKING:
     from taliro.tptaliro import TaliroPredicate
@@ -205,6 +211,8 @@ class TPTaliro(StlSpecification):
     def __init__(self, phi: str, predicate_map: Sequence[TaliroPredicate]):
         if not _has_tptaliro:
             raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
+        if not _can_translate:
+            raise RuntimeError("TP-TaLiRo specifications require translation functionality.")
 
         def into_taliro_predicate(user_data: Mapping[str, object]) -> TaliroPredicate:
             name = user_data.get("name")
@@ -218,7 +226,12 @@ class TPTaliro(StlSpecification):
                 "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
             }
 
-        self.spec = phi
+        # translate STL to TPTL; else, assume valid TPTL
+        try:
+            self.spec = translate(phi, TemporalLogic.STL, TemporalLogic.TPTL)
+        except SpecificationSyntaxError:
+            self.spec = phi
+
         self.pmap = [into_taliro_predicate(user_dict) for user_dict in predicate_map]
 
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
@@ -231,4 +244,4 @@ class TPTaliro(StlSpecification):
             ts=np.array(times_, dtype=np.double, ndmin=2),
         )
 
-        return robustness["ds"] # type: ignore
+        return robustness["ds"]  # type: ignore

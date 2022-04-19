@@ -86,7 +86,7 @@ def _stl_to_tptl(stream: InputStream) -> str:
 
     from .stlLexer import stlLexer as Lexer
     from .stlParser import stlParser as Parser
-    from .stlTptlParserVisitorTranslator import stlTptlParserVisitorTranslator as Visitor
+    from .stlTptlParserVisitorTranslator import stlTptlParserVisitorTranslator as stlTptlVisitor
 
     try:
         lexer = Lexer(stream)
@@ -94,7 +94,7 @@ def _stl_to_tptl(stream: InputStream) -> str:
 
         parser = Parser(stream)
         tree = parser.stlSpecification()
-        visitor = Visitor(lexer)
+        visitor = stlTptlVisitor(lexer)
 
         return visitor.visit(tree)  # type: ignore
     except:
