@@ -76,7 +76,7 @@ class SpecificationTestCase(TestCase):
         not _has_taliro, "Py-TaLiRo library must be installed to run TP-TaLiRo specification test"
     )
     def test_tp_taliro_specification(self) -> None:
-        requirement = "!(@Var_t1 ([](({ Var_t1 >= 0 } /\ { Var_t1 <= 4.0 }) -> x1_1 /\ x1_2)) /\ (@Var_t2 <>((({ Var_t2 >= 3.5 } /\ { Var_t2 <= 4.0 }) /\ (x1_3 /\ x1_4)))))"
+        requirement = "(not ((always[0.0, 4.0]((x1_1) and (x1_2))) and (eventually[3.5,4.0]((x1_3) and (x1_4)))))"
         predicates: List[TaliroPredicate] = [
             {
                 "name": "x1_1",
