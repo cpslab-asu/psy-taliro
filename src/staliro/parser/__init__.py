@@ -1,3 +1,3 @@
-from .parser import parse, TemporalLogic, translate
+from .parser import parse, SpecificationSyntaxError, TemporalLogic, translate
 
-__all__ = ["parse", "TemporalLogic" "translate"]
+__all__ = ["parse", "SpecificationSyntaxError" "TemporalLogic" "translate"]
