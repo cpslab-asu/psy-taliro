@@ -44,7 +44,7 @@ class stlTptlParserVisitorTranslator(ParseTreeVisitor):
             translation = (
                 f"!(@Var_t{freeze} (!{subformulas[0]} U "
                 f"(({{ Var_t{freeze} >= {str(lower)} }} /\\ {{ Var_t{freeze} <= {str(upper)} }}) "
-                f"/\ !{subformulas[1]})))"
+                f"/\\ !{subformulas[1]})))"
             )
 
         return translation
