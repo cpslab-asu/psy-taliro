@@ -16,7 +16,7 @@ class Pchip(Signal):
         return float(self.interp(t))
 
     def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts))
+        return cast(List[float], self.interp(ts).tolist())
 
 
 def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
@@ -31,7 +31,7 @@ class PiecewiseLinear(Signal):
         return float(self.interp(t))
 
     def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts))
+        return cast(List[float], self.interp(ts).tolist())
 
 
 def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseLinear:
@@ -46,7 +46,7 @@ class PiecewiseConstant(Signal):
         return float(self.interp(t))
 
     def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts))
+        return cast(List[float], self.interp(ts).tolist())
 
 
 def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseConstant:
