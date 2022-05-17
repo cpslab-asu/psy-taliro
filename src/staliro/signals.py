@@ -1,50 +1,52 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import List, Sequence
+from typing import List, Sequence, cast
 
-import numpy as np
-from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
-from typing_extensions import Protocol, overload
 
 from .core.signal import Signal
 
 
-class ScipyInterpolator(Protocol):
-    @overload
-    def __call__(self, x: float) -> float:
-        ...
-
-    @overload
-    def __call__(self, x: Sequence[float]) -> NDArray[np.float_]:
-        ...
-
-
-class ScipySignal(Signal, ABC):
-    interpolator: ScipyInterpolator
-
-    @abstractmethod
-    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
-        ...
+class Pchip(Signal):
+    def __init__(self, interp: PchipInterpolator):
+        self.interp = interp
 
     def at_time(self, t: float) -> float:
-        return self.interpolator(t)
+        return float(self.interp(t))
 
     def at_times(self, ts: Sequence[float]) -> List[float]:
-        return self.interpolator(ts).tolist()  # type: ignore
+        return cast(List[float], self.interp(ts))
 
 
-class Pchip(ScipySignal):
-    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
-        self.interpolator = PchipInterpolator(xs, ys)
+def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
+    return Pchip(PchipInterpolator(times, signal_values))
 
 
-class PiecewiseLinear(ScipySignal):
-    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
-        self.interpolator = interp1d(xs, ys)
+class PiecewiseLinear(Signal):
+    def __init__(self, interp: interp1d):
+        self.interp = interp
+
+    def at_time(self, t: float) -> float:
+        return float(self.interp(t))
+
+    def at_times(self, ts: Sequence[float]) -> List[float]:
+        return cast(List[float], self.interp(ts))
 
 
-class PiecewiseConstant(ScipySignal):
-    def __init__(self, xs: Sequence[float], ys: Sequence[float]):
-        self.interpolator = interp1d(xs, ys, kind="zero", fill_value="extrapolate")
+def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseLinear:
+    return PiecewiseLinear(interp1d(times, signal_values))
+
+
+class PiecewiseConstant(Signal):
+    def __init__(self, interp: interp1d):
+        self.interp = interp
+
+    def at_time(self, t: float) -> float:
+        return float(self.interp(t))
+
+    def at_times(self, ts: Sequence[float]) -> List[float]:
+        return cast(List[float], self.interp(ts))
+
+
+def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseConstant:
+    return PiecewiseConstant(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
