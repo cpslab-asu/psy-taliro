@@ -9,7 +9,7 @@ import numpy.testing
 import pandas as pd
 
 from staliro.core.interval import Interval
-from staliro.signals import Pchip, PiecewiseConstant
+from staliro.signals import pchip, piecewise_constant
 
 TEST_DIR = path.dirname(__file__)
 
@@ -27,7 +27,7 @@ class ConstantSignalTestCase(TestCase):
         y_axis = [0, 1, 0, 1, 0, 0]
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
 
-        signal = PiecewiseConstant(x_axis, y_axis)
+        signal = piecewise_constant(x_axis, y_axis)
         csv_data = pd.read_csv(path.join(TEST_DIR, "data", "constant_trace.csv"))
         times_col = csv_data.columns[0]
         times = csv_data[times_col].tolist()
@@ -42,7 +42,7 @@ class ConstantSignalTestCase(TestCase):
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
         times = _random(interval.lower, interval.upper, len(y_axis))
 
-        signal = PiecewiseConstant(x_axis, y_axis)
+        signal = piecewise_constant(x_axis, y_axis)
         single_sampled_points = [signal.at_time(t) for t in times]
         vector_sampled_points = signal.at_times(times)
 
@@ -66,7 +66,7 @@ class PchipSignalTestCase(TestCase):
         ]
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
 
-        signal = Pchip(x_axis, y_axis)
+        signal = pchip(x_axis, y_axis)
         csv_data = pd.read_csv(path.join(TEST_DIR, "data", "pchip_trace.csv"))
         times_col = csv_data.columns[0]
         times = csv_data[times_col].to_numpy()
@@ -81,7 +81,7 @@ class PchipSignalTestCase(TestCase):
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
         times = _random(interval.lower, interval.upper, len(y_axis))
 
-        signal = Pchip(x_axis, y_axis)
+        signal = pchip(x_axis, y_axis)
         single_sampled_points = [signal.at_time(t) for t in times]
         vector_sampled_points = signal.at_times(times)
 
