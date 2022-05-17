@@ -117,12 +117,6 @@ unittest-cp310:
   cache:
     key: cache-cp310
 
-regressiontest-cp37:
-  extends: .regressiontest-job
-  image: python:3.7
-  cache:
-    key: cache-cp37
-
 regressiontest-cp38:
   extends: .regressiontest-job
   image: python:3.8
