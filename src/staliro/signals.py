@@ -79,3 +79,32 @@ def delayed(signal_factory: SignalFactory, *, delay: int) -> SignalFactory:
         return Delayed(signal, delay)
 
     return factory
+
+
+class Sequenced(Signal):
+    def __init__(self, s1: Signal, s2: Signal, t_switch: int):
+        self.s1 = s1
+        self.s2 = s2
+        self.t_switch = t_switch
+
+    def at_time(self, t: float) -> float:
+        return self.s1.at_time(t) if t < self.t_switch else self.s2.at_time(t)
+
+    def at_times(self, ts: Sequence[float]) -> List[float]:
+        return [self.at_time(t) for t in ts]
+
+
+def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int) -> SignalFactory:
+    def factory(times: Sequence[float], signal_values: Sequence[float]) -> Signal:
+        signal1_indices = [i for i, t in enumerate(times) if t < t_switch]
+        signal2_indices = [i for i, t in enumerate(times) if t >= t_switch]
+        signal1 = factory1(
+            [times[i] for i in signal1_indices], [signal_values[i] for i in signal1_indices]
+        )
+        signal2 = factory2(
+            [times[i] for i in signal2_indices], [signal_values[i] for i in signal2_indices]
+        )
+
+        return Sequenced(signal1, signal2, t_switch)
+
+    return factory
