@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Sequence, TypeVar, cast
+from itertools import accumulate
+from typing import Iterable, List, TypeVar, cast
 
 import numpy as np
 
@@ -18,42 +19,31 @@ ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 
 
-def _signal_times(options: SignalOptions) -> List[float]:
-    if options.signal_times is None:
+def _make_parameters(t_span: Interval, start: int, signal_opts: SignalOptions) -> SignalParameters:
+    stop = start + signal_opts.control_points
+    values_range = slice(start, stop, 1)
+
+    if signal_opts.signal_times is None:
         times_array = np.linspace(
-            start=options.bound.lower,
-            stop=options.bound.upper,
-            num=options.control_points,
+            start=t_span.lower,
+            stop=t_span.upper,
+            num=signal_opts.control_points,
             dtype=np.float64,
         )
-
-        return cast(List[float], times_array.tolist())
+        signal_times = cast(List[float], times_array.tolist())
     else:
-        return options.signal_times
+        signal_times = signal_opts.signal_times
+
+    return SignalParameters(values_range, signal_times, signal_opts.factory)
 
 
-def _accumulate(values: Iterable[int], initial: int) -> Iterable[int]:
-    current = initial
-
-    for value in values:
-        yield current
-        current = current + value
-
-    yield current
-
-
-def _signal_parameters(opts_seq: Sequence[SignalOptions], offset: int) -> List[SignalParameters]:
-    control_points = [opts.control_points for opts in opts_seq]
-    range_starts = _accumulate(control_points, initial=offset)
-    values_ranges = [
-        slice(start, start + length, 1) for start, length in zip(range_starts, control_points)
-    ]
-
-    def parameters(opts: SignalOptions, values_range: slice) -> SignalParameters:
-        return SignalParameters(values_range, _signal_times(opts), opts.factory)
+def _signal_parameters(options: Options, start_index: int) -> List[SignalParameters]:
+    control_points = [opts.control_points for opts in options.signals]
+    signal_start_indices = accumulate(control_points, initial=start_index)
 
     return [
-        parameters(signal, values_range) for signal, values_range in zip(opts_seq, values_ranges)
+        _make_parameters(options.interval, start_index, signal_opts)
+        for start_index, signal_opts in zip(signal_start_indices, options.signals)
     ]
 
 
@@ -82,7 +72,7 @@ def staliro(
         An object containing the result of each optimization attempt.
     """
     static_params_end = len(options.static_parameters)
-    signal_parameters = _signal_parameters(options.signals, static_params_end)
+    signal_parameters = _signal_parameters(options, static_params_end)
     signal_bounds = _signal_bounds(options.signals)
     bounds = options.static_parameters + signal_bounds
 
@@ -106,7 +96,7 @@ def simulate_model(
     model: Model[StateT, ExtraT], options: Options, sample: Sample
 ) -> ModelResult[StateT, ExtraT]:
     static_range = slice(0, len(options.static_parameters))
-    signal_params = _signal_parameters(options.signals, static_range.stop)
+    signal_params = _signal_parameters(options, static_range.stop)
     static_inputs, signals = decompose_sample(sample, static_range, signal_params)
 
     return model.simulate(static_inputs, signals, options.interval)
