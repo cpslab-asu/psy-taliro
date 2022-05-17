@@ -14,7 +14,7 @@ from typing_extensions import Literal
 
 from .core.interval import Interval
 from .core.signal import SignalFactory
-from .signals import Pchip
+from .signals import pchip
 
 
 class OptionsError(Exception):
@@ -109,7 +109,7 @@ class SignalOptions:
     """
 
     bound: Interval = field(converter=_to_interval)
-    factory: SignalFactory = field(default=Pchip)
+    factory: SignalFactory = field(default=pchip)
     control_points: int = field(default=10, converter=_strict_int)
     signal_times: Optional[_SignalTimesT] = field(
         default=None, converter=optional(_to_signal_times)
