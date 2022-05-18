@@ -72,7 +72,7 @@ class DataFrame:
         raw: bool = ...,
         result_type: Optional[Literal["expand", "reduce", "broadcast"]] = ...,
         args: Tuple[Any] = ...,
-        **kwds: Any
+        **kwds: Any,
     ) -> DataFrame: ...
     def set_axis(
         self,
@@ -111,7 +111,7 @@ def read_csv(
     prefix: Optional[str] = ...,
     mangle_dupe_cols: bool = ...,
     dtype: Union[DTypeLike, _DtypeDict, None] = ...,
-    engine: Union[Literal["c", "python"]] = ...,
+    engine: Literal["c", "python"] = ...,
     converters: Optional[_Converters] = ...,
     true_values: Optional[List[Any]] = ...,
     false_values: Optional[List[Any]] = ...,

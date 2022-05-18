@@ -134,7 +134,7 @@ def _to_intervals(values: _IntervalSeqT) -> List[Interval]:
 
 
 def _seed_factory() -> int:
-    return random.randint(0, 2 ** 32 - 1)
+    return random.randint(0, 2**32 - 1)
 
 
 _ParallelizationT = Union[None, Literal["all", "cores"], int]

@@ -99,12 +99,6 @@ isort:
   script:
     - poetry run isort --check src stubs tests examples
 
-unittest-cp37:
-  extends: .unittest-job
-  image: python:3.7
-  cache:
-    key: cache-cp37
-
 unittest-cp38:
   extends: .unittest-job
   image: python:3.8
@@ -122,12 +116,6 @@ unittest-cp310:
   image: python:3.10
   cache:
     key: cache-cp310
-
-regressiontest-cp37:
-  extends: .regressiontest-job
-  image: python:3.7
-  cache:
-    key: cache-cp37
 
 regressiontest-cp38:
   extends: .regressiontest-job
