@@ -8,13 +8,13 @@ from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 import numpy as np
 from attr import Attribute, field, frozen
 from attr.converters import optional
-from attr.validators import deep_iterable, instance_of
+from attr.validators import deep_iterable, instance_of, is_callable
 from numpy.typing import NDArray
 from typing_extensions import Literal
 
 from .core.interval import Interval
 from .core.signal import SignalFactory
-from .signals import Pchip
+from .signals import pchip
 
 
 class OptionsError(Exception):
@@ -109,7 +109,7 @@ class SignalOptions:
     """
 
     bound: Interval = field(converter=_to_interval)
-    factory: SignalFactory = field(default=Pchip)
+    factory: SignalFactory = field(default=pchip, validator=is_callable())
     control_points: int = field(default=10, converter=_strict_int)
     signal_times: Optional[_SignalTimesT] = field(
         default=None, converter=optional(_to_signal_times)
