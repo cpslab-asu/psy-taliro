@@ -36,9 +36,6 @@ PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 
 def _valid_trajectories_array(trajectories: NDArray[Any], row_len: int) -> Optional[str]:
-    if not isinstance(trajectories, np.ndarray):
-        return "trajectories must be provided as an NDArray"
-
     if not trajectories.ndim == 2:
         return "trajectories array must be 2-dimensional"
 
