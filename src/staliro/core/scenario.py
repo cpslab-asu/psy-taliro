@@ -114,7 +114,7 @@ class ExperimentGenerator(
                 self.optimizer,
                 self.bounds,
                 self.iterations,
-                self.rng.integers(0, 2 ** 32 - 1),
+                self.rng.integers(0, 2**32 - 1),
             )
 
 
@@ -213,7 +213,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
     specification: SpecificationOrFactory[StateT] = field(validator=_validate_specification)
     runs: int = field(validator=[instance_of(int), _greater_than(0)])
     iterations: int = field(validator=[instance_of(int), _greater_than(0)])
-    seed: int = field(validator=[instance_of(int), _within_range(0, 2 ** 32 - 1)])
+    seed: int = field(validator=[instance_of(int), _within_range(0, 2**32 - 1)])
     processes: Optional[int] = field(validator=optional([instance_of(int), _greater_than(0)]))
     bounds: Sequence[Interval] = field(
         validator=deep_iterable(instance_of(Interval), iterable_validator=_min_length(1))
