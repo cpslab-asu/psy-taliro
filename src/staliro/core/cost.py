@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
 
 from attr import field, frozen
-from attr.validators import deep_iterable, instance_of, is_callable
+from attr.validators import instance_of
 
 from .interval import Interval
 from .model import Failure, Model, ModelData, ModelError, ModelResult
@@ -111,11 +111,11 @@ def _result_cost(specification: Specification[StateT], result: ModelResult[State
     raise ModelError("unsupported type returned from model")
 
 
-@frozen(auto_attribs=False)
+@frozen(auto_attribs=False, slots=True)
 class SignalParameters:
-    values_range: slice = field(validator=instance_of(slice))
-    times: Sequence[float] = field(validator=deep_iterable(instance_of(float)))
-    factory: SignalFactory = field(validator=is_callable())
+    values_range: slice = field()
+    times: Sequence[float] = field()
+    factory: SignalFactory = field()
 
 
 def decompose_sample(
