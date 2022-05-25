@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest import TestCase
 
-from staliro.core.interval import Interval
+from staliro.core.interval import Interval, IntervalError
 
 
 class IntervalTestCase(TestCase):
@@ -19,11 +19,11 @@ class IntervalTestCase(TestCase):
         self.assertIsInstance(interval.upper, float)
 
     def test_nonnumeric_bound(self) -> None:
-        with self.assertRaises(TypeError):
+        with self.assertRaises(IntervalError):
             Interval([1, 2], "b")  # type: ignore
 
     def test_bounds_order(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaises(IntervalError):
             Interval(1, 1)
             Interval(1, 0)
 
