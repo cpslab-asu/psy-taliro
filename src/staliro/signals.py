@@ -24,7 +24,7 @@ def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
     return Pchip(PchipInterpolator(times, signal_values))
 
 
-class PiecewiseLinear(Signal):
+class Piecewise(Signal):
     def __init__(self, interp: interp1d):
         self.interp = interp
 
@@ -35,23 +35,12 @@ class PiecewiseLinear(Signal):
         return cast(List[float], self.interp(ts).tolist())
 
 
-def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseLinear:
-    return PiecewiseLinear(interp1d(times, signal_values))
+def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
+    return Piecewise(interp1d(times, signal_values))
 
 
-class PiecewiseConstant(Signal):
-    def __init__(self, interp: interp1d):
-        self.interp = interp
-
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
-
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts).tolist())
-
-
-def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseConstant:
-    return PiecewiseConstant(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
+def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
+    return Piecewise(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
 
 
 class Delayed(Signal):
@@ -64,9 +53,6 @@ class Delayed(Signal):
             return 0.0
 
         return self.signal.at_time(t)
-
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return [self.at_time(t) for t in ts]
 
 
 def delayed(signal_factory: SignalFactory, *, delay: int) -> SignalFactory:
@@ -90,9 +76,6 @@ class Sequenced(Signal):
 
     def at_time(self, t: float) -> float:
         return self.s1.at_time(t) if t < self.t_switch else self.s2.at_time(t)
-
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return [self.at_time(t) for t in ts]
 
 
 def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int) -> SignalFactory:
