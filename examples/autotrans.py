@@ -67,8 +67,8 @@ specification = TLTK(phi, {"rpm": 0, "speed": 1})
 optimizer = DualAnnealing()
 
 signals = [
-    SignalOptions((0, 100), control_points=7),
-    SignalOptions((0, 350), control_points=3),
+    SignalOptions(control_points=[(0, 100)] * 7),
+    SignalOptions(control_points=[(0, 350)] * 3),
 ]
 options = Options(runs=1, iterations=100, interval=(0, 30), signals=signals)
 
