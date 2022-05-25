@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import collections.abc as cabc
 import os
 import random
-from typing import Any, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
-from attr import Attribute, field, frozen
-from attr.converters import optional
-from attr.validators import deep_iterable, instance_of, is_callable
+from attr import Attribute, converters, field, frozen, validators
 from numpy.typing import NDArray
 from typing_extensions import Literal
 
-from .core.interval import Interval
+from .core.interval import BoundT, Interval
 from .core.signal import SignalFactory
 from .signals import pchip
 
@@ -21,38 +18,10 @@ class OptionsError(Exception):
     pass
 
 
-_IntervalValueT = Union[
-    Interval,
-    List[float],
-    List[int],
-    Tuple[float, float],
-    Tuple[int, int],
-    NDArray[np.float_],
-    NDArray[np.int_],
-]
+_IntervalT = Union[Sequence[BoundT], NDArray[Any]]
 
 
-def _strict_float(value: Union[int, float]) -> float:
-    if isinstance(value, int):
-        return float(value)
-
-    if isinstance(value, float):
-        return value
-
-    raise OptionsError(f"Expected float or int, received {type(value)}")
-
-
-def _strict_int(value: Union[int, float]) -> int:
-    if isinstance(value, int):
-        return value
-
-    if isinstance(value, float):
-        return int(value)
-
-    raise OptionsError(f"Expected float or int, received {type(value)}")
-
-
-def _to_interval(value: _IntervalValueT) -> Interval:
+def _to_interval(interval: Union[Interval, _IntervalT]) -> Interval:
     """Convert a value to an interval.
 
     This function only supports ordered collections because the order of values in the iterable
@@ -66,33 +35,29 @@ def _to_interval(value: _IntervalValueT) -> Interval:
         An instance of Interval using the values provided in the ordered collection
     """
 
-    if isinstance(value, Interval):
-        return value
+    if isinstance(interval, Interval):
+        return interval
 
-    if isinstance(value, np.ndarray):
-        return _to_interval(value.tolist())
+    if isinstance(interval, np.ndarray):
+        interval = interval.astype(float)
 
-    if isinstance(value, (list, tuple)):
-        if len(value) != 2:
-            raise OptionsError("Interval value must have length 2")
-
-        return Interval(*value)
-
-    raise TypeError(f"unsupported type {type(value)} provided as interval")
+    return Interval(interval[0], interval[1])
 
 
-_SignalTimesValueT = Union[Sequence[float], Sequence[int], NDArray[Any]]
-_SignalTimesT = List[float]
+_IntervalsT = Sequence[_IntervalT]
 
 
-def _to_signal_times(values: _SignalTimesValueT) -> _SignalTimesT:
-    if isinstance(values, np.ndarray):
-        return cast(List[float], values.astype(np.float64).tolist())
+def _to_intervals(intervals: _IntervalsT) -> Tuple[Interval, ...]:
+    """Convert a sequence of values into a sequence on intervals."""
 
-    if isinstance(values, cabc.Sequence):
-        return [_strict_float(value) for value in values]
+    return tuple(_to_interval(interval) for interval in intervals)
 
-    raise OptionsError(f"signal times must be provided as an ordered sequence. Got {type(values)}")
+
+def _to_signal_times(times: Union[Sequence[float], NDArray[np.float_]]) -> list[float]:
+    if isinstance(times, np.ndarray):
+        return cast(list[float], np.array(times, dtype=float).tolist())
+
+    return list(times)
 
 
 @frozen()
@@ -108,29 +73,16 @@ class SignalOptions:
                       variable (EXPERIMENTAL)
     """
 
-    bound: Interval = field(converter=_to_interval)
-    factory: SignalFactory = field(default=pchip, validator=is_callable())
-    control_points: int = field(default=10, converter=_strict_int)
-    signal_times: Optional[_SignalTimesT] = field(
-        default=None, converter=optional(_to_signal_times)
+    control_points: tuple[Interval, ...] = field(converter=_to_intervals)
+    factory: SignalFactory = field(default=pchip, validator=validators.is_callable())
+    signal_times: Optional[list[float]] = field(
+        default=None,
+        converter=converters.optional(_to_signal_times),
+        validator=validators.optional(
+            validators.deep_iterable(validators.instance_of(float), validators.instance_of(list))
+        ),
     )
     time_varying: bool = field(default=False)
-
-    @property
-    def bounds(self) -> List[Interval]:
-        """The interval value repeated control_points number of times."""
-
-        return [self.bound] * self.control_points
-
-
-_IntervalSeqT = Sequence[_IntervalValueT]
-
-
-def _to_intervals(values: _IntervalSeqT) -> List[Interval]:
-    if isinstance(values, cabc.Sequence):
-        return [_to_interval(value) for value in values]
-
-    raise OptionsError(f"Intervals must be provided as an ordered sequence. Got {type(values)}")
 
 
 def _seed_factory() -> int:
@@ -168,13 +120,15 @@ class Options:
             None (no parallelization).
     """
 
-    static_parameters: List[Interval] = field(factory=list, converter=_to_intervals)
+    static_parameters: tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
     signals: Sequence[SignalOptions] = field(
-        factory=list, validator=deep_iterable(instance_of(SignalOptions))
+        factory=list, validator=validators.deep_iterable(validators.instance_of(SignalOptions))
     )
-    seed: int = field(factory=_seed_factory, converter=_strict_int)
-    iterations: int = field(default=400, converter=_strict_int)
-    runs: int = field(default=1, converter=_strict_int)
+    seed: int = field(
+        factory=_seed_factory, validator=[validators.instance_of(int), validators.gt(0)]
+    )
+    iterations: int = field(default=400, validator=[validators.instance_of(int), validators.gt(0)])
+    runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
     interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
     parallelization: _ParallelizationT = field(default=None, validator=_parallelization_validator)
 
