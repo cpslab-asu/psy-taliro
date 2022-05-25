@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import cos
 from typing import List, Sequence, cast
 
 import numpy as np
@@ -108,3 +109,32 @@ def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int
         return Sequenced(signal1, signal2, t_switch)
 
     return factory
+
+
+class Harmonic(Signal):
+    class Component:
+        def __init__(self, amplitude: float, frequency: float, phase: float):
+            self.theta = amplitude
+            self.omega = frequency
+            self.phi = phase
+
+        def at_time(self, time: float) -> float:
+            return self.theta * cos(self.omega * time - self.phi)
+
+    def __init__(self, bias: float, components: Sequence[Harmonic.Component]):
+        self.bias = bias
+        self.components = tuple(components)
+
+    def at_time(self, time: float) -> float:
+        return self.bias + sum(component.at_time(time) for component in self.components)
+
+
+def harmonic(_: Sequence[float], values: Sequence[float]) -> Harmonic:
+    if len(values[1:]) % 3 != 0:
+        raise RuntimeError("Insufficient number of values to generate a harmonic signal")
+
+    bias = values[0]
+    component_params = [(values[i], values[i + 1], values[i + 2]) for i in range(1, len(values), 3)]
+    components = [Harmonic.Component(amp, freq, phase) for amp, freq, phase in component_params]
+
+    return Harmonic(bias, components)
