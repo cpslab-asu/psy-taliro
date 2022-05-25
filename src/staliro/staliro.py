@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import accumulate
 from typing import Iterable, List, TypeVar, cast
 
 import numpy as np
@@ -19,36 +18,32 @@ ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 
 
-def _make_parameters(t_span: Interval, start: int, signal_opts: SignalOptions) -> SignalParameters:
-    stop = start + signal_opts.control_points
-    values_range = slice(start, stop, 1)
-
-    if signal_opts.signal_times is None:
-        times_array = np.linspace(
-            start=t_span.lower,
-            stop=t_span.upper,
-            num=signal_opts.control_points,
-            dtype=np.float64,
-        )
-        signal_times = cast(List[float], times_array.tolist())
-    else:
-        signal_times = signal_opts.signal_times
-
-    return SignalParameters(values_range, signal_times, signal_opts.factory)
-
-
 def _signal_parameters(options: Options, start_index: int) -> List[SignalParameters]:
-    control_points = [opts.control_points for opts in options.signals]
-    signal_start_indices = accumulate(control_points, initial=start_index)
+    t_span = options.interval
+    signal_parameters = []
 
-    return [
-        _make_parameters(options.interval, start_index, signal_opts)
-        for start_index, signal_opts in zip(signal_start_indices, options.signals)
-    ]
+    for signal in options.signals:
+        n_control_points = len(signal.control_points)
+        stop_index = start_index + n_control_points
+        values_range = slice(start_index, stop_index, 1)
+
+        if signal.signal_times is None:
+            times_array = np.linspace(
+                t_span.lower, t_span.upper, num=n_control_points, dtype=np.float64
+            )
+            signal_times = cast(list[float], times_array.tolist())
+        else:
+            signal_times = signal.signal_times
+
+        parameters = SignalParameters(values_range, signal_times, signal.factory)
+        signal_parameters.append(parameters)
+        start_index = stop_index
+
+    return signal_parameters
 
 
-def _signal_bounds(signals: Iterable[SignalOptions]) -> List[Interval]:
-    return sum(([signal.bound] * signal.control_points for signal in signals), [])
+def _signal_bounds(signals: Iterable[SignalOptions]) -> tuple[Interval, ...]:
+    return sum((signal.control_points for signal in signals), ())
 
 
 def staliro(
