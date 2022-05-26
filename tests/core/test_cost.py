@@ -17,6 +17,7 @@ from staliro.core.cost import (
 from staliro.core.interval import Interval
 from staliro.core.model import Failure, Model, ModelData
 from staliro.core.sample import Sample
+from staliro.core.signal import Signal
 from staliro.core.specification import Specification, SpecificationError
 
 
@@ -27,12 +28,15 @@ class TimingDataTestCase(TestCase):
 
 class ThunkTestCase(TestCase):
     def setUp(self) -> None:
+        signal = NonCallableMock(spec=Signal)
+        factory = Mock(return_value=signal)
+
         self.sample = Sample([1, 2, 3, 4])
         self.model = NonCallableMock(spec=Model)
         self.interval = Interval(0, 1)
         self.static_parameter_range = slice(0, 2, 1)
         self.signal_parameters = [
-            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=Mock())
+            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=factory)
         ]
 
     def test_specification_noncallable(self) -> None:
@@ -144,13 +148,16 @@ class ThunkTestCase(TestCase):
 
 class CostFnTestCase(TestCase):
     def setUp(self) -> None:
+        signal = NonCallableMock(spec=Signal)
+        factory = Mock(return_value=signal)
+
         self.model = NonCallableMock(spec=Model)
         self.model.simulate = Mock(return_value=NonCallableMock(spec=ModelData))
         self.specification = NonCallableMock(spec=Specification)
         self.interval = Interval(0, 1)
         self.static_parameter_range = slice(0, 2, 1)
         self.signal_parameters = [
-            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=Mock())
+            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=factory)
         ]
         self.cost_fn: CostFn[Any, Any] = CostFn(
             self.model,
