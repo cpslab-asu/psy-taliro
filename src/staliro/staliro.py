@@ -31,7 +31,7 @@ def _signal_parameters(options: Options, start_index: int) -> List[SignalParamet
             times_array = np.linspace(
                 t_span.lower, t_span.upper, num=n_control_points, dtype=np.float64
             )
-            signal_times = cast(list[float], times_array.tolist())
+            signal_times = cast(List[float], times_array.tolist())
         else:
             signal_times = signal.signal_times
 
