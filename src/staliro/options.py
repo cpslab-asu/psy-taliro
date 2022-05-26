@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import random
-from typing import Any, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 from attr import Attribute, converters, field, frozen, validators
@@ -55,7 +55,7 @@ def _to_intervals(intervals: _IntervalsT) -> Tuple[Interval, ...]:
 
 def _to_signal_times(times: Union[Sequence[float], NDArray[np.float_]]) -> list[float]:
     if isinstance(times, np.ndarray):
-        return cast(list[float], np.array(times, dtype=float).tolist())
+        return cast(List[float], np.array(times, dtype=float).tolist())
 
     return list(times)
 
@@ -73,7 +73,7 @@ class SignalOptions:
                       variable (EXPERIMENTAL)
     """
 
-    control_points: tuple[Interval, ...] = field(converter=_to_intervals)
+    control_points: Tuple[Interval, ...] = field(converter=_to_intervals)
     factory: SignalFactory = field(default=pchip, validator=validators.is_callable())
     signal_times: Optional[list[float]] = field(
         default=None,
@@ -120,7 +120,7 @@ class Options:
             None (no parallelization).
     """
 
-    static_parameters: tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
+    static_parameters: Tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
     signals: Sequence[SignalOptions] = field(
         factory=list, validator=validators.deep_iterable(validators.instance_of(SignalOptions))
     )
