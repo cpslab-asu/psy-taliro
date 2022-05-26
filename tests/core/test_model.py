@@ -18,8 +18,8 @@ class ModelData(TestCase):
         data = model.ModelData(self.trajectories2d, self.timestamps)
 
         self.assertIsInstance(data, model.ModelData)
-        np.testing.assert_equal(data.states, self.trajectories2d)  # type: ignore
-        np.testing.assert_equal(data.times, self.timestamps)  # type: ignore
+        np.testing.assert_equal(data.states, self.trajectories2d)
+        np.testing.assert_equal(data.times, self.timestamps)
         self.assertIsNone(data.extra)
 
     def test_with_extra(self) -> None:

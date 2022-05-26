@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import cos
 from typing import List, Sequence, cast
 
 import numpy as np
@@ -23,7 +24,7 @@ def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
     return Pchip(PchipInterpolator(times, signal_values))
 
 
-class PiecewiseLinear(Signal):
+class Piecewise(Signal):
     def __init__(self, interp: interp1d):
         self.interp = interp
 
@@ -34,23 +35,12 @@ class PiecewiseLinear(Signal):
         return cast(List[float], self.interp(ts).tolist())
 
 
-def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseLinear:
-    return PiecewiseLinear(interp1d(times, signal_values))
+def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
+    return Piecewise(interp1d(times, signal_values))
 
 
-class PiecewiseConstant(Signal):
-    def __init__(self, interp: interp1d):
-        self.interp = interp
-
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
-
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts).tolist())
-
-
-def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> PiecewiseConstant:
-    return PiecewiseConstant(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
+def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
+    return Piecewise(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
 
 
 class Delayed(Signal):
@@ -63,9 +53,6 @@ class Delayed(Signal):
             return 0.0
 
         return self.signal.at_time(t)
-
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return [self.at_time(t) for t in ts]
 
 
 def delayed(signal_factory: SignalFactory, *, delay: int) -> SignalFactory:
@@ -90,9 +77,6 @@ class Sequenced(Signal):
     def at_time(self, t: float) -> float:
         return self.s1.at_time(t) if t < self.t_switch else self.s2.at_time(t)
 
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return [self.at_time(t) for t in ts]
-
 
 def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int) -> SignalFactory:
     def factory(times: Sequence[float], signal_values: Sequence[float]) -> Signal:
@@ -108,3 +92,32 @@ def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int
         return Sequenced(signal1, signal2, t_switch)
 
     return factory
+
+
+class Harmonic(Signal):
+    class Component:
+        def __init__(self, amplitude: float, frequency: float, phase: float):
+            self.theta = amplitude
+            self.omega = frequency
+            self.phi = phase
+
+        def at_time(self, time: float) -> float:
+            return self.theta * cos(self.omega * time - self.phi)
+
+    def __init__(self, bias: float, components: Sequence[Harmonic.Component]):
+        self.bias = bias
+        self.components = tuple(components)
+
+    def at_time(self, time: float) -> float:
+        return self.bias + sum(component.at_time(time) for component in self.components)
+
+
+def harmonic(_: Sequence[float], values: Sequence[float]) -> Harmonic:
+    if len(values[1:]) % 3 != 0:
+        raise RuntimeError("Insufficient number of values to generate a harmonic signal")
+
+    bias = values[0]
+    component_params = [(values[i], values[i + 1], values[i + 2]) for i in range(1, len(values), 3)]
+    components = [Harmonic.Component(amp, freq, phase) for amp, freq, phase in component_params]
+
+    return Harmonic(bias, components)

@@ -34,7 +34,7 @@ class ConstantSignalTestCase(TestCase):
         sampled_values = np.array(signal.at_times(times))
         signal_col = csv_data.columns[1]
 
-        np.testing.assert_equal(csv_data[signal_col].to_numpy(), sampled_values)  # type: ignore
+        np.testing.assert_equal(csv_data[signal_col].to_numpy(), sampled_values)
 
     def test_single_vs_vectorized(self) -> None:
         interval = Interval(0, 100)
@@ -73,7 +73,7 @@ class PchipSignalTestCase(TestCase):
         sampled_values = np.array(signal.at_times(times))
         signal_col = csv_data.columns[1]
 
-        np.testing.assert_almost_equal(csv_data[signal_col].to_numpy(), sampled_values)  # type: ignore
+        np.testing.assert_almost_equal(csv_data[signal_col].to_numpy(), sampled_values)
 
     def test_single_vs_vectorized(self) -> None:
         interval = Interval(0, 100)

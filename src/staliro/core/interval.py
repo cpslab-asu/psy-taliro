@@ -4,23 +4,29 @@ from typing import Iterable, Iterator, Tuple, Union
 
 from attr import Attribute, field, frozen
 
+BoundT = Union[int, float]
 
-def _bound_converter(value: Union[int, float]) -> float:
-    if isinstance(value, int):
-        return float(value)
 
-    if isinstance(value, float):
-        return value
+class IntervalError(Exception):
+    pass
 
-    raise TypeError("bounds can only be specified as int or float")
+
+def _bound_converter(bound: BoundT) -> float:
+    if isinstance(bound, int):
+        return float(bound)
+
+    if isinstance(bound, float):
+        return bound
+
+    raise IntervalError(f"Expected [float, int] type for bound, recieved: {type(bound)}")
 
 
 def _upper_validator(inst: Interval, _: Attribute[float], upper: float) -> None:
     if upper == inst.lower:
-        raise ValueError("interval cannot have zero length")
+        raise IntervalError("interval cannot have zero length")
 
     if upper < inst.lower:
-        raise ValueError("interval upper bound must be greater than lower bound")
+        raise IntervalError("interval upper bound must be greater than lower bound")
 
 
 @frozen(slots=True)
