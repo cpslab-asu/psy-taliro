@@ -151,6 +151,3 @@ class stlParserVisitor(ParseTreeVisitor):
         bounds.append(float(ctx.getRuleContext().getChild(3).getText()))
 
         return bounds
-
-
-del stlParser
