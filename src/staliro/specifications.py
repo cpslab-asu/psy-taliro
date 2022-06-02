@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, Optional, TypeVar
+from typing import Any, Dict, Optional, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
