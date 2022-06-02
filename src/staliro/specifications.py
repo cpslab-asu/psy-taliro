@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 try:
     from rtamt import (
-        LTLPastifyException,
+        Language,
         Semantics,
         STLDenseTimeSpecification,
         STLDiscreteTimeSpecification,
@@ -97,98 +97,105 @@ def _step_widths(times: NDArray[np.float_]) -> Iterable[float]:
 
 
 class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
-    """STL logic specification that uses RTAMT discrete-time semantics to compute robustness.
+    """STL logic specification that uses RTAMT Discrete-Time semantics to computer robustness.
 
     Attributes:
-        phi: The specification requirement
-        predicates: A set of Predicate(s) used in the requirement
+        formula: The specification requirement
+        predicates: A set of Predicates used in the requirement.
     """
 
-    def __init__(self, phi: str, column_map: PredicateColumnMap):
+    def __init__(self, formula: str, predicate_map: PredicateColumnMap):
         if not _has_rtamt:
-            raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
+            raise RuntimeError("RTAMT must be installed to used the RTAMTDiscrete specification")
 
-        if "time" in column_map:
-            raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
+        self._obj = STLDiscreteTimeSpecification(
+            Semantics.STANDARD,
+            language=Language.PYTHON
+        )
 
-        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
+        self._obj.spec = formula
+        self._predicate_map = predicate_map
 
-        self.rtamt_obj.spec = phi
-        self.column_map = column_map
+        for name in predicate_map.keys():
+            self._obj.declare_var(name, "float")
 
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
+    def evaluate(self, states: NDArray[np.float_], timestamps: NDArray[np.float_]) -> float:
+        """Evaluate the robustness of the specification against some trajectories.
 
-    def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        trajectories_err = _valid_trajectories_array(states, times.size)
+        Arguments:
+            states:
+            timestamps:
+        """
 
-        if trajectories_err is not None:
-            raise SpecificationError(trajectories_err)
+        self._obj.set_sampling_period(round(timestamps[1] - timestamps[0], 3), "s", 0.1)
+        self._obj.parse()
 
-        self.rtamt_obj.reset()
+        if len(timestamps) < 2:
+            raise RuntimeError("Two samples must be present to evaluate")
 
-        period = stats.mean(_step_widths(times))
-        self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
+        timestamps = np.array(timestamps, dtype=np.float64, ndmin=2)
+        if timestamps.shape[0] != 1:
+            raise RuntimeError("Please provide timestamps as a single row")
 
-        # parse AFTER declaring variables and setting sampling period
-        self.rtamt_obj.parse()
+        states = np.array(states, dtype=np.float64, ndmin=2)
+        if states.shape[0] != timestamps.shape[0]:
+            raise RuntimeError("The length of the timestamps and state samples must match")
 
-        try:
-            self.rtamt_obj.pastify()
-        except LTLPastifyException:
-            pass
+        trajectories = {"time": timestamps[0].tolist()}
+        for name, column in self._predicate_map.items():
+            trajectories[name] = states[column].tolist()
 
-        traces = {"time": times.tolist()}
-
-        for name, column in self.column_map.items():
-            traces[name] = states[column].tolist()
-
-        # traces: Dict['time': timestamps, 'variable'(s): trajectories]
-        robustness = self.rtamt_obj.evaluate(traces)
-
-        return robustness[-1][1]
-
+        robustness = self._obj.evaluate(trajectories)
+        return robustness[0][1]
 
 class RTAMTDense(StlSpecification[NDArray[np.float_]]):
-    """STL logic specification that uses RTAMT dense-time semantics to compute robustness.
+    """STL logic specification that uses RTAMT Dense-Time semantics to computer robustness.
 
     Attributes:
-        phi: The specification requirement
-        predicates: A set of Predicate(s) used in the requirement
+        formula: The specification requirement
+        predicates: A set of Predicates used in the requirement.
     """
 
-    def __init__(self, phi: str, column_map: PredicateColumnMap):
+    def __init__(self, formula: str, predicate_map: PredicateColumnMap):
         if not _has_rtamt:
-            raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
+            raise RuntimeError("RTAMT must be installed to used the RTAMTDense specification")
 
-        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
-        self.column_map = column_map
-        self.rtamt_obj.spec = phi
+        self._obj = STLDenseTimeSpecification(
+            Semantics.STANDARD,
+            language=Language.PYTHON
+        )
 
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
+        self._obj.spec = formula
+        self._predicate_map = predicate_map
 
-    def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        trajectories_err = _valid_trajectories_array(states, times.size)
+        for name in predicate_map.keys():
+            self._obj.declare_var(name, "float")
 
-        if trajectories_err is not None:
-            raise SpecificationError(trajectories_err)
+    def evaluate(self, states: NDArray[np.float_], timestamps: NDArray[np.float_]) -> float:
+        """Evaluate the robustness of the specification against some trajectories.
 
-        self.rtamt_obj.reset()
+        Arguments:
+            states:
+            timestamps:
+        """
 
-        # parse AFTER declaring variables
-        self.rtamt_obj.parse()
+        self._obj.parse()
 
-        try:
-            self.rtamt_obj.pastify()
-        except LTLPastifyException:
-            pass
+        if len(timestamps) < 2:
+            raise RuntimeError("Two samples must be present to evaluate")
 
-        map_items = self.column_map.items()
-        traces = [
-            (name, np.array([times, states[column]]).T.tolist()) for name, column in map_items
+        timestamps = np.array(timestamps, dtype=np.float64, ndmin=2)
+        if timestamps.shape[0] != 1:
+            raise RuntimeError("Please provide timestamps as a single row")
+
+        states = np.array(states, dtype=np.float64, ndmin=2)
+        if states.shape[0] != timestamps.shape[0]:
+            raise RuntimeError("The length of the timestamps and state samples must match")
+
+        pmap = self._predicate_map.items()
+        trajectories = [
+            (name, np.array([timestamps[0], states[column]]).T.tolist()) for name, column in pmap
         ]
 
-        robustness = self.rtamt_obj.evaluate(*traces)
-
-        return robustness[-1][1]
+        robustness = self._obj.evaluate(*trajectories)
+        return robustness[0][1]
