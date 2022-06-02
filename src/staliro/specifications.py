@@ -1,19 +1,13 @@
 from __future__ import annotations
 
-import statistics as stats
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, Optional, TypeVar
+from typing import Any, Dict, Optional, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import (
-        LTLPastifyException,
-        Semantics,
-        STLDenseTimeSpecification,
-        STLDiscreteTimeSpecification,
-    )
+    from rtamt import Language, Semantics, STLDenseTimeSpecification, STLDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
@@ -89,13 +83,6 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         return self.tltk_obj.robustness
 
 
-def _step_widths(times: NDArray[np.float_]) -> Iterable[float]:
-    """Compute the distance between adjacent elements."""
-
-    for i in range(len(times) - 2):
-        yield abs(times[i] - times[i + 1])
-
-
 class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT discrete-time semantics to compute robustness.
 
@@ -111,7 +98,7 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         if "time" in column_map:
             raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
 
-        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
 
         self.rtamt_obj.spec = phi
         self.column_map = column_map
@@ -122,31 +109,25 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
         trajectories_err = _valid_trajectories_array(states, times.size)
 
+        if times.size < 2:
+            raise RuntimeError("timestamps must have at least two samples to evaluate")
+
         if trajectories_err is not None:
             raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
 
-        period = stats.mean(_step_widths(times))
+        period = times[1] - times[0]
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
-        # parse AFTER declaring variables and setting sampling period
         self.rtamt_obj.parse()
-
-        try:
-            self.rtamt_obj.pastify()
-        except LTLPastifyException:
-            pass
-
         traces = {"time": times.tolist()}
 
         for name, column in self.column_map.items():
             traces[name] = states[column].tolist()
 
-        # traces: Dict['time': timestamps, 'variable'(s): trajectories]
         robustness = self.rtamt_obj.evaluate(traces)
-
-        return robustness[-1][1]
+        return robustness[0][1]
 
 
 class RTAMTDense(StlSpecification[NDArray[np.float_]]):
@@ -161,7 +142,7 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
 
-        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
         self.column_map = column_map
         self.rtamt_obj.spec = phi
 
@@ -175,14 +156,7 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
             raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
-
-        # parse AFTER declaring variables
         self.rtamt_obj.parse()
-
-        try:
-            self.rtamt_obj.pastify()
-        except LTLPastifyException:
-            pass
 
         map_items = self.column_map.items()
         traces = [
@@ -191,4 +165,4 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
 
         robustness = self.rtamt_obj.evaluate(*traces)
 
-        return robustness[-1][1]
+        return robustness[0][1]
