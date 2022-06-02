@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import statistics as stats
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterable, Optional, TypeVar
 
@@ -8,12 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import (
-        Language,
-        Semantics,
-        STLDenseTimeSpecification,
-        STLDiscreteTimeSpecification,
-    )
+    from rtamt import Language, Semantics, STLDenseTimeSpecification, STLDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
@@ -34,12 +28,14 @@ PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
+
 def _validate_trajectories(states: NDArray[Any], timestamps: NDArray[Any]) -> Optional[str]:
     if timestamps.shape[0] != 1:
         raise SpecificationError("please provide timestamps as a single row")
 
     if states.shape[0] != timestamps.shape[0]:
         raise SpecificationError("the length of the timestamps and state samples must match")
+
 
 class StlSpecification(Specification[StateT], ABC):
     @abstractmethod
@@ -61,12 +57,12 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
                 "TLTK specifications require parsing functionality. Please refer to the documentation for how to enable parsing."
             )
 
-        _tltk_obj = parse(phi, list(column_map.keys()))
+        tltk_obj = parse(phi, list(column_map.keys()))
 
-        if _tltk_obj is None:
+        if tltk_obj is None:
             raise SpecificationError("could not parse formula")
 
-        self._tltk_obj = _tltk_obj
+        self._tltk_obj = tltk_obj
         self.column_map = column_map
 
     def evaluate(self, states: NDArray[np.float_], timestamps: NDArray[np.float_]) -> float:
@@ -91,6 +87,7 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
 
         return self._tltk_obj.robustness
 
+
 class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT Discrete-Time semantics to computer robustness.
 
@@ -103,10 +100,7 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to used the RTAMTDiscrete specification")
 
-        self._rtamt_obj = STLDiscreteTimeSpecification(
-            Semantics.STANDARD,
-            language=Language.PYTHON
-        )
+        self._rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
 
         self._rtamt_obj.spec = formula
         self._column_map = column_map
@@ -140,6 +134,7 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         robustness = self._rtamt_obj.evaluate(trajectories)
         return robustness[0][1]
 
+
 class RTAMTDense(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT Dense-Time semantics to computer robustness.
 
@@ -152,10 +147,7 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to used the RTAMTDense specification")
 
-        self._rtamt_obj = STLDenseTimeSpecification(
-            Semantics.STANDARD,
-            language=Language.PYTHON
-        )
+        self._rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
 
         self._rtamt_obj.spec = formula
         self._column_map = column_map
