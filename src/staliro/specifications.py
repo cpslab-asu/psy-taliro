@@ -29,7 +29,7 @@ ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 
-def _validate_trajectories(states: NDArray[Any], timestamps: NDArray[Any]) -> Optional[str]:
+def _validate_trajectories(states: NDArray[Any], timestamps: NDArray[Any]) -> None:
     if timestamps.shape[0] != 1:
         raise SpecificationError("please provide timestamps as a single row")
 
