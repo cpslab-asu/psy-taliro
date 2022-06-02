@@ -41,6 +41,11 @@ kaleido = "0.2.1"
 
 [tool.black]
 line-length = 100
+extend-exclude = '''
+/src/staliro/parser/stlParserListener.py
+| /src/staliro/parser/stlParser.py
+| /src/staliro/parser/stlLexer.py
+'''
 
 [tool.isort]
 profile = "black"
