@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import statistics as stats
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, TypeVar
 
@@ -8,11 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import (
-        Semantics,
-        STLDenseTimeSpecification,
-        STLDiscreteTimeSpecification,
-    )
+    from rtamt import Language, Semantics, STLDenseTimeSpecification, STLDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
@@ -87,6 +82,7 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
 
         return self.tltk_obj.robustness
 
+
 class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
     """STL logic specification that uses RTAMT discrete-time semantics to compute robustness.
 
@@ -102,7 +98,7 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         if "time" in column_map:
             raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
 
-        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
 
         self.rtamt_obj.spec = phi
         self.column_map = column_map
@@ -146,7 +142,7 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
 
-        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD)
+        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
         self.column_map = column_map
         self.rtamt_obj.spec = phi
 
