@@ -24,7 +24,7 @@ from attr.validators import instance_of
 from .interval import Interval
 from .model import Failure, Model, ModelData, ModelError, ModelResult
 from .optimizer import ObjectiveFn
-from .result import TimingData, Evaluation
+from .result import Evaluation, TimingData
 from .sample import Sample
 from .signal import Signal, SignalFactory
 from .specification import Specification, SpecificationError
