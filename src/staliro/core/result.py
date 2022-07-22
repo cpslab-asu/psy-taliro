@@ -3,7 +3,11 @@ from __future__ import annotations
 import statistics as stats
 from typing import Generic, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
 
+import numpy as np
 from attr import frozen
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from .interval import Interval
 from .sample import Sample
@@ -158,3 +162,13 @@ class Result(Generic[RT, ET]):
     @property
     def best_run(self) -> Run[RT, ET]:
         return min(self.runs, key=lambda r: r.best_eval.cost)
+
+    def plot_signal(self, signal: Signal, step_size: float = 0.1) -> Tuple[Figure, Axes]:
+        fig, ax = plt.subplots()
+        times = np.arange(self.interval.lower, self.interval.upper, step_size, dtype=np.float64)
+        values = signal.at_times(cast(Sequence[float], times.tolist()))
+
+        ax.plot(times, values)
+
+        return fig, ax
+
