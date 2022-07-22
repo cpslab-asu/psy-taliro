@@ -171,4 +171,3 @@ class Result(Generic[RT, ET]):
         ax.plot(times, values)
 
         return fig, ax
-

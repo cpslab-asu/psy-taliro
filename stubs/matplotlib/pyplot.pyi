@@ -20,4 +20,3 @@ def subplots(
     gridspec_kw: Optional[Dict[Any, Any]] = ...,
     **fig_kw: Any,
 ) -> Tuple[Figure, Axes]: ...
-

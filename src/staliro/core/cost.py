@@ -15,7 +15,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    cast
+    cast,
 )
 
 from attr import field, frozen

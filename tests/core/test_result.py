@@ -64,7 +64,8 @@ class ResultTestCase(TestCase):
     def setUp(self) -> None:
         def run(multiplier: float) -> Run[None, None]:
             history = [
-                Evaluation(cost, Sample([]), [], [], None, TimingData(cost, 0)) for cost in range(1, 7)
+                Evaluation(cost, Sample([]), [], [], None, TimingData(cost, 0))
+                for cost in range(1, 7)
             ]
             return Run(None, history, 0, 0)
 
