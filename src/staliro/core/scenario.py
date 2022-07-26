@@ -10,8 +10,9 @@ from attr import Attribute, field, frozen
 from attr.validators import deep_iterable, instance_of, optional
 from numpy.random import Generator, default_rng
 
-from .cost import CostFn, SignalParameters, SpecificationOrFactory
+from .cost import CostFn, SpecificationOrFactory
 from .interval import Interval
+from .layout import SampleLayout
 from .model import Model
 from .optimizer import Optimizer
 from .result import Result, Run
@@ -38,16 +39,14 @@ class CostFnGenerator(Generic[StateT, ExtraT], Iterator[CostFn[StateT, ExtraT]])
     model: Model[StateT, ExtraT]
     specification: SpecificationOrFactory[StateT]
     interval: Interval
-    static_parameter_range: slice
-    signal_parameters: Sequence[SignalParameters]
+    layout: SampleLayout
 
     def __next__(self) -> CostFn[StateT, ExtraT]:
         return CostFn(
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
 
@@ -140,27 +139,6 @@ def _validate_specification(
         raise TypeError("specification must be a specification instance or a function")
 
 
-def _validate_static_params(
-    inst: Scenario[Any, Any, Any], attr: Attribute[slice], value: slice
-) -> None:
-    if _slice_length(inst.static_parameter_range) > len(inst.bounds):
-        raise ValueError("static parameter range is greater than the number of bounds")
-
-
-ParamSeq = Sequence[SignalParameters]
-
-
-def _validate_signal_params(
-    inst: Scenario[Any, Any, Any], _: Attribute[ParamSeq], value: ParamSeq
-) -> None:
-    static_params_length = _slice_length(inst.static_parameter_range)
-    param_lengths = [_slice_length(param_obj.values_range) for param_obj in value]
-    total_param_length = sum(param_lengths, static_params_length)
-
-    if total_param_length > len(inst.bounds):
-        raise ValueError("signal values range is greater than the number of bounds")
-
-
 def _greater_than(bound: float) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if float(value) <= bound:
@@ -219,8 +197,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
         validator=deep_iterable(instance_of(Interval), iterable_validator=_min_length(1))
     )
     interval: Interval = field(validator=instance_of(Interval))
-    static_parameter_range: slice = field(validator=_validate_static_params)
-    signal_parameters: Sequence[SignalParameters] = field(validator=_validate_signal_params)
+    layout: SampleLayout = field(validator=instance_of(SampleLayout))
 
     def run(self, optimizer: Optimizer[ResultT]) -> Result[ResultT, ExtraT]:
         """Execute all optimization attempts given an optimizer.
@@ -242,8 +219,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
         experiment_gen = ExperimentGenerator(cost_fns, optimizer, self.bounds, self.iterations, rng)
         experiments = islice(experiment_gen, self.runs)
