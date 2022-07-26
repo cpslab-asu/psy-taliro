@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Iterable, Mapping, Sequence, Tuple
 
-from attr import Attribute, field, frozen
+from attr import field, frozen
 
 from .sample import Sample
 from .signal import Signal
@@ -17,7 +17,7 @@ def _to_signals(mapping: Mapping[Tuple[int, int], SignalConstructor]) -> Constru
     return dict(mapping)
 
 
-def _validate_signals(_: Any, attr: Attribute, signals: ConstructorMap) -> None:
+def _validate_signals(_: Any, attr: Any, signals: ConstructorMap) -> None:
     for (lo, hi) in signals.keys():
         if (hi - lo) < 1:
             raise ValueError("Interval must contain at least one element")
