@@ -119,9 +119,7 @@ class Thunk(Generic[StateT, ExtraT]):
         cost_duration, cost = _time(compute_cost)
         timing_data = TimingData(model_duration, cost_duration)
 
-        return Evaluation(
-            cost, self.sample, model_result.extra, timing_data
-        )
+        return Evaluation(cost, self.sample, model_result.extra, timing_data)
 
 
 @frozen()

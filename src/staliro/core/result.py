@@ -10,9 +10,9 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from .interval import Interval
+from .layout import SampleLayout
 from .sample import Sample
 from .signal import Signal
-from .layout import SampleLayout
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")

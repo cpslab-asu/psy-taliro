@@ -65,8 +65,7 @@ class ResultTestCase(TestCase):
     def setUp(self) -> None:
         def run(multiplier: float) -> Run[None, None]:
             history = [
-                Evaluation(cost, Sample([]), None, TimingData(cost, 0))
-                for cost in range(1, 7)
+                Evaluation(cost, Sample([]), None, TimingData(cost, 0)) for cost in range(1, 7)
             ]
             return Run(None, history, 0, 0)
 
@@ -82,7 +81,7 @@ class ResultTestCase(TestCase):
         self.assertEqual(worst_run.worst_eval.cost, max(costs))
 
     def test_best_run(self) -> None:
-        result = Result(self.runs, Interval(0, 1), 0, None, SampleLayout((0 ,1), {}))
+        result = Result(self.runs, Interval(0, 1), 0, None, SampleLayout((0, 1), {}))
         costs = [evaluation.cost for run in self.runs for evaluation in run.history]
         best_run = result.best_run
 
