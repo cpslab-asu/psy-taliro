@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
+from typing import Generic, Iterable, Optional, Sequence, Tuple, TypeVar, cast
 
 import numpy as np
 from attr import frozen

@@ -10,7 +10,6 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
-    List,
     Sequence,
     Tuple,
     TypeVar,
