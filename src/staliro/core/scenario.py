@@ -231,7 +231,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
         else:
             runs = [_run_experiment(experiment) for experiment in experiments]
 
-        return Result(runs, self.interval, self.seed, self.processes)
+        return Result(runs, self.interval, self.seed, self.processes, self.layout)
 
 
 __all__ = ["Scenario"]
