@@ -66,6 +66,9 @@ def _result_cost(specification: Specification[StateT], result: ModelResult[State
     raise ModelError("unsupported type returned from model")
 
 
+ExtraT = TypeVar("ExtraT")
+
+
 @frozen()
 class Thunk(Generic[StateT, ExtraT]):
     """Class which represents the deferred evaluation of the cost function.
@@ -117,7 +120,7 @@ class Thunk(Generic[StateT, ExtraT]):
         timing_data = TimingData(model_duration, cost_duration)
 
         return Evaluation(
-            cost, self.sample, list(static_inputs), signals, model_result.extra, timing_data
+            cost, self.sample, model_result.extra, timing_data
         )
 
 

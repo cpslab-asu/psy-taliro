@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from .interval import Interval
 from .sample import Sample
 from .signal import Signal
+from .layout import SampleLayout
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")
@@ -51,8 +52,6 @@ class Evaluation(Generic[ET]):
 
     cost: float
     sample: Sample
-    static_inputs: List[float]
-    signals: List[Signal]
     extra: ET
     timing: TimingData
 
@@ -154,6 +153,7 @@ class Result(Generic[RT, ET]):
     interval: Interval
     seed: int
     processes: Optional[int]
+    layout: SampleLayout
 
     @property
     def worst_run(self) -> Run[RT, ET]:
