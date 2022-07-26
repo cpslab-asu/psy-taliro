@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock, patch
 
 from staliro.core import Model, Optimizer, Specification
-from staliro.core.cost import SignalParameters
+from staliro.core.layout import SampleLayout
 from staliro.options import Options, SignalOptions
 from staliro.staliro import staliro
 
@@ -21,8 +21,9 @@ class StaliroTestCase(TestCase):
 
         scenario_mock.assert_called_once()
         _, kwargs = scenario_mock.call_args
+        layout: SampleLayout = kwargs["layout"]
 
-        self.assertEqual(kwargs["static_parameter_range"], slice(0, 3, 1))
+        self.assertEqual(layout.static_parameters, slice(0, 3, 1))
 
         pass
 
@@ -40,9 +41,7 @@ class StaliroTestCase(TestCase):
 
         scenario_mock.assert_called_once()
         _, kwargs = scenario_mock.call_args
-        signal_params: list[SignalParameters] = kwargs["signal_parameters"]
+        layout: SampleLayout = kwargs["layout"]
 
-        self.assertEqual(len(signal_params), len(signals))
-        self.assertEqual(signal_params[0].values_range, slice(3, 10, 1))
-
-        pass
+        self.assertEqual(len(layout.signals), len(signals))
+        self.assertNotEqual(layout.signals.get((3, 10)), None)

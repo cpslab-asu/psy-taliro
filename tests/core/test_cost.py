@@ -5,16 +5,9 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock
 
-from staliro.core.cost import (
-    CostFn,
-    Evaluation,
-    SignalParameters,
-    SpecificationFactory,
-    Thunk,
-    TimingData,
-    decompose_sample,
-)
+from staliro.core.cost import CostFn, Evaluation, SpecificationFactory, Thunk, TimingData
 from staliro.core.interval import Interval
+from staliro.core.layout import SampleLayout
 from staliro.core.model import Failure, Model, ModelData
 from staliro.core.sample import Sample
 from staliro.core.signal import Signal
@@ -34,10 +27,12 @@ class ThunkTestCase(TestCase):
         self.sample = Sample([1, 2, 3, 4])
         self.model = NonCallableMock(spec=Model)
         self.interval = Interval(0, 1)
-        self.static_parameter_range = slice(0, 2, 1)
-        self.signal_parameters = [
-            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=factory)
-        ]
+        self.layout = SampleLayout(
+            static_parameters = (0, 2),
+            signals = {
+                (2, 4): lambda vs: factory([1.0, 2.0], vs)  # type: ignore
+            }
+        )
 
     def test_specification_noncallable(self) -> None:
         specification: Specification[Any] = NonCallableMock(spec=Specification)
@@ -46,8 +41,7 @@ class ThunkTestCase(TestCase):
             self.model,
             specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         self.assertEqual(thunk.specification, specification)
@@ -60,8 +54,7 @@ class ThunkTestCase(TestCase):
             self.model,
             specification_factory,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         factory_result = thunk.specification
@@ -77,8 +70,7 @@ class ThunkTestCase(TestCase):
             self.model,
             bad_factory,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         with self.assertRaises(SpecificationError):
@@ -97,14 +89,11 @@ class ThunkTestCase(TestCase):
             model,
             specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         evaluation = thunk.evaluate()
-        static_parameters, signals = decompose_sample(
-            self.sample, self.static_parameter_range, self.signal_parameters
-        )
+        static_parameters, signals = self.layout.decompose_sample(self.sample)
 
         model.simulate.assert_called_once()
         model.simulate.assert_called_with(static_parameters, signals, self.interval)
@@ -128,14 +117,11 @@ class ThunkTestCase(TestCase):
             model,
             specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         evaluation = thunk.evaluate()
-        static_parameters, signals = decompose_sample(
-            self.sample, self.static_parameter_range, self.signal_parameters
-        )
+        static_parameters, signals = self.layout.decompose_sample(self.sample)
 
         model.simulate.assert_called_once()
         model.simulate.assert_called_with(static_parameters, signals, self.interval)
@@ -155,16 +141,17 @@ class CostFnTestCase(TestCase):
         self.model.simulate = Mock(return_value=NonCallableMock(spec=ModelData))
         self.specification = NonCallableMock(spec=Specification)
         self.interval = Interval(0, 1)
-        self.static_parameter_range = slice(0, 2, 1)
-        self.signal_parameters = [
-            SignalParameters(values_range=slice(2, 4, 1), times=[1.0, 2.0], factory=factory)
-        ]
+        self.layout = SampleLayout(
+            static_parameters=(0, 2),
+            signals = {
+                (2, 4): lambda vs: factory([1.0, 2.0], vs)  # type: ignore
+            }
+        )
         self.cost_fn: CostFn[Any, Any] = CostFn(
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
     def test_eval_sample(self) -> None:
@@ -201,15 +188,13 @@ class CostFnTestCase(TestCase):
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
         many_cost_fn: CostFn[Any, Any] = CostFn(
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         single_costs = [single_cost_fn.eval_sample(sample) for sample in samples]
