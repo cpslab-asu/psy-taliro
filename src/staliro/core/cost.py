@@ -4,18 +4,7 @@ import logging
 import math
 import time
 from concurrent.futures import ProcessPoolExecutor
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Iterable,
-    Iterator,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
 
 from attr import field, frozen
 from attr.validators import instance_of
