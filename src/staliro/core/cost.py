@@ -4,7 +4,19 @@ import logging
 import math
 import time
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from attr import field, frozen
 from attr.validators import instance_of
@@ -12,13 +24,12 @@ from attr.validators import instance_of
 from .interval import Interval
 from .model import Failure, Model, ModelData, ModelError, ModelResult
 from .optimizer import ObjectiveFn
+from .result import Evaluation, TimingData
 from .sample import Sample
 from .signal import Signal, SignalFactory
 from .specification import Specification, SpecificationError
 
 StateT = TypeVar("StateT")
-ExtraT = TypeVar("ExtraT")
-
 SpecificationFactory = Callable[[Sample], Specification[StateT]]
 SpecificationOrFactory = Union[Specification[StateT], SpecificationFactory[StateT]]
 
@@ -28,44 +39,6 @@ logger.addHandler(logging.NullHandler())
 
 def _slice_length(s: slice) -> int:
     return cast(int, s.stop - s.start // s.step)
-
-
-@frozen()
-class TimingData:
-    """Storage class for execution durations of different PSY-TaLiRo components.
-
-    The durations stored in this class are for a single evaluation.
-
-    Attributes:
-        model: Run time of model component
-        specification: Run time of specification component
-    """
-
-    model: float
-    specification: float
-
-    @property
-    def total(self) -> float:
-        """The total duration of all components."""
-
-        return self.model + self.specification
-
-
-@frozen()
-class Evaluation(Generic[ExtraT]):
-    """The result of applying the cost function to a sample.
-
-    Attributes:
-        cost: The result of using a specification to analyze the output of a model
-        sample: The sample provided to the model
-        extra: Additional data returned by the model
-        timing: Execution durations of each component of the cost function
-    """
-
-    cost: float
-    sample: Sample
-    extra: ExtraT
-    timing: TimingData
 
 
 class EvaluationError(Exception):
@@ -120,11 +93,14 @@ class SignalParameters:
 
 def decompose_sample(
     sample: Sample, static_range: slice, params_seq: Sequence[SignalParameters]
-) -> Tuple[Sequence[float], Sequence[Signal]]:
+) -> Tuple[Sequence[float], List[Signal]]:
     static_parameters = sample[static_range]
     signals = [_mksignal(sample, params) for params in params_seq]
 
     return static_parameters, signals
+
+
+ExtraT = TypeVar("ExtraT")
 
 
 @frozen()
@@ -182,7 +158,9 @@ class Thunk(Generic[StateT, ExtraT]):
         cost_duration, cost = _time(compute_cost)
         timing_data = TimingData(model_duration, cost_duration)
 
-        return Evaluation(cost, self.sample, model_result.extra, timing_data)
+        return Evaluation(
+            cost, self.sample, list(static_inputs), signals, model_result.extra, timing_data
+        )
 
 
 @frozen()

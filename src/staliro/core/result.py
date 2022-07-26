@@ -1,15 +1,60 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, Optional, Sequence, TypeVar
+from typing import Generic, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
 
+import numpy as np
 from attr import frozen
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
-from .cost import Evaluation
 from .interval import Interval
+from .sample import Sample
+from .signal import Signal
 
 RT = TypeVar("RT")
 ET = TypeVar("ET")
+
+
+@frozen()
+class TimingData:
+    """Storage class for execution durations of different PSY-TaLiRo components.
+
+    The durations stored in this class are for a single evaluation.
+
+    Attributes:
+        model: Run time of model component
+        specification: Run time of specification component
+    """
+
+    model: float
+    specification: float
+
+    @property
+    def total(self) -> float:
+        """The total duration of all components."""
+
+        return self.model + self.specification
+
+
+@frozen()
+class Evaluation(Generic[ET]):
+    """The result of applying the cost function to a sample.
+
+    Attributes:
+        cost: The result of using a specification to analyze the output of a model
+        sample: The sample provided to the model
+        extra: Additional data returned by the model
+        timing: Execution durations of each component of the cost function
+    """
+
+    cost: float
+    sample: Sample
+    static_inputs: List[float]
+    signals: List[Signal]
+    extra: ET
+    timing: TimingData
 
 
 @frozen(slots=True)
@@ -117,3 +162,12 @@ class Result(Generic[RT, ET]):
     @property
     def best_run(self) -> Run[RT, ET]:
         return min(self.runs, key=lambda r: r.best_eval.cost)
+
+    def plot_signal(self, signal: Signal, step_size: float = 0.1) -> Tuple[Figure, Axes]:
+        fig, ax = plt.subplots()
+        times = np.arange(self.interval.lower, self.interval.upper, step_size, dtype=np.float64)
+        values = signal.at_times(cast(Sequence[float], times.tolist()))
+
+        ax.plot(times, values)
+
+        return fig, ax
