@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, List, Optional, Sequence, Tuple, TypeVar, cast
+from typing import Generic, Iterable, Optional, Sequence, Tuple, TypeVar, cast
 
 import numpy as np
 from attr import frozen
@@ -10,6 +10,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from .interval import Interval
+from .layout import SampleLayout
 from .sample import Sample
 from .signal import Signal
 
@@ -51,8 +52,6 @@ class Evaluation(Generic[ET]):
 
     cost: float
     sample: Sample
-    static_inputs: List[float]
-    signals: List[Signal]
     extra: ET
     timing: TimingData
 
@@ -154,6 +153,7 @@ class Result(Generic[RT, ET]):
     interval: Interval
     seed: int
     processes: Optional[int]
+    layout: SampleLayout
 
     @property
     def worst_run(self) -> Run[RT, ET]:

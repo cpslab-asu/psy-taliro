@@ -4,29 +4,17 @@ import logging
 import math
 import time
 from concurrent.futures import ProcessPoolExecutor
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Iterable,
-    Iterator,
-    List,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
 
 from attr import field, frozen
 from attr.validators import instance_of
 
 from .interval import Interval
+from .layout import SampleLayout
 from .model import Failure, Model, ModelData, ModelError, ModelResult
 from .optimizer import ObjectiveFn
 from .result import Evaluation, TimingData
 from .sample import Sample
-from .signal import Signal, SignalFactory
 from .specification import Specification, SpecificationError
 
 StateT = TypeVar("StateT")
@@ -57,24 +45,6 @@ def _time(func: Callable[[], T]) -> Tuple[float, T]:
     return duration, result
 
 
-def _mksignal(sample: Sample, params: SignalParameters) -> Signal:
-    signal_values = sample[params.values_range]
-
-    if len(signal_values) != _slice_length(params.values_range):
-        raise EvaluationError(
-            f"cannot satisfy signal values range {params.values_range} with sample {sample}"
-        )
-
-    signal = params.factory(params.times, signal_values)
-
-    if not isinstance(signal, Signal):
-        raise EvaluationError(
-            f"unknown type {type(signal)} returned from signal factory {params.factory.__class__}"
-        )
-
-    return signal
-
-
 def _result_cost(specification: Specification[StateT], result: ModelResult[StateT, Any]) -> float:
     if isinstance(result, ModelData):
         return specification.evaluate(result.states, result.times)
@@ -82,22 +52,6 @@ def _result_cost(specification: Specification[StateT], result: ModelResult[State
         return -math.inf
 
     raise ModelError("unsupported type returned from model")
-
-
-@frozen(auto_attribs=False, slots=True)
-class SignalParameters:
-    values_range: slice = field()
-    times: Sequence[float] = field()
-    factory: SignalFactory = field()
-
-
-def decompose_sample(
-    sample: Sample, static_range: slice, params_seq: Sequence[SignalParameters]
-) -> Tuple[Sequence[float], List[Signal]]:
-    static_parameters = sample[static_range]
-    signals = [_mksignal(sample, params) for params in params_seq]
-
-    return static_parameters, signals
 
 
 ExtraT = TypeVar("ExtraT")
@@ -121,8 +75,7 @@ class Thunk(Generic[StateT, ExtraT]):
     model: Model[StateT, ExtraT]
     _specification: SpecificationOrFactory[StateT]
     interval: Interval
-    static_parameter_range: slice
-    signal_parameters: Sequence[SignalParameters]
+    layout: SampleLayout
 
     @property
     def specification(self) -> Specification[StateT]:
@@ -146,11 +99,7 @@ class Thunk(Generic[StateT, ExtraT]):
             An Evaluation instance representing the result of the computation pipeline.
         """
 
-        static_inputs, signals = decompose_sample(
-            self.sample,
-            self.static_parameter_range,
-            self.signal_parameters,
-        )
+        static_inputs, signals = self.layout.decompose_sample(self.sample)
         simulate = lambda: self.model.simulate(static_inputs, signals, self.interval)
         model_duration, model_result = _time(simulate)
 
@@ -158,9 +107,7 @@ class Thunk(Generic[StateT, ExtraT]):
         cost_duration, cost = _time(compute_cost)
         timing_data = TimingData(model_duration, cost_duration)
 
-        return Evaluation(
-            cost, self.sample, list(static_inputs), signals, model_result.extra, timing_data
-        )
+        return Evaluation(cost, self.sample, model_result.extra, timing_data)
 
 
 @frozen()
@@ -171,8 +118,7 @@ class ThunkGenerator(Generic[StateT, ExtraT], Iterable[Thunk[StateT, ExtraT]]):
     model: Model[StateT, ExtraT]
     specification: SpecificationOrFactory[StateT]
     interval: Interval
-    static_parameter_range: slice
-    signal_parameters: Sequence[SignalParameters]
+    layout: SampleLayout
 
     def __iter__(self) -> Iterator[Thunk[StateT, ExtraT]]:
         for sample in self.samples:
@@ -181,8 +127,7 @@ class ThunkGenerator(Generic[StateT, ExtraT], Iterable[Thunk[StateT, ExtraT]]):
                 self.model,
                 self.specification,
                 self.interval,
-                self.static_parameter_range,
-                self.signal_parameters,
+                self.layout,
             )
 
 
@@ -209,8 +154,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
     model: Model[StateT, ExtraT]
     specification: SpecificationOrFactory[StateT]
     interval: Interval
-    static_parameter_range: slice
-    signal_parameters: Sequence[SignalParameters]
+    layout: SampleLayout
     history: list[Evaluation[ExtraT]] = field(init=False, factory=list)
 
     def eval_sample(self, sample: Sample) -> float:
@@ -230,8 +174,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
         evaluation = _evaluate(thunk)
 
@@ -256,8 +199,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
         evaluations = [_evaluate(thunk) for thunk in thunks]
 
@@ -285,8 +227,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
             self.model,
             self.specification,
             self.interval,
-            self.static_parameter_range,
-            self.signal_parameters,
+            self.layout,
         )
 
         with ProcessPoolExecutor(max_workers=processes) as executor:

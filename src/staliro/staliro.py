@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from typing import Iterable, List, TypeVar, cast
+from typing import Any, Iterable, List, Sequence, TypeVar, cast
 
 import numpy as np
+from attr import frozen
 
-from .core.cost import SignalParameters, SpecificationOrFactory, decompose_sample
+from .core.cost import SpecificationOrFactory
 from .core.interval import Interval
+from .core.layout import SampleLayout
 from .core.model import Model, ModelResult
 from .core.optimizer import Optimizer
 from .core.result import Result
 from .core.sample import Sample
 from .core.scenario import Scenario
+from .core.signal import Signal, SignalFactory
 from .options import Options, SignalOptions
 
 StateT = TypeVar("StateT")
@@ -18,28 +21,53 @@ ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 
 
-def _signal_parameters(options: Options, start_index: int) -> List[SignalParameters]:
-    t_span = options.interval
-    signal_parameters = []
+class SignalFactoryWrapper:
+    def __init__(self, factory: SignalFactory, signal_times: List[float]):
+        self.factory = factory
+        self.signal_times = signal_times
 
-    for signal in options.signals:
-        n_control_points = len(signal.control_points)
-        stop_index = start_index + n_control_points
-        values_range = slice(start_index, stop_index, 1)
+    def __call__(self, signal_values: Sequence[float]) -> Signal:
+        if len(signal_values) != len(self.signal_times):
+            raise RuntimeError("not enough values for signal")
 
-        if signal.signal_times is None:
+        signal = self.factory(self.signal_times, signal_values)
+
+        if not isinstance(signal, Signal):
+            raise ValueError("signal factory did not return signal")
+
+        return signal
+
+
+@frozen(slots=True)
+class LayoutParameters:
+    static_inputs: Sequence[Any]
+    signal_options: Sequence[SignalOptions]
+    t_span: Interval
+
+
+def _create_sample_layout(params: LayoutParameters) -> SampleLayout:
+    offset = len(params.static_inputs)
+    static_inputs_range = (0, offset)
+    signal_ranges_map = {}
+
+    for signal_opts in params.signal_options:
+        n_points = len(signal_opts.control_points)
+        signal_range = (offset, offset + n_points)
+        offset = offset + len(signal_opts.control_points)
+        signal_times = signal_opts.signal_times
+
+        if signal_times is None:
             times_array = np.linspace(
-                t_span.lower, t_span.upper, num=n_control_points, dtype=np.float64
+                params.t_span.lower,
+                params.t_span.upper,
+                num=n_points,
+                dtype=np.float64,
             )
             signal_times = cast(List[float], times_array.tolist())
-        else:
-            signal_times = signal.signal_times
 
-        parameters = SignalParameters(values_range, signal_times, signal.factory)
-        signal_parameters.append(parameters)
-        start_index = stop_index
+        signal_ranges_map[signal_range] = SignalFactoryWrapper(signal_opts.factory, signal_times)
 
-    return signal_parameters
+    return SampleLayout(static_inputs_range, signal_ranges_map)
 
 
 def _signal_bounds(signals: Iterable[SignalOptions]) -> tuple[Interval, ...]:
@@ -66,8 +94,8 @@ def staliro(
     Returns:
         An object containing the result of each optimization attempt.
     """
-    static_params_end = len(options.static_parameters)
-    signal_parameters = _signal_parameters(options, static_params_end)
+    params = LayoutParameters(options.static_parameters, options.signals, options.interval)
+    layout = _create_sample_layout(params)
     signal_bounds = _signal_bounds(options.signals)
     bounds = options.static_parameters + signal_bounds
 
@@ -80,8 +108,7 @@ def staliro(
         processes=options.process_count,
         bounds=bounds,
         interval=options.interval,
-        static_parameter_range=slice(0, static_params_end, 1),
-        signal_parameters=signal_parameters,
+        layout=layout,
     )
 
     return scenario.run(optimizer)
@@ -90,8 +117,8 @@ def staliro(
 def simulate_model(
     model: Model[StateT, ExtraT], options: Options, sample: Sample
 ) -> ModelResult[StateT, ExtraT]:
-    static_range = slice(0, len(options.static_parameters))
-    signal_params = _signal_parameters(options, static_range.stop)
-    static_inputs, signals = decompose_sample(sample, static_range, signal_params)
+    params = LayoutParameters(options.static_parameters, options.signals, options.interval)
+    layout = _create_sample_layout(params)
+    static_inputs, signals = layout.decompose_sample(sample)
 
     return model.simulate(static_inputs, signals, options.interval)
