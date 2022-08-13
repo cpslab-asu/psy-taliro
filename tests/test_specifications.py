@@ -6,10 +6,9 @@ import numpy as np
 import pandas as pd
 
 from staliro.specifications import (
+    TLTK,
     AdjacencyList,
     GuardMap,
-    HyDist,
-    TLTK,
     RTAMTDense,
     RTAMTDiscrete,
     TPTaliro,
@@ -122,7 +121,7 @@ class SpecificationTestCase(TestCase):
     )
     def test_tp_taliro_specification_hybrid(self) -> None:
         requirement = "globally (p1 and p2)"
-        predicates = [ # FIXME: add type annotation
+        predicates = [  # FIXME: add type annotation
             {"name": "p1", "a": -1.0, "b": 0.0, "l": 1},
             {"name": "p2", "a": -1.0, "b": -5.0, "l": 1},
             {"name": "p3", "a": 1.0, "b": 30.0, "l": 2},
