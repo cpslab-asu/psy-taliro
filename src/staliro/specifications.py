@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import TYPE_CHECKING, Dict, List, Mapping, NewType, Sequence, Tuple, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Mapping,
+    NewType,
+    Sequence,
+    Tuple,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from numpy.typing import NDArray
@@ -46,6 +57,39 @@ PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
+# The type definitions that follow should be defined in `py-taliro` package.
+# However, since it is a WIP, here is sufficient. For now.
+class HyDist(TypedDict):
+    """Hybrid Distance Type
+
+    Attributes:
+        ds: Distance to state trajectory
+        dl: Distance to location
+    """
+
+    ds: float
+    dl: float
+
+
+Vertex = str
+AdjacencyList = Dict[Vertex, List[Vertex]]
+
+Edge = Tuple[Vertex, Vertex]
+
+
+class Guard(TypedDict):
+    """The constraint of the form Ax <= b
+
+    Attributes:
+        a: A matrix
+        b: b matrix
+    """
+
+    a: Union[NDArray[np.float_], float, int]
+    b: Union[NDArray[np.float_], float, int]
+
+
+GuardMap = Dict[Edge, Guard]
 
 TaliroPredicateMap = List[TaliroPredicate]
 
@@ -220,11 +264,20 @@ class TPTaliro(StlSpecification):
             if not isinstance(name, str):
                 raise ValueError("TP-TaLiRo predicate name must be a string")
 
-            return {
-                "name": name,
-                "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
-                "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
-            }
+            return (
+                {
+                    "name": name,
+                    "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
+                    "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
+                    "l": np.array(user_data["l"], dtype=np.double, ndmin=2),
+                }
+                if "l" in user_data
+                else {
+                    "name": name,
+                    "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
+                    "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
+                }
+            )
 
         # translate STL to TPTL; else, assume valid TPTL
         try:
@@ -251,3 +304,56 @@ class TPTaliro(StlSpecification):
         )
 
         return robustness["ds"]  # type: ignore
+
+    def hybrid(
+        self,
+        states: NDArray[np.float_],
+        times: NDArray[np.float_],
+        locations: NDArray[np.float_],
+        graph: AdjacencyList,
+        guard_map: GuardMap,
+    ) -> HyDist:
+        """Compute hybrid-based robustness metric.
+
+        A couple notes regarding the arguments: (1) `locations` is a trajectory
+        of active states corresponding to a timestamp; (2) the `guard_map` must
+        have an entry for _every_ edge defined in the `graph`. For example, if
+        we have the following adjacency list:
+
+        ```text
+        A -> B
+        A -> A
+        ```
+
+        Then, the guard map should contain an entry for the edge (A, B) and the
+        edge (A, A). It is not required to add an entry for the edge (B, A) or
+        (B, B) (i.e., the graph is nondeterministic).
+
+        Arguments:
+            states: State trajectories
+            times: Timestamps
+            locations: Location trajectories
+            graph: Control location graph represented as an adjacency list
+            guard_map: Transition criteria for each edge in the graph
+        """
+
+        def into_taliro_guard(constraint: Guard) -> Guard:
+            return {
+                "a": np.array(constraint["a"], dtype=np.double, ndmin=2),
+                "b": np.array(constraint["b"], dtype=np.double, ndmin=2),
+            }
+
+        for guard, constraint in guard_map.items():
+            guard_map[guard] = into_taliro_guard(constraint)
+
+        hdist = tp.tptaliro(
+            spec=self.spec,
+            preds=self.pmap,
+            st=np.array(states, dtype=np.double, ndmin=2),
+            ts=np.array(times, dtype=np.double, ndmin=2),
+            lt=np.array(locations, dtype=np.double, ndmin=2),
+            adj_list=graph,
+            guards=guard_map,
+        )
+
+        return {"ds": hdist["ds"], "dl": hdist["dl"]}
