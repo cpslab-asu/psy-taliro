@@ -346,7 +346,7 @@ class TPTaliro(StlSpecification):
         for guard, constraint in guard_map.items():
             guard_map[guard] = into_taliro_guard(constraint)
 
-        hdist = tp.tptaliro(
+        robustness: HyDist = tp.tptaliro(
             spec=self.spec,
             preds=self.pmap,
             st=np.array(states, dtype=np.double, ndmin=2),
@@ -356,4 +356,4 @@ class TPTaliro(StlSpecification):
             guards=guard_map,
         )
 
-        return {"ds": hdist["ds"], "dl": hdist["dl"]}
+        return robustness
