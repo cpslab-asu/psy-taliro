@@ -5,14 +5,7 @@ from unittest import TestCase, skipIf
 import numpy as np
 import pandas as pd
 
-from staliro.specifications import (
-    TLTK,
-    AdjacencyList,
-    GuardMap,
-    RTAMTDense,
-    RTAMTDiscrete,
-    TPTaliro,
-)
+from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete, TPTaliro
 
 try:
     import tltk_mtl  # noqa: F401
@@ -29,7 +22,7 @@ else:
     _has_taliro = True
 
 if _has_taliro and TYPE_CHECKING:
-    from taliro.tptaliro import TaliroPredicate
+    from taliro.tptaliro import AdjacencyList, GuardMap, HyDist, TaliroPredicate
 
 SIG_FIGS = 3
 
@@ -142,7 +135,9 @@ class SpecificationTestCase(TestCase):
         trajectories = self._data["x1"].to_numpy(dtype=np.float32)
         locations = self._data["loc"].to_numpy(dtype=np.float32)
 
-        robustness = specification.hybrid(trajectories, timestamps, locations, graph, guards)
+        robustness: HyDist = specification.hybrid(
+            trajectories, timestamps, locations, graph, guards
+        )
 
         self.assertAlmostEqual(robustness["ds"], -248.4178466796875, SIG_FIGS)
         self.assertEqual(robustness["dl"], -2)
