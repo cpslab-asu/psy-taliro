@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
 from math import inf
 from typing import (
     TYPE_CHECKING,
@@ -11,9 +10,7 @@ from typing import (
     NewType,
     Sequence,
     Tuple,
-    TypedDict,
     TypeVar,
-    Union,
 )
 
 import numpy as np
@@ -50,7 +47,7 @@ else:
     _can_translate = True
 
 if TYPE_CHECKING:
-    from taliro.tptaliro import TaliroPredicate
+    from taliro.tptaliro import AdjacencyList, Guard, GuardMap, HyDist, TaliroPredicate
 
 
 StateT = TypeVar("StateT")
@@ -58,39 +55,6 @@ PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
-# The type definitions that follow should be defined in `py-taliro` package.
-# However, since it is a WIP, here is sufficient. For now.
-class HyDist(TypedDict):
-    """Hybrid Distance Type
-
-    Attributes:
-        ds: Distance to state trajectory
-        dl: Distance to location
-    """
-
-    ds: float
-    dl: float
-
-
-Vertex = str
-AdjacencyList = Dict[Vertex, List[Vertex]]
-
-Edge = Tuple[Vertex, Vertex]
-
-
-class Guard(TypedDict):
-    """The constraint of the form Ax <= b
-
-    Attributes:
-        a: A matrix
-        b: b matrix
-    """
-
-    a: Union[NDArray[np.float_], float, int]
-    b: Union[NDArray[np.float_], float, int]
-
-
-GuardMap = Dict[Edge, Guard]
 TaliroPredicateMap = List[TaliroPredicate]
 
 
@@ -276,6 +240,7 @@ class TPTaliro(StlSpecification):
                     "name": name,
                     "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
                     "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
+                    "l": None,
                 }
             )
 
@@ -296,14 +261,17 @@ class TPTaliro(StlSpecification):
         """
         times_, states_ = _parse_times_states(times, states)
 
-        robustness = tp.tptaliro(
+        robustness: HyDist = tp.tptaliro(
             spec=self.spec,
             preds=self.pmap,
             st=np.array(states_, dtype=np.double, ndmin=2),
             ts=np.array(times_, dtype=np.double, ndmin=2),
+            lt=None,
+            adj_list=None,
+            guards=None,
         )
 
-        return robustness["ds"]  # type: ignore
+        return robustness["ds"]
 
     def hybrid(
         self,
