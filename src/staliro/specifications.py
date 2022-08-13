@@ -235,6 +235,12 @@ class TPTaliro(StlSpecification):
         self.pmap = [into_taliro_predicate(user_dict) for user_dict in predicate_map]
 
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        """Compute the euclidean-based robustness
+
+        Attributes:
+            states: State trajectories
+            times: Timestamps
+        """
         times_, states_ = _parse_times_states(times, states)
 
         robustness = tp.tptaliro(
