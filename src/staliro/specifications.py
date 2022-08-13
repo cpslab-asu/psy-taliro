@@ -240,8 +240,7 @@ class TPTaliro(StlSpecification):
                     "name": name,
                     "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
                     "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
-                    "l": None,
-                }
+                }  # type: ignore
             )
 
         # translate STL to TPTL; else, assume valid TPTL
