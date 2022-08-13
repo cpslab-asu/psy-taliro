@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+
 from math import inf
 from typing import (
     TYPE_CHECKING,
@@ -90,7 +91,6 @@ class Guard(TypedDict):
 
 
 GuardMap = Dict[Edge, Guard]
-
 TaliroPredicateMap = List[TaliroPredicate]
 
 
