@@ -76,7 +76,7 @@ class SpecificationTestCase(TestCase):
         not _has_taliro,
         "Py-TaLiRo library must be installed to run TP-TaLiRo specification euclidean test",
     )
-    def test_tp_taliro_specification_euclidean(self) -> None:
+    def test_tp_taliro_specification_evaluate(self) -> None:
         requirement = "(not ((always[0.0, 4.0]((x1_1) and (x1_2))) and (eventually[3.5,4.0]((x1_3) and (x1_4)))))"
         predicates: List[TaliroPredicate] = [
             {

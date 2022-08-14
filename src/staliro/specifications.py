@@ -2,16 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    List,
-    Mapping,
-    NewType,
-    Sequence,
-    Tuple,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Dict, List, Mapping, NewType, Sequence, Tuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
