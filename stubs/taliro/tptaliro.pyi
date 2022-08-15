@@ -3,12 +3,6 @@ from typing import Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 import numpy as np
 from numpy.typing import NDArray
 
-class TaliroPredicate(TypedDict):
-    name: str
-    a: NDArray[np.float_]
-    b: NDArray[np.float_]
-    l: Optional[NDArray[np.float_]]
-
 # The type definitions that follow should be defined in `py-taliro` package.
 # However, since it is a WIP, here is sufficient. For now.
 class HyDist(TypedDict):

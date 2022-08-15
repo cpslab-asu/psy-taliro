@@ -5,7 +5,7 @@ from unittest import TestCase, skipIf
 import numpy as np
 import pandas as pd
 
-from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete, TPTaliro
+from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete, TaliroPredicate, TPTaliro
 
 try:
     import tltk_mtl  # noqa: F401
@@ -22,7 +22,7 @@ else:
     _has_taliro = True
 
 if _has_taliro and TYPE_CHECKING:
-    from taliro.tptaliro import AdjacencyList, GuardMap, HyDist, TaliroPredicate
+    from taliro.tptaliro import AdjacencyList, GuardMap, HyDist
 
 SIG_FIGS = 3
 
@@ -78,28 +78,32 @@ class SpecificationTestCase(TestCase):
     )
     def test_tp_taliro_specification_evaluate(self) -> None:
         requirement = "(not ((always[0.0, 4.0]((x1_1) and (x1_2))) and (eventually[3.5,4.0]((x1_3) and (x1_4)))))"
-        predicates: List[TaliroPredicate] = [
-            {
-                "name": "x1_1",
-                "a": np.array(1.0),
-                "b": np.array(250.0),
-            },
-            {
-                "name": "x1_2",
-                "a": np.array(-1.0),
-                "b": np.array(-240.0),
-            },
-            {
-                "name": "x1_3",
-                "a": np.array(1.0),
-                "b": np.array(240.1),
-            },
-            {
-                "name": "x1_4",
-                "a": np.array(-1.0),
-                "b": np.array(-240.0),
-            },
-        ]
+        predicates: List[TaliroPredicate] = map(
+            TaliroPredicate.from_dict,
+            [
+                {
+                    "name": "x1_1",
+                    "a": np.array(1.0),
+                    "b": np.array(250.0),
+                },
+                {
+                    "name": "x1_2",
+                    "a": np.array(-1.0),
+                    "b": np.array(-240.0),
+                },
+                {
+                    "name": "x1_3",
+                    "a": np.array(1.0),
+                    "b": np.array(240.1),
+                },
+                {
+                    "name": "x1_4",
+                    "a": np.array(-1.0),
+                    "b": np.array(-240.0),
+                },
+            ],
+        )
+
         specification = TPTaliro(requirement, predicates)
 
         timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
@@ -114,11 +118,14 @@ class SpecificationTestCase(TestCase):
     )
     def test_tp_taliro_specification_hybrid(self) -> None:
         requirement = "globally (p1 and p2)"
-        predicates: List[TaliroPredicate] = [
-            {"name": "p1", "a": -1.0, "b": 0.0, "l": 1},
-            {"name": "p2", "a": -1.0, "b": -5.0, "l": 1},
-            {"name": "p3", "a": 1.0, "b": 30.0, "l": 2},
-        ]
+        predicates: List[TaliroPredicate] = map(
+            TaliroPredicate.from_dict,
+            [
+                {"name": "p1", "a": -1.0, "b": 0.0, "l": 1},
+                {"name": "p2", "a": -1.0, "b": -5.0, "l": 1},
+                {"name": "p3", "a": 1.0, "b": 30.0, "l": 2},
+            ],
+        )
 
         graph: AdjacencyList = {"1": ["2"], "2": ["3", "4"], "3": ["1"], "4": ["3"]}
 

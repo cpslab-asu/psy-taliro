@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import TYPE_CHECKING, Dict, List, Mapping, NewType, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, NewType, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
+from attrs import field, frozen
 from numpy.typing import NDArray
 
 try:
@@ -199,6 +200,35 @@ class RTAMTDense(StlSpecification):
         return robustness[0][1]
 
 
+@frozen(slots=True)
+class TaliroPredicate:
+    name: str = field(kw_only=True)
+    A: NDArray[np.float_] = field(kw_only=True)
+    b: NDArray[np.float_] = field(kw_only=True)
+    l: Optional[NDArray[np.float_]] = field(default=None, kw_only=True)
+
+    def as_dict(self) -> Dict[str, Any]:
+        pred = {
+            "name": self.name,
+            "a": np.array(self.A, dtype=np.double, ndmin=2),
+            "b": np.array(self.b, dtype=np.double, ndmin=2),
+        }
+
+        if self.l:
+            pred["l"] = np.array(self.l, dtype=np.double, ndmin=2)
+
+        return pred
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> TaliroPredicate:
+        try:
+            l = d["l"]
+        except KeyError:
+            l = None
+
+        return cls(name=d["name"], A=d["a"], b=d["b"], l=l)
+
+
 class TPTaliro(StlSpecification):
     """TPTL logic specification that uses TP-TaLiRo to compute robustness values.
 
@@ -213,34 +243,13 @@ class TPTaliro(StlSpecification):
         if not _can_translate:
             raise RuntimeError("TP-TaLiRo specifications require translation functionality.")
 
-        def into_taliro_predicate(user_data: Mapping[str, object]) -> TaliroPredicate:
-            name = user_data.get("name")
-
-            if not isinstance(name, str):
-                raise ValueError("TP-TaLiRo predicate name must be a string")
-
-            return (
-                {
-                    "name": name,
-                    "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
-                    "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
-                    "l": np.array(user_data["l"], dtype=np.double, ndmin=2),
-                }
-                if "l" in user_data
-                else {
-                    "name": name,
-                    "a": np.array(user_data["a"], dtype=np.double, ndmin=2),
-                    "b": np.array(user_data["b"], dtype=np.double, ndmin=2),
-                }  # type: ignore
-            )
-
         # translate STL to TPTL; else, assume valid TPTL
         try:
             self.spec = translate(phi, TemporalLogic.STL, TemporalLogic.TPTL)
         except SpecificationSyntaxError:
             self.spec = phi
 
-        self.pmap = [into_taliro_predicate(user_dict) for user_dict in predicate_map]
+        self.pmap = [user_dict.as_dict() for user_dict in predicate_map]
 
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         """Compute the euclidean-based robustness
