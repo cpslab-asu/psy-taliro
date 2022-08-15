@@ -121,3 +121,20 @@ def harmonic(_: Sequence[float], values: Sequence[float]) -> Harmonic:
     components = [Harmonic.Component(amp, freq, phase) for amp, freq, phase in component_params]
 
     return Harmonic(bias, components)
+
+
+class Clamped(Signal):
+    def __init__(self, s: Signal, lo: float, hi: float):
+        self._signal = s
+        self._lo = lo
+        self._hi = hi
+
+    def at_time(self, time: float) -> float:
+        return min(self._hi, max(self._lo, self._signal.at_time(time)))
+
+
+def clamped(factory: SignalFactory, *, lo: float, hi: float) -> SignalFactory:
+    def _factory(times: Sequence[float], values: Sequence[float]) -> Clamped:
+        return Clamped(factory(times, values), lo, hi)
+
+    return _factory
