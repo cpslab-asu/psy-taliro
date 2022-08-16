@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, List, Sequence
+from typing import List, Sequence
 
 import numpy as np
 import plotly.graph_objects as go
@@ -11,11 +11,8 @@ from staliro.core import BasicResult, ModelResult, Trace, best_eval, best_run
 from staliro.models import SignalTimes, SignalValues, blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options
-from staliro.specifications import TPTaliro
+from staliro.specifications import TaliroPredicate, TPTaliro
 from staliro.staliro import simulate_model, staliro
-
-if TYPE_CHECKING:
-    from taliro.tptaliro import TaliroPredicate
 
 F16DataT = ModelResult[List[float], None]
 
@@ -53,13 +50,16 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
 
 
 phi = "[] (alt)"
-predicates: List[TaliroPredicate] = [
-    {
-        "name": "alt",
-        "a": np.array(-1),
-        "b": np.array(0),
-    }
-]
+predicates: List[TaliroPredicate] = map(
+    TaliroPredicate.from_dict,
+    [
+        {
+            "name": "alt",
+            "a": np.array(-1),
+            "b": np.array(0),
+        }
+    ],
+)
 specification = TPTaliro(phi, predicates)
 
 optimizer = DualAnnealing()
