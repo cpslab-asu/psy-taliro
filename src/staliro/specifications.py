@@ -39,8 +39,7 @@ else:
     _can_translate = True
 
 if TYPE_CHECKING:
-    from taliro.tptaliro import AdjacencyList, Guard, GuardMap, HyDist, TaliroPredicate
-
+    from taliro.tptaliro import AdjacencyList, Guard, GuardMap, HyDist
 
 StateT = TypeVar("StateT")
 PredicateName = str

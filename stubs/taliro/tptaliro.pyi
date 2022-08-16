@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Sequence, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -36,7 +36,7 @@ GuardMap = Dict[Edge, Guard]
 
 def tptaliro(
     spec: str,
-    preds: Sequence[TaliroPredicate],
+    preds: Sequence[Dict[str, Any]],
     st: NDArray[np.float_],
     ts: NDArray[np.float_],
     lt: Optional[NDArray[np.float_]],
