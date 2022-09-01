@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import logging
-import math
 import time
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any, Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union, cast
+from typing import Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union
 
 from attr import field, frozen
 from attr.validators import instance_of
 
 from .interval import Interval
 from .layout import SampleLayout
-from .model import Failure, Model, ModelData, ModelError, ModelResult
+from .model import FailureResult, Model, ModelResult
 from .optimizer import ObjectiveFn
 from .result import Evaluation, TimingData
 from .sample import Sample
@@ -44,15 +43,6 @@ def _time(func: Callable[[], T]) -> Tuple[float, T]:
     duration = stop_time - start_time
 
     return duration, result
-
-
-def _result_cost(specification: Specification[StateT], result: ModelResult[StateT, Any]) -> float:
-    if isinstance(result, ModelData):
-        return specification.evaluate(result.states, result.times)
-    elif isinstance(result, Failure):
-        return -math.inf
-
-    raise ModelError("unsupported type returned from model")
 
 
 ExtraT = TypeVar("ExtraT")
@@ -100,12 +90,21 @@ class Thunk(Generic[StateT, CostT, ExtraT]):
             An Evaluation instance representing the result of the computation pipeline.
         """
 
-        static_inputs, signals = self.layout.decompose_sample(self.sample)
-        simulate = lambda: self.model.simulate(static_inputs, signals, self.interval)
+        inputs = self.layout.decompose_sample(self.sample)
+        simulate = lambda: self.model.simulate(inputs, self.interval)
         model_duration, model_result = _time(simulate)
 
-        compute_cost = lambda: _result_cost(self.specification, model_result)
+        if not isinstance(model_result, ModelResult):
+            raise EvaluationError(f"Incorrect return type from model {type(model_result)}")
+
+        if isinstance(model_result, FailureResult):
+            cost = self.specification.failure_cost
+            cost_duration = 0.0
+        else:
+            trace = model_result.trace
+            compute_cost = lambda: self.specification.evaluate(trace.states, trace.times)
         cost_duration, cost = _time(compute_cost)
+
         timing_data = TimingData(model_duration, cost_duration)
 
         return Evaluation(cost, self.sample, model_result.extra, timing_data)
