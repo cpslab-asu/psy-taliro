@@ -18,6 +18,10 @@ class Specification(Protocol[StateT, CostT]):
     a value which represents the "goodness" of the model results with respect to some criteria.
     """
 
+    @property
+    def failure_cost(self) -> CostT:
+        ...
+
     def evaluate(self, state: Sequence[StateT], timestamps: Sequence[float]) -> CostT:
         """Evaluate trajectories and timestamps with respect to some requirement.
 
