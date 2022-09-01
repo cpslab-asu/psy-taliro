@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Sequence, TypeVar
 
-from numpy import float_
-from numpy.typing import NDArray
 from typing_extensions import Protocol, runtime_checkable
 
 StateT = TypeVar("StateT", contravariant=True)
