@@ -45,7 +45,7 @@ class UniformRandomResult:
     average_cost: float
 
 
-class UniformRandom(Optimizer[UniformRandomResult]):
+class UniformRandom(Optimizer[float, UniformRandomResult]):
     """Optimizer that implements the uniform random optimization technique.
 
     This optimizer picks samples randomly from the search space until the budget is exhausted.
@@ -74,7 +74,7 @@ class UniformRandom(Optimizer[UniformRandomResult]):
         self.behavior = behavior
 
     def optimize(
-        self, func: ObjectiveFn, bounds: Bounds, budget: int, seed: int
+        self, func: ObjectiveFn[float], bounds: Bounds, budget: int, seed: int
     ) -> UniformRandomResult:
         def sample_uniform(bounds: Bounds, rng: Generator) -> Sample:
             return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
@@ -119,7 +119,7 @@ class DualAnnealingResult:
     hessian_evals: int
 
 
-class DualAnnealing(Optimizer[DualAnnealingResult]):
+class DualAnnealing(Optimizer[float, DualAnnealingResult]):
     """Optimizer that implements the simulated annealing optimization technique.
 
     The simulated annealing implementation is provided by the SciPy library dual_annealing function
@@ -130,7 +130,7 @@ class DualAnnealing(Optimizer[DualAnnealingResult]):
         self.behavior = behavior
 
     def optimize(
-        self, func: ObjectiveFn, bounds: Bounds, budget: int, seed: int
+        self, func: ObjectiveFn[float], bounds: Bounds, budget: int, seed: int
     ) -> DualAnnealingResult:
         def wrapper(values: NDArray[np.float_]) -> float:
             return func.eval_sample(Sample(values))
