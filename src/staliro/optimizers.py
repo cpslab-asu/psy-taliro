@@ -135,9 +135,6 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
     def optimize(
         self, func: ObjectiveFn[float], bounds: Bounds, budget: int, seed: int
     ) -> DualAnnealingResult:
-        def wrapper(values: NDArray[np.float_]) -> float:
-            return func.eval_sample(Sample(values))
-
         def listener(sample: NDArray[np.float_], robustness: float, ctx: Literal[-1, 0, 1]) -> bool:
             if robustness < 0 and self.behavior is Behavior.FALSIFICATION:
                 return True
@@ -145,8 +142,8 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
             return False
 
         result = optimize.dual_annealing(
-            wrapper,
-            [bound.astuple() for bound in bounds],
+            func=lambda x: func.eval_sample(Sample(x)),
+            bounds=[bound.astuple() for bound in bounds],
             seed=seed,
             maxfun=budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
