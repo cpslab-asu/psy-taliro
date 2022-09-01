@@ -99,7 +99,7 @@ class Thunk(Generic[StateT, CostT, ExtraT]):
         else:
             trace = model_result.trace
             compute_cost = lambda: self.specification.evaluate(trace.states, trace.times)
-        cost_duration, cost = _time(compute_cost)
+            cost_duration, cost = _time(compute_cost)
 
         timing_data = TimingData(model_duration, cost_duration)
 
