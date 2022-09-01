@@ -90,9 +90,10 @@ class FailureResult(ModelResult[StateT, ExtraT]):
         return self._extra
 
 
-StaticInput = Sequence[float]
-Signals = Sequence[Signal]
-ModelResult = Union[ModelData[StateT, ExtraT], Failure[ExtraT]]
+@frozen()
+class ModelInputs:
+    static: Sequence[float]
+    signals: Sequence[Signal]
 
 
 class Model(Generic[StateT, ExtraT], ABC):
@@ -103,9 +104,7 @@ class Model(Generic[StateT, ExtraT], ABC):
     """
 
     @abstractmethod
-    def simulate(
-        self, static: StaticInput, signals: Signals, interval: Interval
-    ) -> ModelResult[StateT, ExtraT]:
+    def simulate(self, inputs: ModelInputs, interval: Interval) -> ModelResult[StateT, ExtraT]:
         """Simulate the model using the given inputs.
 
         This method contains the logic responsible for simulating the model with the given inputs.
