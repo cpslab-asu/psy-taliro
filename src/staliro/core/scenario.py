@@ -16,7 +16,6 @@ from .layout import SampleLayout
 from .model import Model
 from .optimizer import Optimizer
 from .result import Result, Run
-from .specification import Specification
 
 StateT = TypeVar("StateT")
 CostT = TypeVar("CostT")
@@ -118,28 +117,6 @@ class ExperimentGenerator(
             )
 
 
-def _run_experiment(experiment: Experiment[Any, ResultT, ExtraT]) -> Run[ResultT, ExtraT]:
-    return experiment.run()
-
-
-def _slice_length(s: slice) -> int:
-    diff: int = s.stop - s.start
-
-    if s.step is None:
-        step: int = 1
-    else:
-        step = s.step
-
-    return diff // step
-
-
-def _validate_specification(
-    _: Any, attr: Attribute[Any], value: SpecificationOrFactory[Any]
-) -> None:
-    if not isinstance(value, Specification) and not callable(value):
-        raise TypeError("specification must be a specification instance or a function")
-
-
 def _greater_than(bound: float) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if float(value) <= bound:
@@ -227,10 +204,12 @@ class Scenario(Generic[StateT, CostT, ResultT, ExtraT]):
 
         if self.processes is not None:
             with ProcessPoolExecutor(self.processes) as executor:
-                futures: Iterable[Run[ResultT, ExtraT]] = executor.map(_run_experiment, experiments)
+                futures: Iterable[Run[ResultT, CostT, ExtraT]] = executor.map(
+                    Experiment.run, experiments
+                )
                 runs = list(futures)
         else:
-            runs = [_run_experiment(experiment) for experiment in experiments]
+            runs = [experiment.run() for experiment in experiments]
 
         return Result(runs, self.interval, self.seed, self.processes, self.layout)
 
