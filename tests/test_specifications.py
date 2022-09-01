@@ -36,8 +36,8 @@ class SpecificationTestCase(TestCase):
         predicates = {"x1": 0}
         specification = TLTK(self._requirement, predicates)
 
-        timestamps = self._data["t"].to_numpy(dtype=np.float32)
-        trajectories = self._data[["x1"]].to_numpy()
+        timestamps = self._data["t"].to_numpy(dtype=np.float32).tolist()
+        trajectories = self._data[["x1"]].to_numpy().tolist()
         robustness = specification.evaluate(np.atleast_2d(trajectories).T, timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
@@ -46,8 +46,8 @@ class SpecificationTestCase(TestCase):
         predicates = {"x1": 0}
         specification = RTAMTDiscrete(self._requirement, predicates)
 
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        trajectories = self._data["x1"].to_numpy(dtype=np.float64)
+        timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
+        trajectories = self._data["x1"].to_numpy(dtype=np.float64).tolist()
         robustness = specification.evaluate(np.atleast_2d(trajectories), timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)
@@ -56,8 +56,8 @@ class SpecificationTestCase(TestCase):
         predicates = {"x1": 0}
         specification = RTAMTDense(self._requirement, predicates)
 
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        trajectories = self._data["x1"].to_numpy(dtype=np.float64)
+        timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
+        trajectories = self._data["x1"].to_numpy(dtype=np.float64).tolist()
         robustness = specification.evaluate(np.atleast_2d(trajectories), timestamps)
 
         self.assertAlmostEqual(robustness, self._expected_robustness, SIG_FIGS)

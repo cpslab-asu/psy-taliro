@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock
 
@@ -6,33 +6,26 @@ from numpy import ndarray
 from numpy.typing import NDArray
 
 from staliro.core.interval import Interval
-from staliro.core.model import ModelData
+from staliro.core.model import ModelInputs, ModelResult
 from staliro.core.signal import Signal
-from staliro.models import (
-    ODE,
-    Blackbox,
-    SignalTimes,
-    SignalValues,
-    State,
-    StaticInput,
-    blackbox,
-    ode,
-)
+from staliro.models import ODE, Blackbox, SignalTimes, SignalValues, State, blackbox, ode
 
-AnyData = ModelData[Any, Any]
+StaticInput = Sequence[float]
+AnyResult = ModelResult[Any, Any]
 
 
 class BlackboxTestCase(TestCase):
     def test_simulation(self) -> None:
         sampling_interval = 0.1
-        func = Mock(return_value=NonCallableMock(spec=ModelData))
+        func = Mock(return_value=NonCallableMock(spec=ModelResult))
         model: Blackbox[Any, Any] = Blackbox(func, sampling_interval=sampling_interval)
 
         static_inputs = [1, 2, 3, 4]
         signals = [Mock(spec=Signal), Mock(spec=Signal)]
+        inputs = ModelInputs(static_inputs, signals)
         interval = Interval(0, 10)
 
-        result = model.simulate(static_inputs, signals, interval)
+        result = model.simulate(inputs, interval)
 
         for signal in signals:
             self.assertEqual(signal.at_times.call_count, 1)
@@ -60,7 +53,7 @@ class BlackboxTestCase(TestCase):
 class BlackboxDecoratorTestCase(TestCase):
     def test_with_args(self) -> None:
         @blackbox(sampling_interval=0.2)
-        def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyData:
+        def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyResult:
             ...
 
         self.assertIsInstance(dummy, Blackbox)
@@ -68,7 +61,7 @@ class BlackboxDecoratorTestCase(TestCase):
 
     def test_without_args(self) -> None:
         @blackbox
-        def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyData:
+        def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyResult:
             ...
 
         self.assertIsInstance(dummy, Blackbox)

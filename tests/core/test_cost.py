@@ -8,7 +8,7 @@ from unittest.mock import Mock, NonCallableMock
 from staliro.core.cost import CostFn, Evaluation, SpecificationFactory, Thunk, TimingData
 from staliro.core.interval import Interval
 from staliro.core.layout import SampleLayout
-from staliro.core.model import Failure, Model, ModelData
+from staliro.core.model import BasicResult, FailureResult, Model, ModelResult, Trace
 from staliro.core.sample import Sample
 from staliro.core.signal import Signal
 from staliro.core.specification import Specification, SpecificationError
@@ -33,8 +33,8 @@ class ThunkTestCase(TestCase):
         )
 
     def test_specification_noncallable(self) -> None:
-        specification: Specification[Any] = NonCallableMock(spec=Specification)
-        thunk: Thunk[Any, Any] = Thunk(
+        specification: Specification[Any, Any] = NonCallableMock(spec=Specification)
+        thunk: Thunk[Any, Any, Any] = Thunk(
             self.sample,
             self.model,
             specification,
@@ -45,9 +45,9 @@ class ThunkTestCase(TestCase):
         self.assertEqual(thunk.specification, specification)
 
     def test_specification_callable(self) -> None:
-        specification: Specification[Any] = NonCallableMock(spec=Specification)
-        specification_factory: SpecificationFactory[Any] = Mock(return_value=specification)
-        thunk: Thunk[Any, Any] = Thunk(
+        specification: Specification[Any, Any] = NonCallableMock(spec=Specification)
+        specification_factory: SpecificationFactory[Any, Any] = Mock(return_value=specification)
+        thunk: Thunk[Any, Any, Any] = Thunk(
             self.sample,
             self.model,
             specification_factory,
@@ -63,7 +63,7 @@ class ThunkTestCase(TestCase):
 
     def test_specification_callable_return_type(self) -> None:
         bad_factory = Mock(return_value=None)
-        thunk: Thunk[Any, Any] = Thunk(
+        thunk: Thunk[Any, Any, Any] = Thunk(
             self.sample,
             self.model,
             bad_factory,
@@ -74,55 +74,58 @@ class ThunkTestCase(TestCase):
         with self.assertRaises(SpecificationError):
             thunk.specification
 
-    def test_data_evaluation(self) -> None:
-        model_result = NonCallableMock(spec=ModelData)
+    def test_result_evaluation(self) -> None:
+        trace = Trace([0.0], [0.0])
+        model_result = BasicResult(trace)
+
         model = NonCallableMock(spec=Model)
         model.simulate = Mock(return_value=model_result)
-
         specification = NonCallableMock(spec=Specification)
         specification.evaluate = Mock(return_value=0)
 
-        thunk: Thunk[Any, Any] = Thunk(
+        thunk: Thunk[Any, Any, Any] = Thunk(
             self.sample,
             model,
             specification,
             self.interval,
             self.layout,
         )
-
         evaluation = thunk.evaluate()
-        static_parameters, signals = self.layout.decompose_sample(self.sample)
+        inputs = self.layout.decompose_sample(self.sample)
 
         model.simulate.assert_called_once()
-        model.simulate.assert_called_with(static_parameters, signals, self.interval)
+        model.simulate.assert_called_with(inputs, self.interval)
         specification.evaluate.assert_called_once()
-        specification.evaluate.assert_called_with(model_result.states, model_result.times)
+        specification.evaluate.assert_called_with(
+            model_result.trace.states,
+            model_result.trace.times,
+        )
 
         self.assertIsInstance(evaluation, Evaluation)
         self.assertEqual(evaluation.cost, 0)
         self.assertEqual(evaluation.sample, self.sample)
 
     def test_failure_evaluation(self) -> None:
-        model_result = NonCallableMock(spec=Failure)
+        model_result: ModelResult[Any, None] = FailureResult(None)
+
         model = NonCallableMock(spec=Model)
         model.simulate = Mock(return_value=model_result)
-
         specification = NonCallableMock(spec=Specification)
         specification.evaluate = Mock(return_value=0)
+        specification.failure_cost = -inf
 
-        thunk: Thunk[Any, Any] = Thunk(
+        thunk: Thunk[Any, Any, Any] = Thunk(
             self.sample,
             model,
             specification,
             self.interval,
             self.layout,
         )
-
         evaluation = thunk.evaluate()
-        static_parameters, signals = self.layout.decompose_sample(self.sample)
+        inputs = self.layout.decompose_sample(self.sample)
 
         model.simulate.assert_called_once()
-        model.simulate.assert_called_with(static_parameters, signals, self.interval)
+        model.simulate.assert_called_with(inputs, self.interval)
         specification.evaluate.assert_not_called()
 
         self.assertIsInstance(evaluation, Evaluation)
@@ -134,16 +137,17 @@ class CostFnTestCase(TestCase):
     def setUp(self) -> None:
         signal = NonCallableMock(spec=Signal)
         factory = Mock(return_value=signal)
+        model_result = BasicResult(Trace([0.0], [0.0]))
 
         self.model = NonCallableMock(spec=Model)
-        self.model.simulate = Mock(return_value=NonCallableMock(spec=ModelData))
+        self.model.simulate = Mock(return_value=model_result)
         self.specification = NonCallableMock(spec=Specification)
         self.interval = Interval(0, 1)
         self.layout = SampleLayout(
             static_parameters=(0, 2),
             signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},  # type: ignore
         )
-        self.cost_fn: CostFn[Any, Any] = CostFn(
+        self.cost_fn: CostFn[Any, Any, Any] = CostFn(
             self.model,
             self.specification,
             self.interval,
@@ -180,13 +184,13 @@ class CostFnTestCase(TestCase):
 
     def test_single_vs_many_samples(self) -> None:
         samples = [Sample([1, 2, 3, 4]), Sample([5, 6, 7, 8])]
-        single_cost_fn: CostFn[Any, Any] = CostFn(
+        single_cost_fn: CostFn[Any, Any, Any] = CostFn(
             self.model,
             self.specification,
             self.interval,
             self.layout,
         )
-        many_cost_fn: CostFn[Any, Any] = CostFn(
+        many_cost_fn: CostFn[Any, Any, Any] = CostFn(
             self.model,
             self.specification,
             self.interval,
