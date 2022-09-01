@@ -38,7 +38,7 @@ class Trace(Generic[StateT]):
         return list(self._states)
 
 
-class ModelResult(Generic[StateT, ExtraT]):
+class ModelResult(Generic[StateT, ExtraT], ABC):
     @property
     @abstractmethod
     def trace(self) -> Trace[StateT]:
