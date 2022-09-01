@@ -120,6 +120,6 @@ def simulate_model(
 ) -> ModelResult[StateT, ExtraT]:
     params = LayoutParameters(options.static_parameters, options.signals, options.interval)
     layout = _create_sample_layout(params)
-    static_inputs, signals = layout.decompose_sample(sample)
+    inputs = layout.decompose_sample(sample)
 
-    return model.simulate(static_inputs, signals, options.interval)
+    return model.simulate(inputs, options.interval)
