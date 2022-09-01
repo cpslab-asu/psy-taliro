@@ -14,8 +14,9 @@ from .layout import SampleLayout
 from .sample import Sample
 from .signal import Signal
 
-RT = TypeVar("RT")
-ET = TypeVar("ET")
+ResultT = TypeVar("ResultT")
+ExtraT = TypeVar("ExtraT")
+CostT = TypeVar("CostT")
 
 
 @frozen()
@@ -40,7 +41,7 @@ class TimingData:
 
 
 @frozen()
-class Evaluation(Generic[ET]):
+class Evaluation(Generic[CostT, ExtraT]):
     """The result of applying the cost function to a sample.
 
     Attributes:
@@ -50,9 +51,9 @@ class Evaluation(Generic[ET]):
         timing: Execution durations of each component of the cost function
     """
 
-    cost: float
+    cost: CostT
     sample: Sample
-    extra: ET
+    extra: ExtraT
     timing: TimingData
 
 
@@ -88,7 +89,7 @@ class TimeStats:
 
 
 @frozen(slots=True)
-class Run(Generic[RT, ET]):
+class Run(Generic[ResultT, CostT, ExtraT]):
     """Data class that represents one run of an optimizer.
 
     Attributes:
@@ -97,31 +98,19 @@ class Run(Generic[RT, ET]):
         duration: Time spent by the optimizer
     """
 
-    result: RT
-    history: Sequence[Evaluation[ET]]
+    result: ResultT
+    history: Sequence[Evaluation[CostT, ExtraT]]
     duration: float
     seed: int
 
     @property
-    def worst_eval(self) -> Evaluation[ET]:
-        """The evaluation with the highest cost (furthest from falsifying)."""
-
-        return max(self.history, key=lambda e: e.cost)
-
-    @property
-    def best_eval(self) -> Evaluation[ET]:
-        """The evaluation with the lowest cost (closest to falsification)."""
-
-        return min(self.history, key=lambda e: e.cost)
-
-    @property
-    def fastest_eval(self) -> Evaluation[ET]:
+    def fastest_eval(self) -> Evaluation[CostT, ExtraT]:
         """The evaluation with the lowest total duration."""
 
         return min(self.history, key=lambda e: e.timing.total)
 
     @property
-    def slowest_eval(self) -> Evaluation[ET]:
+    def slowest_eval(self) -> Evaluation[CostT, ExtraT]:
         """Evaluation with the longest total duration."""
 
         return max(self.history, key=lambda e: e.timing.total)
@@ -140,7 +129,7 @@ class Run(Generic[RT, ET]):
 
 
 @frozen(slots=True)
-class Result(Generic[RT, ET]):
+class Result(Generic[ResultT, CostT, ExtraT]):
     """Data class that represents a set of successful runs of the optimizer.
 
     Attributes:
@@ -149,19 +138,11 @@ class Result(Generic[RT, ET]):
                  for each run
     """
 
-    runs: Sequence[Run[RT, ET]]
+    runs: Sequence[Run[ResultT, CostT, ExtraT]]
     interval: Interval
     seed: int
     processes: Optional[int]
     layout: SampleLayout
-
-    @property
-    def worst_run(self) -> Run[RT, ET]:
-        return max(self.runs, key=lambda r: r.worst_eval.cost)
-
-    @property
-    def best_run(self) -> Run[RT, ET]:
-        return min(self.runs, key=lambda r: r.best_eval.cost)
 
     def plot_signal(self, signal: Signal, step_size: float = 0.1) -> Tuple[Figure, Axes]:
         fig, ax = plt.subplots()
