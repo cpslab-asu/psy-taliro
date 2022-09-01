@@ -127,10 +127,6 @@ class ThunkGenerator(Generic[StateT, CostT, ExtraT], Iterable[Thunk[StateT, Cost
             )
 
 
-def _evaluate(thunk: Thunk[Any, ExtraT]) -> Evaluation[ExtraT]:
-    return thunk.evaluate()
-
-
 @frozen()
 class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
     """Class which represents the composition of a Model and Specification.
@@ -172,7 +168,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
             self.interval,
             self.layout,
         )
-        evaluation = _evaluate(thunk)
+        evaluation = thunk.evaluate()
 
         self.history.append(evaluation)
 
@@ -197,7 +193,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
             self.interval,
             self.layout,
         )
-        evaluations = [_evaluate(thunk) for thunk in thunks]
+        evaluations = [thunk.evaluate() for thunk in thunks]
 
         self.history.extend(evaluations)
 
@@ -227,7 +223,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
         )
 
         with ProcessPoolExecutor(max_workers=processes) as executor:
-            futures: Iterable[Evaluation[ExtraT]] = executor.map(_evaluate, thunks)
+            futures: Iterable[Evaluation[CostT, ExtraT]] = executor.map(Thunk.evaluate, thunks)
             evaluations = list(futures)
 
         self.history.extend(evaluations)
