@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, Optional, Sequence, Tuple, TypeVar, cast
+from abc import abstractmethod
+from typing import Any, Generic, Iterable, Optional, Protocol, Sequence, Tuple, TypeVar, cast
 
 import numpy as np
 from attr import frozen
@@ -17,6 +18,19 @@ from .signal import Signal
 ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 CostT = TypeVar("CostT")
+
+
+class Comparable(Protocol):
+    @abstractmethod
+    def __eq__(self, other: Any) -> bool:
+        pass
+
+    @abstractmethod
+    def __lt__(self: ComparableT, other: ComparableT) -> bool:
+        pass
+
+
+ComparableT = TypeVar("ComparableT", bound=Comparable)
 
 
 @frozen()
@@ -128,6 +142,14 @@ class Run(Generic[ResultT, CostT, ExtraT]):
         return TimeStats(iteration.timing.specification for iteration in self.history)
 
 
+def best_eval(run: Run[Any, ComparableT, ExtraT]) -> Evaluation[ComparableT, ExtraT]:
+    return max(run.history, key=lambda e: e.cost)
+
+
+def worst_eval(run: Run[Any, ComparableT, ExtraT]) -> Evaluation[ComparableT, ExtraT]:
+    return min(run.history, key=lambda e: e.cost)
+
+
 @frozen(slots=True)
 class Result(Generic[ResultT, CostT, ExtraT]):
     """Data class that represents a set of successful runs of the optimizer.
@@ -152,3 +174,11 @@ class Result(Generic[ResultT, CostT, ExtraT]):
         ax.plot(times, values)
 
         return fig, ax
+
+
+def best_run(result: Result[ResultT, ComparableT, ExtraT]) -> Run[ResultT, ComparableT, ExtraT]:
+    return max(result.runs, key=best_eval)
+
+
+def worst_run(result: Result[ResultT, ComparableT, ExtraT]) -> Run[ResultT, ComparableT, ExtraT]:
+    return min(result.runs, key=worst_eval)
