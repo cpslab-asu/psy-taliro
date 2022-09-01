@@ -25,10 +25,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _slice_length(s: slice) -> int:
-    return cast(int, s.stop - s.start // s.step)
-
-
 class EvaluationError(Exception):
     pass
 
