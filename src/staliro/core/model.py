@@ -4,28 +4,37 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic, Sequence, TypeVar, Union, overload
 
 import numpy as np
-from attr import Attribute, field, frozen
+from attr import frozen
 from numpy.typing import NDArray
 
 from .interval import Interval
 from .signal import Signal
 
 Times = NDArray[np.float_]
-
-
-def _times_validator(obj: Any, attr: Attribute[Any], times: Times) -> None:
-    if not isinstance(times, np.ndarray):
-        raise TypeError("timestamps must be provided as a NDArray")
-
-    if not np.issubdtype(times.dtype, np.floating):
-        raise TypeError("timestamp values must be floating point values")
-
-    if times.ndim != 1:
-        raise ValueError("timestamps must be 1-dimensional")
-
-
 StateT = TypeVar("StateT")
-ExtraT = TypeVar("ExtraT")
+
+
+@frozen(eq=False)
+class Trace(Generic[StateT]):
+    _times: Sequence[float]
+    _states: Sequence[StateT]
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Trace):
+            return NotImplemented
+
+        return self.times == other.times and self.states == other.states
+
+    def __len__(self) -> int:
+        return len(self._times)
+
+    @property
+    def times(self) -> list[float]:
+        return list(self._times)
+
+    @property
+    def states(self) -> list[StateT]:
+        return list(self._states)
 
 
 @frozen(init=False)
