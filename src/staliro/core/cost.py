@@ -18,8 +18,9 @@ from .sample import Sample
 from .specification import Specification, SpecificationError
 
 StateT = TypeVar("StateT")
-SpecificationFactory = Callable[[Sample], Specification[StateT]]
-SpecificationOrFactory = Union[Specification[StateT], SpecificationFactory[StateT]]
+CostT = TypeVar("CostT")
+SpecificationFactory = Callable[[Sample], Specification[StateT, CostT]]
+SpecificationOrFactory = Union[Specification[StateT, CostT], SpecificationFactory[StateT, CostT]]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -58,7 +59,7 @@ ExtraT = TypeVar("ExtraT")
 
 
 @frozen()
-class Thunk(Generic[StateT, ExtraT]):
+class Thunk(Generic[StateT, CostT, ExtraT]):
     """Class which represents the deferred evaluation of the cost function.
 
     A Thunk contains all the necessary information to produce an Evaluation, but does not execute
@@ -73,12 +74,12 @@ class Thunk(Generic[StateT, ExtraT]):
 
     sample: Sample = field(validator=instance_of(Sample))
     model: Model[StateT, ExtraT]
-    _specification: SpecificationOrFactory[StateT]
+    _specification: SpecificationOrFactory[StateT, CostT]
     interval: Interval
     layout: SampleLayout
 
     @property
-    def specification(self) -> Specification[StateT]:
+    def specification(self) -> Specification[StateT, CostT]:
         if not callable(self._specification):
             return self._specification
 
@@ -89,7 +90,7 @@ class Thunk(Generic[StateT, ExtraT]):
 
         return specification
 
-    def evaluate(self) -> Evaluation[ExtraT]:
+    def evaluate(self) -> Evaluation[CostT, ExtraT]:
         """Evaluate the sample using the specification and model.
 
         The computation is the following pipeline:
@@ -111,16 +112,16 @@ class Thunk(Generic[StateT, ExtraT]):
 
 
 @frozen()
-class ThunkGenerator(Generic[StateT, ExtraT], Iterable[Thunk[StateT, ExtraT]]):
+class ThunkGenerator(Generic[StateT, CostT, ExtraT], Iterable[Thunk[StateT, CostT, ExtraT]]):
     """Generate Thunk instances from a collection of samples."""
 
     samples: Iterable[Sample]
     model: Model[StateT, ExtraT]
-    specification: SpecificationOrFactory[StateT]
+    specification: SpecificationOrFactory[StateT, CostT]
     interval: Interval
     layout: SampleLayout
 
-    def __iter__(self) -> Iterator[Thunk[StateT, ExtraT]]:
+    def __iter__(self) -> Iterator[Thunk[StateT, CostT, ExtraT]]:
         for sample in self.samples:
             yield Thunk(
                 sample,
@@ -136,7 +137,7 @@ def _evaluate(thunk: Thunk[Any, ExtraT]) -> Evaluation[ExtraT]:
 
 
 @frozen()
-class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
+class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
     """Class which represents the composition of a Model and Specification.
 
     A Model is responsible for modeling the system and returning a trajectory given a sample, and a
@@ -152,12 +153,12 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
     """
 
     model: Model[StateT, ExtraT]
-    specification: SpecificationOrFactory[StateT]
+    specification: SpecificationOrFactory[StateT, CostT]
     interval: Interval
     layout: SampleLayout
-    history: list[Evaluation[ExtraT]] = field(init=False, factory=list)
+    history: list[Evaluation[CostT, ExtraT]] = field(init=False, factory=list)
 
-    def eval_sample(self, sample: Sample) -> float:
+    def eval_sample(self, sample: Sample) -> CostT:
         """Compute the cost of a single sample.
 
         Args:
@@ -182,7 +183,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
 
         return evaluation.cost
 
-    def eval_samples(self, samples: Sequence[Sample]) -> list[float]:
+    def eval_samples(self, samples: Sequence[Sample]) -> list[CostT]:
         """Compute the cost of multiple samples sequentially.
 
         Args:
@@ -207,7 +208,7 @@ class CostFn(ObjectiveFn, Generic[StateT, ExtraT]):
 
         return [evaluation.cost for evaluation in evaluations]
 
-    def eval_samples_parallel(self, samples: Sequence[Sample], processes: int) -> list[float]:
+    def eval_samples_parallel(self, samples: Sequence[Sample], processes: int) -> list[CostT]:
         """Compute the cost of multiple samples in parallel.
 
         Samples are evaluated row-wise, so each row is considered a different sample.
