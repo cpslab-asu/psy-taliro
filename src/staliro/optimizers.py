@@ -34,6 +34,22 @@ class Behavior(enum.IntEnum):
     MINIMIZATION = enum.auto()
 
 
+def _sample_uniform(bounds: Bounds, rng: Generator) -> Sample:
+    return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
+
+
+def _minimize(samples: Samples, func: ObjectiveFn[float], nprocs: Optional[int]) -> Iterable[float]:
+    if nprocs is None:
+        return func.eval_samples(samples)
+    else:
+        return func.eval_samples_parallel(samples, nprocs)
+
+
+def _falsify(samples: Samples, func: ObjectiveFn[float]) -> Iterable[float]:
+    costs = map(func.eval_sample, samples)
+    return takewhile(lambda c: c >= 0, costs)
+
+
 @frozen(slots=True)
 class UniformRandomResult:
     """Data class that represents the result of a uniform random optimization.
@@ -76,26 +92,13 @@ class UniformRandom(Optimizer[float, UniformRandomResult]):
     def optimize(
         self, func: ObjectiveFn[float], bounds: Bounds, budget: int, seed: int
     ) -> UniformRandomResult:
-        def sample_uniform(bounds: Bounds, rng: Generator) -> Sample:
-            return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
-
-        def minimize(samples: Samples, func: ObjectiveFn, nprocs: Optional[int]) -> Iterable[float]:
-            if nprocs is None:
-                return func.eval_samples(samples)
-            else:
-                return func.eval_samples_parallel(samples, nprocs)
-
-        def falsify(samples: Samples, func: ObjectiveFn) -> Iterable[float]:
-            costs = map(func.eval_sample, samples)
-            return takewhile(lambda c: c >= 0, costs)
-
         rng = default_rng(seed)
-        samples = [sample_uniform(bounds, rng) for _ in range(budget)]
+        samples = [_sample_uniform(bounds, rng) for _ in range(budget)]
 
         if self.behavior is Behavior.MINIMIZATION:
-            costs = minimize(samples, func, self.processes)
+            costs = _minimize(samples, func, self.processes)
         else:
-            costs = falsify(samples, func)
+            costs = _falsify(samples, func)
 
         average_cost = stats.mean(costs)
 
