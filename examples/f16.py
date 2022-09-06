@@ -1,24 +1,24 @@
 import logging
 import math
+from typing import List, Sequence
 
 import numpy as np
 import plotly.graph_objects as go
 from aerobench.examples.gcas.gcas_autopilot import GcasAutopilot
 from aerobench.run_f16_sim import run_f16_sim
-from numpy.typing import NDArray
 
-from staliro.core.model import Failure
-from staliro.models import ModelData, SignalTimes, SignalValues, StaticInput, blackbox
+from staliro.core import BasicResult, ModelResult, Trace, best_eval, best_run
+from staliro.models import SignalTimes, SignalValues, blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options
 from staliro.specifications import RTAMTDense
 from staliro.staliro import simulate_model, staliro
 
-F16DataT = ModelData[NDArray[np.float_], None]
+F16DataT = ModelResult[List[float], None]
 
 
 @blackbox()
-def f16_model(static: StaticInput, times: SignalTimes, signals: SignalValues) -> F16DataT:
+def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues) -> F16DataT:
     power = 9
     alpha = np.deg2rad(2.1215)
     beta = 0
@@ -34,18 +34,19 @@ def f16_model(static: StaticInput, times: SignalTimes, signals: SignalValues) ->
 
     result = run_f16_sim(initial_state, max(times), autopilot, step, extended_states=True)
 
-    trajectories: NDArray[np.float_] = np.asarray(
-        [
-            [0 if x == "standby" else 1 for x in result["modes"]],  # GCAS: autopilot (ap)
-            result["states"][:, 4].T,  # roll
-            result["states"][:, 5].T,  # pitch
-            result["states"][:, 6].T,  # yaw
-            result["states"][:, 12].T,  # altitude
-        ]
+    states = np.vstack(
+        (
+            np.array([0 if x == "standby" else 1 for x in result["modes"]]),
+            result["states"][:, 4],  # roll
+            result["states"][:, 5],  # pitch
+            result["states"][:, 6],  # yaw
+            result["states"][:, 12],  # altitude
+        )
     )
+    timestamps: List[float] = result["times"]
+    trace = Trace(timestamps, states.tolist())
 
-    timestamps: NDArray[np.float_] = result["times"]
-    return ModelData(trajectories, timestamps)
+    return BasicResult(trace)
 
 
 phi_01 = "always[0:15] (alt > 0)"
@@ -68,16 +69,14 @@ if __name__ == "__main__":
 
     result = staliro(f16_model, specification, optimizer, options)
 
-    best_sample = result.best_run.best_eval.sample
+    best_sample = best_eval(best_run(result)).sample
     best_result = simulate_model(f16_model, options, best_sample)
-
-    assert not isinstance(best_result, Failure)
 
     figure = go.Figure()
     figure.add_trace(
         go.Scatter(
-            x=best_result.times,
-            y=best_result.states[0],
+            x=best_result.trace.times,
+            y=best_result.trace.states[4],
             mode="lines",
             line_color="green",
             name="altitude",

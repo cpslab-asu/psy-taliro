@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TypeVar
+from math import inf
+from typing import Dict, NewType, Sequence, Tuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -29,23 +30,44 @@ ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
 
 
-def _valid_trajectories_array(trajectories: NDArray[Any], row_len: int) -> Optional[str]:
-    if not trajectories.ndim == 2:
-        return "trajectories array must be 2-dimensional"
-
-    if not trajectories.shape[1] == row_len:
-        return f"trajectory array must have {row_len} columns"
-
-    return None
+class StlSpecificationException(Exception):
+    pass
 
 
-class StlSpecification(Specification[StateT], ABC):
+_Times = NewType("_Times", NDArray[np.float64])
+_States = NewType("_States", NDArray[np.float64])
+_Parsed = Tuple[_Times, _States]
+
+
+def _parse_times_states(times: Sequence[float], states: Sequence[Sequence[float]]) -> _Parsed:
+    times_ = _Times(np.array(times, dtype=np.float64))
+    states_ = _States(np.array(states, dtype=np.float64))
+
+    if times_.ndim != 1:
+        raise StlSpecificationException("Times must be a 1-D vector")
+
+    if states_.ndim != 2:
+        raise StlSpecificationException("States must be a 2-D matrix")
+
+    if states_.shape[0] == times_.size:
+        return (times_, states_.T)
+    elif states_.shape[1] == times_.size:
+        return (times_, states_)
+    else:
+        raise StlSpecificationException("States must have one dimension that maches times length")
+
+
+class StlSpecification(Specification[Sequence[float], float], ABC):
     @abstractmethod
     def __init__(self, requirement: str, column_map: PredicateColumnMap):
         ...
 
+    @property
+    def failure_cost(self) -> float:
+        return -inf
 
-class TLTK(StlSpecification[NDArray[np.float_]]):
+
+class TLTK(StlSpecification):
     """STL logic specification that uses TLTK to compute robustness values.
 
     Attributes:
@@ -67,15 +89,11 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         self.tltk_obj = tltk_obj
         self.column_map = column_map
 
-    def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        trajectories_err = _valid_trajectories_array(states, times.size)
-
-        if trajectories_err is not None:
-            raise SpecificationError(trajectories_err)
-
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        times_, states_ = _parse_times_states(times, states)
         map_items = self.column_map.items()
-        traces = {name: np.array(states[column], dtype=np.float64) for name, column in map_items}
-        timestamps = np.array(times, dtype=np.float32)
+        traces = {name: np.array(states_[column], dtype=np.float64) for name, column in map_items}
+        timestamps = np.array(times_, dtype=np.float32)
 
         self.tltk_obj.reset()
         self.tltk_obj.eval_interval(traces, timestamps)
@@ -83,7 +101,7 @@ class TLTK(StlSpecification[NDArray[np.float_]]):
         return self.tltk_obj.robustness
 
 
-class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
+class RTAMTDiscrete(StlSpecification):
     """STL logic specification that uses RTAMT discrete-time semantics to compute robustness.
 
     Attributes:
@@ -106,14 +124,11 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         for name in column_map:
             self.rtamt_obj.declare_var(name, "float")
 
-    def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        trajectories_err = _valid_trajectories_array(states, times.size)
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        times_, states_ = _parse_times_states(times, states)
 
-        if times.size < 2:
+        if times_.size < 2:
             raise RuntimeError("timestamps must have at least two samples to evaluate")
-
-        if trajectories_err is not None:
-            raise SpecificationError(trajectories_err)
 
         self.rtamt_obj.reset()
 
@@ -121,16 +136,16 @@ class RTAMTDiscrete(StlSpecification[NDArray[np.float_]]):
         self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
         self.rtamt_obj.parse()
-        traces = {"time": times.tolist()}
+        traces = {"time": list(times)}
 
         for name, column in self.column_map.items():
-            traces[name] = states[column].tolist()
+            traces[name] = list(states[column])
 
         robustness = self.rtamt_obj.evaluate(traces)
         return robustness[0][1]
 
 
-class RTAMTDense(StlSpecification[NDArray[np.float_]]):
+class RTAMTDense(StlSpecification):
     """STL logic specification that uses RTAMT dense-time semantics to compute robustness.
 
     Attributes:
@@ -149,18 +164,16 @@ class RTAMTDense(StlSpecification[NDArray[np.float_]]):
         for name in column_map:
             self.rtamt_obj.declare_var(name, "float")
 
-    def evaluate(self, states: NDArray[np.float_], times: NDArray[np.float_]) -> float:
-        trajectories_err = _valid_trajectories_array(states, times.size)
-
-        if trajectories_err is not None:
-            raise SpecificationError(trajectories_err)
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        times_, states_ = _parse_times_states(times, states)
 
         self.rtamt_obj.reset()
         self.rtamt_obj.parse()
 
         map_items = self.column_map.items()
         traces = [
-            (name, np.array([times, states[column]]).T.tolist()) for name, column in map_items
+            (name, np.array([times_.tolist(), states_[column]]).T.tolist())
+            for name, column in map_items
         ]
 
         robustness = self.rtamt_obj.evaluate(*traces)

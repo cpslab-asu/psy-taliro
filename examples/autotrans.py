@@ -1,12 +1,14 @@
 import logging
+from typing import List, Sequence
 
 import numpy as np
 import plotly.graph_objects as go
 import plotly.subplots as sp
-from numpy.typing import NDArray
 
 from staliro.core.interval import Interval
-from staliro.core.model import Failure, Model, ModelData, Signals, StaticInput
+from staliro.core.model import BasicResult, Model, ModelInputs, ModelResult, Trace
+from staliro.core.result import best_eval, best_run
+from staliro.core.signal import Signal
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options, SignalOptions
 from staliro.specifications import TLTK
@@ -21,11 +23,12 @@ else:
     _has_matlab = True
 
 
-AutotransDataT = NDArray[np.float_]
-AutotransResultT = ModelData[AutotransDataT, None]
+StaticInput = Sequence[float]
+Signals = Sequence[Signal]
+AutotransResultT = ModelResult[List[float], None]
 
 
-class AutotransModel(Model[AutotransDataT, None]):
+class AutotransModel(Model[List[float], None]):
     MODEL_NAME = "Autotrans_shift"
 
     def __init__(self) -> None:
@@ -42,21 +45,24 @@ class AutotransModel(Model[AutotransDataT, None]):
         self.engine = engine
         self.model_opts = engine.simset(model_opts, "SaveFormat", "Array")
 
-    def simulate(self, static: StaticInput, signals: Signals, intrvl: Interval) -> AutotransResultT:
-        sim_t = matlab.double([0, intrvl.upper])
-        n_times = intrvl.length // self.sampling_step
-        signal_times = np.linspace(intrvl.lower, intrvl.upper, int(n_times))
-        signal_values = np.array([[signal.at_time(t) for t in signal_times] for signal in signals])
+    def simulate(self, inputs: ModelInputs, interval: Interval) -> BasicResult[List[float]]:
+        sim_t = matlab.double([0, interval.upper])
+        n_times = interval.length // self.sampling_step
+        signal_times = np.linspace(interval.lower, interval.upper, int(n_times))
+        signal_values = np.array(
+            [[signal.at_time(t) for t in signal_times] for signal in inputs.signals]
+        )
         model_input = matlab.double(np.row_stack((signal_times, signal_values)).T.tolist())
 
         timestamps, _, data = self.engine.sim(
             self.MODEL_NAME, sim_t, self.model_opts, model_input, nargout=3
         )
 
-        timestamps_array = np.array(timestamps).flatten()
-        data_array = np.array(data)
+        timestamps_list: List[float] = np.array(timestamps).flatten().tolist()
+        data_list: List[List[float]] = list(data)
+        trace = Trace(timestamps_list, data_list)
 
-        return ModelData(data_array, timestamps_array)
+        return BasicResult(trace)
 
 
 model = AutotransModel()
@@ -77,14 +83,14 @@ if __name__ == "__main__":
 
     result = staliro(model, specification, optimizer, options)
 
-    best_sample = result.best_run.best_eval.sample
+    best_sample = best_eval(best_run(result)).sample
     best_result = simulate_model(model, options, best_sample)
-
-    assert not isinstance(best_result, Failure)
+    rpm = best_result.trace.states[0]
+    speed = best_result.trace.states[1]
 
     figure = sp.make_subplots(rows=2, cols=1, shared_xaxes=True, x_title="Time (s)")
-    figure.add_trace(go.Scatter(x=best_result.times, y=best_result.states[0]), row=1, col=1)
-    figure.add_trace(go.Scatter(x=best_result.times, y=best_result.states[1]), row=2, col=1)
+    figure.add_trace(go.Scatter(x=best_result.trace.times, y=rpm), row=1, col=1)
+    figure.add_trace(go.Scatter(x=best_result.trace.times, y=speed), row=2, col=1)
     figure.update_yaxes(title_text="RPM", row=1, col=1)
-    figure.update_yaxes(title_text="Speed", row=1, col=1)
+    figure.update_yaxes(title_text="Speed", row=2, col=1)
     figure.write_image("autotrans.jpeg")

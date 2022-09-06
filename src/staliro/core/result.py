@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import statistics as stats
-from typing import Generic, Iterable, Optional, Sequence, Tuple, TypeVar, cast
+from abc import abstractmethod
+from typing import Any, Generic, Iterable, Optional, Protocol, Sequence, Tuple, TypeVar, cast
 
 import numpy as np
 from attr import frozen
@@ -14,8 +15,22 @@ from .layout import SampleLayout
 from .sample import Sample
 from .signal import Signal
 
-RT = TypeVar("RT")
-ET = TypeVar("ET")
+ResultT = TypeVar("ResultT")
+ExtraT = TypeVar("ExtraT")
+CostT = TypeVar("CostT")
+
+
+class Comparable(Protocol):
+    @abstractmethod
+    def __eq__(self, other: Any) -> bool:
+        pass
+
+    @abstractmethod
+    def __lt__(self: ComparableT, other: ComparableT) -> bool:
+        pass
+
+
+ComparableT = TypeVar("ComparableT", bound=Comparable)
 
 
 @frozen()
@@ -40,7 +55,7 @@ class TimingData:
 
 
 @frozen()
-class Evaluation(Generic[ET]):
+class Evaluation(Generic[CostT, ExtraT]):
     """The result of applying the cost function to a sample.
 
     Attributes:
@@ -50,9 +65,9 @@ class Evaluation(Generic[ET]):
         timing: Execution durations of each component of the cost function
     """
 
-    cost: float
+    cost: CostT
     sample: Sample
-    extra: ET
+    extra: ExtraT
     timing: TimingData
 
 
@@ -88,7 +103,7 @@ class TimeStats:
 
 
 @frozen(slots=True)
-class Run(Generic[RT, ET]):
+class Run(Generic[ResultT, CostT, ExtraT]):
     """Data class that represents one run of an optimizer.
 
     Attributes:
@@ -97,31 +112,19 @@ class Run(Generic[RT, ET]):
         duration: Time spent by the optimizer
     """
 
-    result: RT
-    history: Sequence[Evaluation[ET]]
+    result: ResultT
+    history: Sequence[Evaluation[CostT, ExtraT]]
     duration: float
     seed: int
 
     @property
-    def worst_eval(self) -> Evaluation[ET]:
-        """The evaluation with the highest cost (furthest from falsifying)."""
-
-        return max(self.history, key=lambda e: e.cost)
-
-    @property
-    def best_eval(self) -> Evaluation[ET]:
-        """The evaluation with the lowest cost (closest to falsification)."""
-
-        return min(self.history, key=lambda e: e.cost)
-
-    @property
-    def fastest_eval(self) -> Evaluation[ET]:
+    def fastest_eval(self) -> Evaluation[CostT, ExtraT]:
         """The evaluation with the lowest total duration."""
 
         return min(self.history, key=lambda e: e.timing.total)
 
     @property
-    def slowest_eval(self) -> Evaluation[ET]:
+    def slowest_eval(self) -> Evaluation[CostT, ExtraT]:
         """Evaluation with the longest total duration."""
 
         return max(self.history, key=lambda e: e.timing.total)
@@ -139,8 +142,16 @@ class Run(Generic[RT, ET]):
         return TimeStats(iteration.timing.specification for iteration in self.history)
 
 
+def best_eval(run: Run[Any, ComparableT, ExtraT]) -> Evaluation[ComparableT, ExtraT]:
+    return max(run.history, key=lambda e: e.cost)
+
+
+def worst_eval(run: Run[Any, ComparableT, ExtraT]) -> Evaluation[ComparableT, ExtraT]:
+    return min(run.history, key=lambda e: e.cost)
+
+
 @frozen(slots=True)
-class Result(Generic[RT, ET]):
+class Result(Generic[ResultT, CostT, ExtraT]):
     """Data class that represents a set of successful runs of the optimizer.
 
     Attributes:
@@ -149,19 +160,11 @@ class Result(Generic[RT, ET]):
                  for each run
     """
 
-    runs: Sequence[Run[RT, ET]]
+    runs: Sequence[Run[ResultT, CostT, ExtraT]]
     interval: Interval
     seed: int
     processes: Optional[int]
     layout: SampleLayout
-
-    @property
-    def worst_run(self) -> Run[RT, ET]:
-        return max(self.runs, key=lambda r: r.worst_eval.cost)
-
-    @property
-    def best_run(self) -> Run[RT, ET]:
-        return min(self.runs, key=lambda r: r.best_eval.cost)
 
     def plot_signal(self, signal: Signal, step_size: float = 0.1) -> Tuple[Figure, Axes]:
         fig, ax = plt.subplots()
@@ -171,3 +174,11 @@ class Result(Generic[RT, ET]):
         ax.plot(times, values)
 
         return fig, ax
+
+
+def best_run(result: Result[ResultT, ComparableT, ExtraT]) -> Run[ResultT, ComparableT, ExtraT]:
+    return max(result.runs, key=best_eval)
+
+
+def worst_run(result: Result[ResultT, ComparableT, ExtraT]) -> Run[ResultT, ComparableT, ExtraT]:
+    return min(result.runs, key=worst_eval)

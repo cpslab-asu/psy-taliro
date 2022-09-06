@@ -1,83 +1,96 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Sequence, TypeVar, Union, overload
+from typing import Generic, Sequence, TypeVar
 
-import numpy as np
-from attr import Attribute, field, frozen
-from numpy.typing import NDArray
+from attr import frozen
 
 from .interval import Interval
 from .signal import Signal
-
-Times = NDArray[np.float_]
-
-
-def _times_validator(obj: Any, attr: Attribute[Any], times: Times) -> None:
-    if not isinstance(times, np.ndarray):
-        raise TypeError("timestamps must be provided as a NDArray")
-
-    if not np.issubdtype(times.dtype, np.floating):
-        raise TypeError("timestamp values must be floating point values")
-
-    if times.ndim != 1:
-        raise ValueError("timestamps must be 1-dimensional")
-
 
 StateT = TypeVar("StateT")
 ExtraT = TypeVar("ExtraT")
 
 
-@frozen(init=False)
-class ModelData(Generic[StateT, ExtraT]):
-    """Representation of the state of a system over time.
+@frozen(eq=False)
+class Trace(Generic[StateT]):
+    _times: Sequence[float]
+    _states: Sequence[StateT]
 
-    Attributes:
-        times: The timestamps corresponding to each state of the system
-        extra: User-defined data related to the particular system execution
-    """
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Trace):
+            return NotImplemented
 
-    states: StateT
-    times: Times = field(validator=_times_validator, converter=np.array)
-    extra: ExtraT
+        return self.times == other.times and self.states == other.states
 
-    @overload
-    def __init__(self: ModelData[StateT, None], states: StateT, timestamps: Any):
+    def __len__(self) -> int:
+        return len(self._times)
+
+    @property
+    def times(self) -> list[float]:
+        return list(self._times)
+
+    @property
+    def states(self) -> list[StateT]:
+        return list(self._states)
+
+
+class ModelResult(Generic[StateT, ExtraT], ABC):
+    @property
+    @abstractmethod
+    def trace(self) -> Trace[StateT]:
         ...
 
-    @overload
-    def __init__(self, states: StateT, timestamps: Any, extra: ExtraT):
+    @property
+    @abstractmethod
+    def extra(self) -> ExtraT:
         ...
 
-    def __init__(self, states: StateT, timestamps: Any, extra: ExtraT = None):
-        self.__attrs_init__(states, timestamps, extra)  # type: ignore
+
+class BasicResult(ModelResult[StateT, None]):
+    def __init__(self, trace: Trace[StateT]):
+        self._trace = trace
+
+    @property
+    def trace(self) -> Trace[StateT]:
+        return self._trace
+
+    @property
+    def extra(self) -> None:
+        return None
 
 
-@frozen(init=False)
-class Failure(Generic[ExtraT]):
-    """Representation of a system failure that should be interpreted as a falsification.
+class ExtraResult(ModelResult[StateT, ExtraT]):
+    def __init__(self, trace: Trace[StateT], extra: ExtraT):
+        self._trace = trace
+        self._extra = extra
 
-    Attributes:
-        extra: User-defined data related to the particular system execution
-    """
+    @property
+    def trace(self) -> Trace[StateT]:
+        return self._trace
 
-    extra: ExtraT = field()
+    @property
+    def extra(self) -> ExtraT:
+        return self._extra
 
-    @overload
-    def __init__(self: Failure[None]):
-        ...
 
-    @overload
+class FailureResult(ModelResult[StateT, ExtraT]):
     def __init__(self, extra: ExtraT):
-        ...
+        self._extra = extra
 
-    def __init__(self, extra: ExtraT = None):
-        self.__attrs_init__(extra)  # type: ignore
+    @property
+    def trace(self) -> Trace[StateT]:
+        return Trace([], [])
+
+    @property
+    def extra(self) -> ExtraT:
+        return self._extra
 
 
-StaticInput = Sequence[float]
-Signals = Sequence[Signal]
-ModelResult = Union[ModelData[StateT, ExtraT], Failure[ExtraT]]
+@frozen()
+class ModelInputs:
+    static: Sequence[float]
+    signals: Sequence[Signal]
 
 
 class Model(Generic[StateT, ExtraT], ABC):
@@ -88,9 +101,7 @@ class Model(Generic[StateT, ExtraT], ABC):
     """
 
     @abstractmethod
-    def simulate(
-        self, static: StaticInput, signals: Signals, interval: Interval
-    ) -> ModelResult[StateT, ExtraT]:
+    def simulate(self, inputs: ModelInputs, interval: Interval) -> ModelResult[StateT, ExtraT]:
         """Simulate the model using the given inputs.
 
         This method contains the logic responsible for simulating the model with the given inputs.

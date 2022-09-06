@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, Iterable, Mapping, Sequence, Tuple
 
 from attr import field, frozen
 
+from .model import ModelInputs
 from .sample import Sample
 from .signal import Signal
 
@@ -42,8 +43,8 @@ class SampleLayout:
     static_parameters: slice = field(converter=_to_static_params)
     signals: ConstructorMap = field(converter=_to_signals, validator=_validate_signals)
 
-    def decompose_sample(self, sample: Sample) -> Tuple[Any, Any]:
+    def decompose_sample(self, sample: Sample) -> ModelInputs:
         static_parameters = sample[self.static_parameters]
         signals = list(_signals_from_sample(self.signals, sample))
 
-        return static_parameters, signals
+        return ModelInputs(static_parameters, signals)

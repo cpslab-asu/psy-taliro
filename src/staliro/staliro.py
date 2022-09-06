@@ -17,6 +17,7 @@ from .core.signal import Signal, SignalFactory
 from .options import Options, SignalOptions
 
 StateT = TypeVar("StateT")
+CostT = TypeVar("CostT")
 ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 
@@ -76,10 +77,10 @@ def _signal_bounds(signals: Iterable[SignalOptions]) -> tuple[Interval, ...]:
 
 def staliro(
     model: Model[StateT, ExtraT],
-    specification: SpecificationOrFactory[StateT],
-    optimizer: Optimizer[ResultT],
+    specification: SpecificationOrFactory[StateT, CostT],
+    optimizer: Optimizer[CostT, ResultT],
     options: Options,
-) -> Result[ResultT, ExtraT]:
+) -> Result[ResultT, CostT, ExtraT]:
     """Search for falsifying inputs to the provided system.
 
     Using the optimizer, search the input space defined in the options for cases which falsify the
@@ -99,7 +100,7 @@ def staliro(
     signal_bounds = _signal_bounds(options.signals)
     bounds = options.static_parameters + signal_bounds
 
-    scenario: Scenario[StateT, ResultT, ExtraT] = Scenario(
+    scenario: Scenario[StateT, CostT, ResultT, ExtraT] = Scenario(
         model=model,
         specification=specification,
         runs=options.runs,
@@ -119,6 +120,6 @@ def simulate_model(
 ) -> ModelResult[StateT, ExtraT]:
     params = LayoutParameters(options.static_parameters, options.signals, options.interval)
     layout = _create_sample_layout(params)
-    static_inputs, signals = layout.decompose_sample(sample)
+    inputs = layout.decompose_sample(sample)
 
-    return model.simulate(static_inputs, signals, options.interval)
+    return model.simulate(inputs, options.interval)

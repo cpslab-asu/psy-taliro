@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import plotly.graph_objects as go
 
-from staliro.core import Failure
+from staliro.core import best_eval, best_run
 from staliro.models import State, ode
 from staliro.optimizers import UniformRandom
 from staliro.options import Options
@@ -32,14 +32,12 @@ if __name__ == "__main__":
 
     result = staliro(nonlinear_model, specification, optimizer, options)
 
-    best_run = result.best_run
-    best_sample = best_run.best_eval.sample
+    best_run_ = best_run(result)
+    best_sample = best_eval(best_run_).sample
     best_result = simulate_model(nonlinear_model, options, best_sample)
 
-    assert not isinstance(best_result, Failure)
-
-    sample_xs = [evaluation.sample[0] for evaluation in best_run.history]
-    sample_ys = [evaluation.sample[1] for evaluation in best_run.history]
+    sample_xs = [evaluation.sample[0] for evaluation in best_run_.history]
+    sample_ys = [evaluation.sample[1] for evaluation in best_run_.history]
 
     figure = go.Figure()
     figure.add_trace(
@@ -76,8 +74,8 @@ if __name__ == "__main__":
     figure.add_trace(
         go.Scatter(
             name="Best evaluation trajectory",
-            x=best_result.states[0],
-            y=best_result.states[1],
+            x=best_result.trace.states[0],
+            y=best_result.trace.states[1],
             mode="lines+markers",
             line=go.scatter.Line(color="blue", shape="spline"),
         )

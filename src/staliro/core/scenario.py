@@ -16,9 +16,9 @@ from .layout import SampleLayout
 from .model import Model
 from .optimizer import Optimizer
 from .result import Result, Run
-from .specification import Specification
 
 StateT = TypeVar("StateT")
+CostT = TypeVar("CostT")
 ResultT = TypeVar("ResultT")
 ExtraT = TypeVar("ExtraT")
 
@@ -27,7 +27,7 @@ logger.addHandler(logging.NullHandler())
 
 
 @frozen()
-class CostFnGenerator(Generic[StateT, ExtraT], Iterator[CostFn[StateT, ExtraT]]):
+class CostFnGenerator(Generic[StateT, CostT, ExtraT], Iterator[CostFn[StateT, CostT, ExtraT]]):
     """Iterator class that generates new instances of CostFn.
 
     Attributes:
@@ -37,11 +37,11 @@ class CostFnGenerator(Generic[StateT, ExtraT], Iterator[CostFn[StateT, ExtraT]])
     """
 
     model: Model[StateT, ExtraT]
-    specification: SpecificationOrFactory[StateT]
+    specification: SpecificationOrFactory[StateT, CostT]
     interval: Interval
     layout: SampleLayout
 
-    def __next__(self) -> CostFn[StateT, ExtraT]:
+    def __next__(self) -> CostFn[StateT, CostT, ExtraT]:
         return CostFn(
             self.model,
             self.specification,
@@ -51,7 +51,7 @@ class CostFnGenerator(Generic[StateT, ExtraT], Iterator[CostFn[StateT, ExtraT]])
 
 
 @frozen()
-class Experiment(Generic[StateT, ResultT, ExtraT]):
+class Experiment(Generic[StateT, CostT, ResultT, ExtraT]):
     """Class that represents a single optimization attempt.
 
     Attributes:
@@ -60,13 +60,13 @@ class Experiment(Generic[StateT, ResultT, ExtraT]):
         params: OptimizationParams instance specific to this optimization attempt
     """
 
-    cost_fn: CostFn[StateT, ExtraT]
-    optimizer: Optimizer[ResultT]
+    cost_fn: CostFn[StateT, CostT, ExtraT]
+    optimizer: Optimizer[CostT, ResultT]
     bounds: Sequence[Interval]
     iterations: int
     seed: int
 
-    def run(self) -> Run[ResultT, ExtraT]:
+    def run(self) -> Run[ResultT, CostT, ExtraT]:
         """Execute this optimization attempt.
 
         Returns:
@@ -84,7 +84,7 @@ class Experiment(Generic[StateT, ResultT, ExtraT]):
 
 @frozen()
 class ExperimentGenerator(
-    Generic[StateT, ResultT, ExtraT], Iterable[Experiment[StateT, ResultT, ExtraT]]
+    Generic[StateT, CostT, ResultT, ExtraT], Iterable[Experiment[StateT, CostT, ResultT, ExtraT]]
 ):
     """Generate experiments from a sequence of cost functions and a random number generator.
 
@@ -100,13 +100,13 @@ class ExperimentGenerator(
         rng: The random number generator used to produce a seed for each experiment
     """
 
-    cost_fns: Iterable[CostFn[StateT, ExtraT]]
-    optimizer: Optimizer[ResultT]
+    cost_fns: Iterable[CostFn[StateT, CostT, ExtraT]]
+    optimizer: Optimizer[CostT, ResultT]
     bounds: Sequence[Interval]
     iterations: int
     rng: Generator
 
-    def __iter__(self) -> Iterator[Experiment[StateT, ResultT, ExtraT]]:
+    def __iter__(self) -> Iterator[Experiment[StateT, CostT, ResultT, ExtraT]]:
         for cost_fn in self.cost_fns:
             yield Experiment(
                 cost_fn,
@@ -115,28 +115,6 @@ class ExperimentGenerator(
                 self.iterations,
                 self.rng.integers(0, 2**32 - 1),
             )
-
-
-def _run_experiment(experiment: Experiment[Any, ResultT, ExtraT]) -> Run[ResultT, ExtraT]:
-    return experiment.run()
-
-
-def _slice_length(s: slice) -> int:
-    diff: int = s.stop - s.start
-
-    if s.step is None:
-        step: int = 1
-    else:
-        step = s.step
-
-    return diff // step
-
-
-def _validate_specification(
-    _: Any, attr: Attribute[Any], value: SpecificationOrFactory[Any]
-) -> None:
-    if not isinstance(value, Specification) and not callable(value):
-        raise TypeError("specification must be a specification instance or a function")
 
 
 def _greater_than(bound: float) -> Callable[[Any, Attribute[Any], Any], None]:
@@ -174,7 +152,7 @@ def _subclass_of(
 
 
 @frozen(auto_attribs=False)
-class Scenario(Generic[StateT, ResultT, ExtraT]):
+class Scenario(Generic[StateT, CostT, ResultT, ExtraT]):
     """Class that represents a set of optimization attempts.
 
     Optimization attempts can be run sequentially or in parallel. When run in parallel, the same
@@ -188,7 +166,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
     """
 
     model: Model[StateT, ExtraT] = field(validator=_subclass_of(Model))
-    specification: SpecificationOrFactory[StateT] = field(validator=_validate_specification)
+    specification: SpecificationOrFactory[StateT, CostT] = field()
     runs: int = field(validator=[instance_of(int), _greater_than(0)])
     iterations: int = field(validator=[instance_of(int), _greater_than(0)])
     seed: int = field(validator=[instance_of(int), _within_range(0, 2**32 - 1)])
@@ -199,7 +177,7 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
     interval: Interval = field(validator=instance_of(Interval))
     layout: SampleLayout = field(validator=instance_of(SampleLayout))
 
-    def run(self, optimizer: Optimizer[ResultT]) -> Result[ResultT, ExtraT]:
+    def run(self, optimizer: Optimizer[CostT, ResultT]) -> Result[ResultT, CostT, ExtraT]:
         """Execute all optimization attempts given an optimizer.
 
         Args:
@@ -226,10 +204,12 @@ class Scenario(Generic[StateT, ResultT, ExtraT]):
 
         if self.processes is not None:
             with ProcessPoolExecutor(self.processes) as executor:
-                futures: Iterable[Run[ResultT, ExtraT]] = executor.map(_run_experiment, experiments)
+                futures: Iterable[Run[ResultT, CostT, ExtraT]] = executor.map(
+                    Experiment.run, experiments
+                )
                 runs = list(futures)
         else:
-            runs = [_run_experiment(experiment) for experiment in experiments]
+            runs = [experiment.run() for experiment in experiments]
 
         return Result(runs, self.interval, self.seed, self.processes, self.layout)
 
