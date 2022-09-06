@@ -3,14 +3,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, Sequence, TypeVar
 
-import numpy as np
 from attr import frozen
-from numpy.typing import NDArray
 
 from .interval import Interval
 from .signal import Signal
 
-Times = NDArray[np.float_]
 StateT = TypeVar("StateT")
 ExtraT = TypeVar("ExtraT")
 
