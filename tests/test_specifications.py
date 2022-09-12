@@ -138,9 +138,9 @@ class SpecificationTestCase(TestCase):
         }
         specification = TPTaliro(requirement, predicates)
 
-        timestamps = self._data["t"].to_numpy(dtype=np.float64)
-        trajectories = self._data["x1"].to_numpy(dtype=np.float32)
-        locations = self._data["loc"].to_numpy(dtype=np.float32)
+        timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
+        trajectories = np.atleast_2d(self._data["x1"].to_numpy(dtype=np.float32)).tolist()
+        locations = self._data["loc"].to_numpy(dtype=np.float32).tolist()
 
         robustness: HyDist = specification.hybrid(
             trajectories, timestamps, locations, graph, guards

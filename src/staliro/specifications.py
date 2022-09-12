@@ -271,9 +271,9 @@ class TPTaliro(StlSpecification):
 
     def hybrid(
         self,
-        states: NDArray[np.float_],
-        times: NDArray[np.float_],
-        locations: NDArray[np.float_],
+        states: Sequence[Sequence[float]],
+        times: Sequence[float],
+        locations: Sequence[float],
         graph: AdjacencyList,
         guard_map: GuardMap,
     ) -> HyDist:
