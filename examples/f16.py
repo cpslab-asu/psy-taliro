@@ -50,7 +50,7 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
 
 
 phi = "[] (alt)"
-predicates: List[TaliroPredicate] = map(
+predicates = map(
     TaliroPredicate.from_dict,
     [
         {
@@ -60,6 +60,7 @@ predicates: List[TaliroPredicate] = map(
         }
     ],
 )
+
 specification = TPTaliro(phi, predicates)
 
 optimizer = DualAnnealing()

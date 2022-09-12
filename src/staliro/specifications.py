@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import TYPE_CHECKING, Any, Dict, List, NewType, Optional, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Iterable, NewType, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
 from attrs import field, frozen
@@ -45,8 +45,6 @@ StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
 PredicateColumnMap = Dict[PredicateName, ColumnT]
-
-TaliroPredicateMap = List[TaliroPredicate]
 
 
 class StlSpecificationException(Exception):
@@ -236,7 +234,7 @@ class TPTaliro(StlSpecification):
         predicates: A set of Predicate(s) used in the requirement
     """
 
-    def __init__(self, phi: str, predicate_map: Sequence[TaliroPredicate]):
+    def __init__(self, phi: str, predicate_map: Iterable[TaliroPredicate]):
         if not _has_tptaliro:
             raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
         if not _can_translate:

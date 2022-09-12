@@ -1,5 +1,5 @@
 from os import path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 from unittest import TestCase, skipIf
 
 import numpy as np
@@ -78,7 +78,7 @@ class SpecificationTestCase(TestCase):
     )
     def test_tp_taliro_specification_evaluate(self) -> None:
         requirement = "(not ((always[0.0, 4.0]((x1_1) and (x1_2))) and (eventually[3.5,4.0]((x1_3) and (x1_4)))))"
-        predicates: List[TaliroPredicate] = map(
+        predicates = map(
             TaliroPredicate.from_dict,
             [
                 {
@@ -118,7 +118,7 @@ class SpecificationTestCase(TestCase):
     )
     def test_tp_taliro_specification_hybrid(self) -> None:
         requirement = "globally (p1 and p2)"
-        predicates: List[TaliroPredicate] = map(
+        predicates = map(
             TaliroPredicate.from_dict,
             [
                 {"name": "p1", "a": -1.0, "b": 0.0, "l": 1},
