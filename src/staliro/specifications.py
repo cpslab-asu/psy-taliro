@@ -226,7 +226,7 @@ class TaliroPredicate:
         return cls(name=d["name"], A=d["a"], b=d["b"], l=l)
 
 
-class TPTaliro(StlSpecification):
+class TpTaliro(StlSpecification):
     """TPTL logic specification that uses TP-TaLiRo to compute robustness values.
 
     Attributes:

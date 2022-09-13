@@ -11,7 +11,7 @@ from staliro.core import BasicResult, ModelResult, Trace, best_eval, best_run
 from staliro.models import SignalTimes, SignalValues, blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options
-from staliro.specifications import TaliroPredicate, TPTaliro
+from staliro.specifications import TaliroPredicate, TpTaliro
 from staliro.staliro import simulate_model, staliro
 
 F16DataT = ModelResult[List[float], None]
@@ -61,7 +61,7 @@ predicates = map(
     ],
 )
 
-specification = TPTaliro(phi, predicates)
+specification = TpTaliro(phi, predicates)
 
 optimizer = DualAnnealing()
 

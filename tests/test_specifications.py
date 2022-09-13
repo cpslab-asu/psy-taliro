@@ -5,7 +5,7 @@ from unittest import TestCase, skipIf
 import numpy as np
 import pandas as pd
 
-from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete, TaliroPredicate, TPTaliro
+from staliro.specifications import TLTK, RTAMTDense, RTAMTDiscrete, TaliroPredicate, TpTaliro
 
 try:
     import tltk_mtl  # noqa: F401
@@ -104,7 +104,7 @@ class SpecificationTestCase(TestCase):
             ],
         )
 
-        specification = TPTaliro(requirement, predicates)
+        specification = TpTaliro(requirement, predicates)
 
         timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
         trajectories = np.atleast_2d(self._data["x1"].to_numpy(dtype=np.float32)).tolist()
@@ -136,7 +136,7 @@ class SpecificationTestCase(TestCase):
             ("4", "3"): {"a": -1.0, "b": -4.0},
             ("3", "1"): {"a": -1.0, "b": 0.0},
         }
-        specification = TPTaliro(requirement, predicates)
+        specification = TpTaliro(requirement, predicates)
 
         timestamps = self._data["t"].to_numpy(dtype=np.float64).tolist()
         trajectories = np.atleast_2d(self._data["x1"].to_numpy(dtype=np.float32)).tolist()
