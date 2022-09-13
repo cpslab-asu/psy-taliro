@@ -10,12 +10,13 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
+antlr4-python3-runtime = ">=4.7"
 attrs = "^21.0.0"
 numpy = "^1.21.5"
 scipy = "^1.6.2"
 typing-extensions = "^4.2.0"
-antlr4-python3-runtime = "^4.7"
 matplotlib = "^3.5.2"
+py-taliro = "^0.2.1"
 
 [tool.poetry.dev-dependencies]
 black = "*"

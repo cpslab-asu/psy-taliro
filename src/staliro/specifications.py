@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
-from typing import Dict, NewType, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Iterable, NewType, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
+from attrs import field, frozen
 from numpy.typing import NDArray
 
 try:
@@ -23,6 +24,22 @@ except:
 else:
     _can_parse = True
 
+try:
+    from taliro import tptaliro as tp
+except ImportError:
+    _has_tptaliro = False
+else:
+    _has_tptaliro = True
+
+try:
+    from .parser import SpecificationSyntaxError, TemporalLogic, translate
+except ImportError:
+    _can_translate = False
+else:
+    _can_translate = True
+
+if TYPE_CHECKING:
+    from taliro.tptaliro import AdjacencyList, Guard, GuardMap, HyDist
 
 StateT = TypeVar("StateT")
 PredicateName = str
@@ -177,5 +194,130 @@ class RTAMTDense(StlSpecification):
         ]
 
         robustness = self.rtamt_obj.evaluate(*traces)
-
         return robustness[0][1]
+
+
+@frozen(slots=True)
+class TaliroPredicate:
+    name: str = field(kw_only=True)
+    A: NDArray[np.float_] = field(kw_only=True)
+    b: NDArray[np.float_] = field(kw_only=True)
+    l: Optional[NDArray[np.float_]] = field(default=None, kw_only=True)
+
+    def as_dict(self) -> Dict[str, Any]:
+        pred = {
+            "name": self.name,
+            "a": np.array(self.A, dtype=np.double, ndmin=2),
+            "b": np.array(self.b, dtype=np.double, ndmin=2),
+        }
+
+        if self.l:
+            pred["l"] = np.array(self.l, dtype=np.double, ndmin=2)
+
+        return pred
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> TaliroPredicate:
+        try:
+            l = d["l"]
+        except KeyError:
+            l = None
+
+        return cls(name=d["name"], A=d["a"], b=d["b"], l=l)
+
+
+class TpTaliro(StlSpecification):
+    """TPTL logic specification that uses TP-TaLiRo to compute robustness values.
+
+    Attributes:
+        phi: The specification requirement
+        predicates: A set of Predicate(s) used in the requirement
+    """
+
+    def __init__(self, phi: str, predicate_map: Iterable[TaliroPredicate]):
+        if not _has_tptaliro:
+            raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
+        if not _can_translate:
+            raise RuntimeError("TP-TaLiRo specifications require translation functionality.")
+
+        # translate STL to TPTL; else, assume valid TPTL
+        try:
+            self.spec = translate(phi, TemporalLogic.STL, TemporalLogic.TPTL)
+        except SpecificationSyntaxError:
+            self.spec = phi
+
+        self.pmap = [user_dict.as_dict() for user_dict in predicate_map]
+
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        """Compute the euclidean-based robustness
+
+        Attributes:
+            states: State trajectories
+            times: Timestamps
+        """
+        times_, states_ = _parse_times_states(times, states)
+
+        robustness: HyDist = tp.tptaliro(
+            spec=self.spec,
+            preds=self.pmap,
+            st=np.array(states_, dtype=np.double, ndmin=2),
+            ts=np.array(times_, dtype=np.double, ndmin=2),
+            lt=None,
+            adj_list=None,
+            guards=None,
+        )
+
+        return robustness["ds"]
+
+    def hybrid(
+        self,
+        states: Sequence[Sequence[float]],
+        times: Sequence[float],
+        locations: Sequence[float],
+        graph: AdjacencyList,
+        guard_map: GuardMap,
+    ) -> HyDist:
+        """Compute hybrid-based robustness metric.
+
+        A couple notes regarding the arguments: (1) `locations` is a trajectory
+        of active states corresponding to a timestamp; (2) the `guard_map` must
+        have an entry for _every_ edge defined in the `graph`. For example, if
+        we have the following adjacency list:
+
+        ```text
+        A -> B
+        A -> A
+        ```
+
+        Then, the guard map should contain an entry for the edge (A, B) and the
+        edge (A, A). It is not required to add an entry for the edge (B, A) or
+        (B, B) (i.e., the graph is nondeterministic).
+
+        Arguments:
+            states: State trajectories
+            times: Timestamps
+            locations: Location trajectories
+            graph: Control location graph represented as an adjacency list
+            guard_map: Transition criteria for each edge in the graph
+        """
+
+        def into_taliro_guard(constraint: Guard) -> Guard:
+            return {
+                "a": np.array(constraint["a"], dtype=np.double, ndmin=2),
+                "b": np.array(constraint["b"], dtype=np.double, ndmin=2),
+            }
+
+        for guard, constraint in guard_map.items():
+            guard_map[guard] = into_taliro_guard(constraint)
+
+        robustness: HyDist = tp.tptaliro(
+            spec=self.spec,
+            preds=self.pmap,
+            st=np.array(states, dtype=np.double, ndmin=2),
+            ts=np.array(times, dtype=np.double, ndmin=2),
+            lt=np.array(locations, dtype=np.double, ndmin=2),
+            adj_list=graph,
+            guards=guard_map,
+        )
+
+        return robustness

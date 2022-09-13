@@ -11,7 +11,7 @@ from staliro.core import BasicResult, ModelResult, Trace, best_eval, best_run
 from staliro.models import SignalTimes, SignalValues, blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options
-from staliro.specifications import RTAMTDense
+from staliro.specifications import TaliroPredicate, TpTaliro
 from staliro.staliro import simulate_model, staliro
 
 F16DataT = ModelResult[List[float], None]
@@ -49,10 +49,19 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
     return BasicResult(trace)
 
 
-phi_01 = "always[0:15] (alt > 0)"
-phi_02 = "always[0:15] (((ap >= 0.5) and (next (ap <= 0.5))) implies (next ((roll >= 0.02 and roll <= 0.04) and (pitch >= 0.20 and pitch <= 0.28))))"
+phi = "[] (alt)"
+predicates = map(
+    TaliroPredicate.from_dict,
+    [
+        {
+            "name": "alt",
+            "a": np.array(-1),
+            "b": np.array(0),
+        }
+    ],
+)
 
-specification = RTAMTDense(phi_01, {"ap": 0, "roll": 1, "pitch": 2, "yaw": 3, "alt": 4})
+specification = TpTaliro(phi, predicates)
 
 optimizer = DualAnnealing()
 
