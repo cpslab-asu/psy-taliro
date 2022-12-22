@@ -1,4 +1,4 @@
-# $\Psy$-TaLiRo
+# $\Psi$-TaLiRo
 
 An extensible Python toolbox for search-based test generation for cyber-physical
 systems. This work is based of the MATLAB toolbox S-TaLiRo, which is available
@@ -6,9 +6,9 @@ systems. This work is based of the MATLAB toolbox S-TaLiRo, which is available
 
 ## Models
 
-$\Psy$-TaLiRo represents the cyber-physical system under test as a model.
+$\Psi$-TaLiRo represents the cyber-physical system under test as a model.
 Conceptually, a model is a function that maps a set of system inputs to a
-timed series of states called a _Trace_. $\Psy$-TaLiRo provides two ways to
+timed series of states called a _Trace_. $\Psi$-TaLiRo provides two ways to
 construct a model: the __Blackbox__ and __Ode__ models. The __Blackbox__ model
 makes no assumptions about the underlying system it represents. The __Ode__
 model expects the underlying model to be represented using ordinary
@@ -16,9 +16,9 @@ differential equations.
 
 ## Specifications
 
-$\Psy$-TaLiRo tests are system requirements expressed in metric temporal logic
+$\Psi$-TaLiRo tests are system requirements expressed in metric temporal logic
 (MTL). Evaluation of the system requirement depends on a _monitor_, and
-$\Psy$-TaLiRo supports several options. All specific implementations are
+$\Psi$-TaLiRo supports several options. All specific implementations are
 available in the `staliro.specifications` module. To use a specification, you
 will need to ensure that the monitor library is installed. Additional
 information is available in the table below:
@@ -31,7 +31,7 @@ information is available in the table below:
 
 ## Optimizers
 
-$\Psy$-TaLiRo generates inputs for the system under test by using an optimizer.
+$\Psi$-TaLiRo generates inputs for the system under test by using an optimizer.
 The optimizers provided by the toolbox are the __UniformRandom__ and
 __DualAnnealing__ optimizers in the `staliro.optimizers` module.
 
