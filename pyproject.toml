@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PSY-TaLiRo"
-version = "1.0.0b7"
+version = "1.0.0b8"
 description = "System-level verification library using STL"
 authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <jwande18@asu.edu>"]
 license = "BSD-3-Clause"
@@ -16,7 +16,14 @@ numpy = "^1.21.5"
 scipy = "^1.6.2"
 typing-extensions = "^4.2.0"
 matplotlib = "^3.5.2"
-py-taliro = "^0.2.1"
+py-taliro = { version = "^0.2.1", optional = true }
+rtamt = { version = "^0.3.5", optional = true }
+tltk-mtl = { version = "^0.0.27", optional = true, markers = "sys_platform == 'linux'" }
+
+[tool.poetry.extras]
+rtamt = ["rtamt"]
+pytaliro = ["py-taliro"]
+tltk = ["tltk-mtl"]
 
 [tool.poetry.dev-dependencies]
 black = "*"
