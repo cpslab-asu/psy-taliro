@@ -1,3 +1,7 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry]
 name = "PSY-TaLiRo"
 version = "1.0.0b8"
@@ -77,6 +81,3 @@ skip_gitignore = true
 src_paths = ["src"]
 extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
