@@ -9,7 +9,7 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 try:
-    from rtamt import Language, Semantics, STLDenseTimeSpecification, STLDiscreteTimeSpecification
+    from rtamt import Language, Semantics, StlDenseTimeSpecification, StlDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
@@ -127,38 +127,38 @@ class RTAMTDiscrete(StlSpecification):
     """
 
     def __init__(self, phi: str, column_map: PredicateColumnMap):
-        if not _has_rtamt:
-            raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
-
         if "time" in column_map:
             raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
 
-        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
-
-        self.rtamt_obj.spec = phi
+        self.phi = phi
         self.column_map = column_map
 
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
-
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        if not _has_rtamt:
+            raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
+
         times_, states_ = _parse_times_states(times, states)
 
         if times_.size < 2:
             raise RuntimeError("timestamps must have at least two samples to evaluate")
 
-        self.rtamt_obj.reset()
+        spec = StlDiscreteTimeSpecification()
+
+        for name in self.column_map:
+            spec.declare_var(name, "float")
 
         period = times[1] - times[0]
-        self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
-        self.rtamt_obj.parse()
+        spec.set_sampling_period(round(period, 2), "s", 0.1)
+        spec.spec = self.phi
+        spec.parse()
+
         traces = {"time": list(times)}
 
         for name, column in self.column_map.items():
             traces[name] = list(states[column])
 
-        robustness = self.rtamt_obj.evaluate(traces)
+        robustness = spec.evaluate(traces)
         return robustness[0][1]
 
 
@@ -171,21 +171,21 @@ class RTAMTDense(StlSpecification):
     """
 
     def __init__(self, phi: str, column_map: PredicateColumnMap):
+        self.phi = phi
+        self.column_map = column_map
+
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
 
-        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
-        self.column_map = column_map
-        self.rtamt_obj.spec = phi
-
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
-
-    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         times_, states_ = _parse_times_states(times, states)
+        spec = StlDenseTimeSpecification()
 
-        self.rtamt_obj.reset()
-        self.rtamt_obj.parse()
+        for name in self.column_map:
+            spec.declare_var(name, "float")
+
+        spec.spec = self.phi
+        spec.parse()
 
         map_items = self.column_map.items()
         traces = [
@@ -193,7 +193,7 @@ class RTAMTDense(StlSpecification):
             for name, column in map_items
         ]
 
-        robustness = self.rtamt_obj.evaluate(*traces)
+        robustness = spec.evaluate(*traces)
         return robustness[0][1]
 
 
