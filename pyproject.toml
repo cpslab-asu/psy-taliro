@@ -81,3 +81,5 @@ skip_gitignore = true
 src_paths = ["src"]
 extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
 
+[tool.poe.tasks]
+nonlinear = "python3 examples/nonlinear.py"
