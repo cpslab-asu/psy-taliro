@@ -79,4 +79,5 @@ src_paths = ["src"]
 extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
 
 [tool.poe.tasks]
+test = "python3 -m unittest discover -v -s 'tests' -p 'test_*.py'"
 nonlinear = "python3 examples/nonlinear.py"
