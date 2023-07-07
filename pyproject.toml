@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "PSY-TaLiRo"
-version = "1.0.0b8"
+version = "1.0.0b9"
 description = "System-level verification library using STL"
 authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <jwande18@asu.edu>"]
 license = "BSD-3-Clause"
