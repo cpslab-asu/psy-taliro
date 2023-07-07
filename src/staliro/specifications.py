@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import inf
+from sys import platform
 from typing import TYPE_CHECKING, Any, Dict, Iterable, NewType, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
@@ -9,7 +10,7 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 try:
-    from rtamt import Language, Semantics, STLDenseTimeSpecification, STLDiscreteTimeSpecification
+    from rtamt import Language, Semantics, StlDenseTimeSpecification, StlDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
@@ -94,9 +95,12 @@ class TLTK(StlSpecification):
 
     def __init__(self, phi: str, column_map: PredicateColumnMap):
         if not _can_parse:
-            raise RuntimeError(
-                "TLTK specifications require parsing functionality. Please refer to the documentation for how to enable parsing."
-            )
+            if platform == "linux":
+                raise RuntimeError(
+                    "TLTK specifications require parsing functionality. Please refer to the documentation for how to enable parsing."
+                )
+            else:
+                raise RuntimeError("TLTK specification is only available on Linux")
 
         tltk_obj = parse(phi, list(column_map.keys()))
 
@@ -127,38 +131,38 @@ class RTAMTDiscrete(StlSpecification):
     """
 
     def __init__(self, phi: str, column_map: PredicateColumnMap):
-        if not _has_rtamt:
-            raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
-
         if "time" in column_map:
             raise SpecificationError("'time' cannot be used as a predicate name for RTAMT")
 
-        self.rtamt_obj = STLDiscreteTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
-
-        self.rtamt_obj.spec = phi
+        self.phi = phi
         self.column_map = column_map
 
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
-
     def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
+        if not _has_rtamt:
+            raise RuntimeError("RTAMT must be installed to use RTAMTDiscrete specification")
+
         times_, states_ = _parse_times_states(times, states)
 
         if times_.size < 2:
             raise RuntimeError("timestamps must have at least two samples to evaluate")
 
-        self.rtamt_obj.reset()
+        spec = StlDiscreteTimeSpecification()
+
+        for name in self.column_map:
+            spec.declare_var(name, "float")
 
         period = times[1] - times[0]
-        self.rtamt_obj.set_sampling_period(round(period, 2), "s", 0.1)
 
-        self.rtamt_obj.parse()
+        spec.set_sampling_period(round(period, 2), "s", 0.1)
+        spec.spec = self.phi
+        spec.parse()
+
         traces = {"time": list(times)}
 
         for name, column in self.column_map.items():
             traces[name] = list(states[column])
 
-        robustness = self.rtamt_obj.evaluate(traces)
+        robustness = spec.evaluate(traces)
         return robustness[0][1]
 
 
@@ -171,21 +175,21 @@ class RTAMTDense(StlSpecification):
     """
 
     def __init__(self, phi: str, column_map: PredicateColumnMap):
+        self.phi = phi
+        self.column_map = column_map
+
+    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         if not _has_rtamt:
             raise RuntimeError("RTAMT must be installed to use RTAMTDense specification")
 
-        self.rtamt_obj = STLDenseTimeSpecification(Semantics.STANDARD, language=Language.PYTHON)
-        self.column_map = column_map
-        self.rtamt_obj.spec = phi
-
-        for name in column_map:
-            self.rtamt_obj.declare_var(name, "float")
-
-    def evaluate(self, states: Sequence[Sequence[float]], times: Sequence[float]) -> float:
         times_, states_ = _parse_times_states(times, states)
+        spec = StlDenseTimeSpecification()
 
-        self.rtamt_obj.reset()
-        self.rtamt_obj.parse()
+        for name in self.column_map:
+            spec.declare_var(name, "float")
+
+        spec.spec = self.phi
+        spec.parse()
 
         map_items = self.column_map.items()
         traces = [
@@ -193,7 +197,7 @@ class RTAMTDense(StlSpecification):
             for name, column in map_items
         ]
 
-        robustness = self.rtamt_obj.evaluate(*traces)
+        robustness = spec.evaluate(*traces)
         return robustness[0][1]
 
 
@@ -236,7 +240,11 @@ class TpTaliro(StlSpecification):
 
     def __init__(self, phi: str, predicate_map: Iterable[TaliroPredicate]):
         if not _has_tptaliro:
-            raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
+            if platform == "linux":
+                raise RuntimeError("Py-TaLiRo must be installed to use TP-TaLiRo specification")
+            else:
+                raise RuntimeError("Py-TaLiRo is only available on Linux")
+
         if not _can_translate:
             raise RuntimeError("TP-TaLiRo specifications require translation functionality.")
 
