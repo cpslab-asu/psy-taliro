@@ -13,13 +13,13 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
+python = "^3.9"
 antlr4-python3-runtime = ">=4.7"
-attrs = "^21.0.0"
-numpy = "^1.21.5"
-scipy = "^1.6.2"
-typing-extensions = "^4.2.0"
-matplotlib = "^3.5.2"
+attrs = "^23.2.0"
+numpy = "^1.26.3"
+scipy = "^1.11.4"
+typing-extensions = "^4.9.0"
+matplotlib = "^3.8.2"
 py-taliro = { version = "^0.2.1", optional = true, markers = "sys_platform == 'linux'" }
 rtamt = { version = "^0.3.5", optional = true }
 tltk-mtl = { version = "^0.0.27", optional = true, markers = "sys_platform == 'linux'" }
