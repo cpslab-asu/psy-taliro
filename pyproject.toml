@@ -8,19 +8,18 @@ dynamic = ["version"]
 description = "Search-based test generation framework"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "BSD-3-Clause"
 keywords = []
 authors = [
-  { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
+    { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
     "antlr4-python3-runtime ~= 4.7.0",
@@ -32,6 +31,9 @@ dependencies = [
     "rtamt ~= 0.3",
 ]
 
+[project.license-files]
+paths = ["LICENSE"]
+
 [project.urls]
 Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
 Issues = "https://github.com/cpslab-asu/psy-taliro/issues"
@@ -40,11 +42,21 @@ Source = "https://github.com/cpslab-asu/psy-taliro"
 [tool.hatch.version]
 path = "src/staliro/__about__.py"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/docs",
+    "/tests",
+    "/stubs",
+    "/examples"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/staliro"]
 
 [tool.hatch.envs.default]
 path = ".venv"
+
+[tool.hatch.envs.style]
 dependencies = [
     "mypy>=1.0.0",
     "black",
@@ -59,27 +71,57 @@ dependencies = [
     "pep8-naming ~= 0.11.1"
 ]
 
-[tool.hatch.envs.default.scripts]
-lint = [
+[tool.hatch.envs.style.scripts]
+check = [
     "black --check src stubs tests examples",
     "flake8 -j 1 --statistics src stubs tests examples",
     "mypy --pretty",
 ]
 
-[tool.hatch.envs.all]
-template = "all"
+[tool.hatch.envs.docs]
 dependencies = [
+    "sphinx ~= 4.1",
+    "sphinx-autodocgen ~= 1.2",
+    "sphinx-autobuild >= 2021.3.14",
+    "furo >= 2022.4.7",
+    "rstcheck >= 5.0.0",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build -b html docs public"
+lint = "rstcheck"
+
+[tool.hatch.envs.examples]
+template = "examples"
+dependencies = [
+    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
+    "kaleido ~= 0.2.1",
+    "plotly ~= 5.3",
+]
+
+[tool.hatch.envs.examples.scripts]
+f16 = "python3 examples/f16.py"
+nonlinear = "python3 examples/nonlinear.py"
+
+
+[tool.hatch.envs.all]
+template = "examples"
+extra-dependencies = [
     "pytest",
     "pandas ~= 2.0",
 ]
 
 [tool.hatch.envs.all.scripts]
-test = "pytest {args:tests}"
+tests = "pytest {args:tests}"
+examples = [
+    "f16",
+    "nonlinear",
+]
 
 [[tool.hatch.envs.all.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.pyright]
-
-[tool.ruff]
+venvPath = "."
+venv = ".venv"
 
