@@ -54,31 +54,43 @@ exclude = [
 packages = ["src/staliro"]
 
 [tool.hatch.envs.default]
-path = ".venv"
+dependencies = [
+    "pytest",
+    "pandas ~= 2.0",
+    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
+    "kaleido ~= 0.2.1",
+    "plotly ~= 5.3",
+]
+
+[tool.hatch.envs.default.scripts]
+tests = "pytest {args:tests}"
+f16 = "python3 examples/f16.py"
+nonlinear = "python3 examples/nonlinear.py"
 
 [tool.hatch.envs.style]
+detached = true
 dependencies = [
-    "mypy>=1.0.0",
-    "black",
-    "isort",
-    "flake8 ~= 4.0",
-    "flake8-comprehensions ~= 3.4",
-    "flake8-pyi ~= 20.10",
-    "flake8-return ~= 1.1",
-    "flake8-use-fstring ~= 1.1",
-    "flake8-annotations-complexity ~= 0.0.8",
-    "flake8-todo ~= 0.7.0 ",
-    "pep8-naming ~= 0.11.1"
+    "ruff >= 0.1.2",
 ]
 
 [tool.hatch.envs.style.scripts]
-check = [
-    "black --check src stubs tests examples",
-    "flake8 -j 1 --statistics src stubs tests examples",
-    "mypy --pretty",
+check = "ruff check {args:.}"
+fix = [
+    "ruff check --select I --fix {args:.}",
+    "ruff format {args:.}",
 ]
 
+[tool.hatch.envs.types]
+template = "types"
+dependencies = [
+    "mypy >= 1.0.0",
+]
+
+[tool.hatch.envs.types.scripts]
+check = "mypy --pretty"
+
 [tool.hatch.envs.docs]
+detached = true
 dependencies = [
     "sphinx ~= 4.1",
     "sphinx-autodocgen ~= 1.2",
@@ -91,28 +103,8 @@ dependencies = [
 build = "sphinx-build -b html docs public"
 lint = "rstcheck"
 
-[tool.hatch.envs.examples]
-template = "examples"
-dependencies = [
-    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
-    "kaleido ~= 0.2.1",
-    "plotly ~= 5.3",
-]
-
-[tool.hatch.envs.examples.scripts]
-f16 = "python3 examples/f16.py"
-nonlinear = "python3 examples/nonlinear.py"
-
-
 [tool.hatch.envs.all]
-template = "examples"
-extra-dependencies = [
-    "pytest",
-    "pandas ~= 2.0",
-]
-
 [tool.hatch.envs.all.scripts]
-tests = "pytest {args:tests}"
 examples = [
     "f16",
     "nonlinear",
@@ -122,6 +114,98 @@ examples = [
 python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.pyright]
-venvPath = "."
-venv = ".venv"
+pythonVersion = "3.9"
+stubPath = "stubs"
 
+[tool.mypy]
+python_version = "3.9"
+mypy_path = "stubs"
+files = [
+    "src/**/*.py",
+    "stubs/**/*.pyi",
+    "tests/**/*.py",
+    "examples/*.py",
+]
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_return_any = true 
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_any_expr = false
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "staliro.parser.parser"
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = [
+    "staliro.parser.stlLexer",
+    "staliro.parser.stlParser",
+    "staliro.parser.stlParserListener",
+    "staliro.parser.stlParserVisitor",
+    "staliro.parser.stlTptlParserVisitorTranslator",
+    "tests.parser.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "antlr4.CommonTokenStream",
+    "antlr4.InputStream",
+    "plotly.*",
+    "aerobench.*",
+    "matlab.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F", "C90",  # Default Flake8 lints
+    "A",                           # Built-in shadowing lints
+    "B",                           # Bugbear lints
+    "I",                           # Isort lints
+    "UP",                          # Upgrade lints
+    "C4",                          # List comprehension lints
+    "PYI",                         # Stub file lints
+    "RET501", "RET502", "RET504",  # Return value lints
+    "N8",                          # Naming plugin
+    "TD",                          # TODO plugin
+    "FBT",                         # Boolean trap lints
+    "SIM",                         # Simplification lints
+    "PTH",                         # Pathlib migration lints
+]
+extend-exclude = [
+    "src/staliro/parser/stlLexer.py"
+    "src/staliro/parser/stlParser.py"
+    "src/staliro/parser/stlParserListener.py"
+    "src/staliro/parser/stlParserVisitor.py"
+    "src/staliro/parser/stlTptlParserVisitorTranslator.py"
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["staliro"]
+split-on-trailing-comma = false
+
+[tool.ruff.per-file-ignores]
+"stubs/**/*.pyi" = [
+    "FBT001",  # Allow boolean parameters
+    "N803",    # No PEP8 naming conventions
+]
+"__init__.py" = [
+    "F401",  # Allow imported but unused
+]
