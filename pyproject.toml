@@ -190,11 +190,11 @@ select = [
     "PTH",                         # Pathlib migration lints
 ]
 extend-exclude = [
-    "src/staliro/parser/stlLexer.py"
-    "src/staliro/parser/stlParser.py"
-    "src/staliro/parser/stlParserListener.py"
-    "src/staliro/parser/stlParserVisitor.py"
-    "src/staliro/parser/stlTptlParserVisitorTranslator.py"
+    "src/staliro/parser/stlLexer.py",
+    "src/staliro/parser/stlParser.py",
+    "src/staliro/parser/stlParserListener.py",
+    "src/staliro/parser/stlParserVisitor.py",
+    "src/staliro/parser/stlTptlParserVisitorTranslator.py",
 ]
 
 [tool.ruff.lint.isort]
