@@ -1,4 +1,4 @@
-from os import path
+from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import TestCase, skipIf
 
@@ -35,8 +35,8 @@ class SpecificationTestCase(TestCase):
         self._expected_robustness = -0.0160623609618824
 
         # trajectory data
-        testdir = path.dirname(path.realpath(__file__))
-        self._data = pd.read_csv(path.join(testdir, "data", "trajectory.csv"))
+        testdir = Path(__file__).parent
+        self._data = pd.read_csv(testdir / "data" / "trajectory.csv")
 
     @skipIf(
         _can_parse is False,
@@ -81,26 +81,10 @@ class SpecificationTestCase(TestCase):
         predicates = map(
             TaliroPredicate.from_dict,
             [
-                {
-                    "name": "x1_1",
-                    "a": np.array(1.0),
-                    "b": np.array(250.0),
-                },
-                {
-                    "name": "x1_2",
-                    "a": np.array(-1.0),
-                    "b": np.array(-240.0),
-                },
-                {
-                    "name": "x1_3",
-                    "a": np.array(1.0),
-                    "b": np.array(240.1),
-                },
-                {
-                    "name": "x1_4",
-                    "a": np.array(-1.0),
-                    "b": np.array(-240.0),
-                },
+                {"name": "x1_1", "a": np.array(1.0), "b": np.array(250.0)},
+                {"name": "x1_2", "a": np.array(-1.0), "b": np.array(-240.0)},
+                {"name": "x1_3", "a": np.array(1.0), "b": np.array(240.1)},
+                {"name": "x1_4", "a": np.array(-1.0), "b": np.array(-240.0)},
             ],
         )
 
