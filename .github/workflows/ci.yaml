@@ -26,7 +26,7 @@ jobs:
       - name: Run Tests
         run: hatch run tests
 
-  examples:
+  f16:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -40,5 +40,5 @@ jobs:
       - name: Install Hatch
         run: pip install hatch
       - name: Run Tests
-        run: hatch run examples
+        run: hatch run f16
 
