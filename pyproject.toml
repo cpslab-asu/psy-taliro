@@ -54,6 +54,8 @@ packages = ["src/staliro"]
 
 [tool.hatch.envs.default]
 dependencies = [
+    "mypy >= 1.0.0",
+    "ruff >= 0.1.2",
     "pytest",
     "pandas ~= 2.0",
     "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
@@ -80,9 +82,6 @@ fix = [
 ]
 
 [tool.hatch.envs.types]
-extra-dependencies = [
-    "mypy >= 1.0.0",
-]
 
 [tool.hatch.envs.types.scripts]
 check = "mypy --pretty"
