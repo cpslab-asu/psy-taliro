@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import os
 import random
-from typing import Any, List, Optional, Sequence, Tuple, Union, cast
+from collections.abc import Sequence
+from typing import Any, Literal, Union, cast
 
 import numpy as np
 from attr import Attribute, converters, field, frozen, validators
 from numpy.typing import NDArray
-from typing_extensions import Literal
+from typing_extensions import TypeAlias
 
-from .core.interval import BoundT, Interval
+from .core.interval import Interval
 from .core.signal import SignalFactory
 from .signals import pchip
 
@@ -18,10 +19,10 @@ class OptionsError(Exception):
     pass
 
 
-_IntervalT = Union[Sequence[BoundT], NDArray[Any]]
+IntervalLike: TypeAlias = Union[Interval, Sequence[float], NDArray[Any]]
 
 
-def _to_interval(interval: Union[Interval, _IntervalT]) -> Interval:
+def _to_interval(interval: IntervalLike) -> Interval:
     """Convert a value to an interval.
 
     This function only supports ordered collections because the order of values in the iterable
@@ -44,18 +45,18 @@ def _to_interval(interval: Union[Interval, _IntervalT]) -> Interval:
     return Interval(interval[0], interval[1])
 
 
-_IntervalsT = Sequence[_IntervalT]
+_Intervals: TypeAlias = Sequence[IntervalLike]
 
 
-def _to_intervals(intervals: _IntervalsT) -> Tuple[Interval, ...]:
+def _to_intervals(intervals: _Intervals) -> tuple[Interval, ...]:
     """Convert a sequence of values into a sequence on intervals."""
 
     return tuple(_to_interval(interval) for interval in intervals)
 
 
-def _to_signal_times(times: Union[Sequence[float], NDArray[np.float_]]) -> list[float]:
+def _to_signal_times(times: Sequence[float] | NDArray[np.float_]) -> list[float]:
     if isinstance(times, np.ndarray):
-        return cast(List[float], np.array(times, dtype=float).tolist())
+        return cast(list[float], np.array(times, dtype=float).tolist())
 
     return list(times)
 
@@ -73,9 +74,9 @@ class SignalOptions:
                       variable (EXPERIMENTAL)
     """
 
-    control_points: Tuple[Interval, ...] = field(converter=_to_intervals)
+    control_points: tuple[Interval, ...] = field(converter=_to_intervals)
     factory: SignalFactory = field(default=pchip, validator=validators.is_callable())
-    signal_times: Optional[list[float]] = field(
+    signal_times: list[float] | None = field(
         default=None,
         converter=converters.optional(_to_signal_times),
         validator=validators.optional(
@@ -89,10 +90,10 @@ def _seed_factory() -> int:
     return random.randint(0, 2**32 - 1)
 
 
-_ParallelizationT = Union[None, Literal["all", "cores"], int]
+_Parallelization: TypeAlias = Union[Literal["all", "cores"], int, None]
 
 
-def _parallelization_validator(_: Any, attr: Attribute[Any], value: _ParallelizationT) -> None:
+def _parallelization_validator(_: Any, attr: Attribute[Any], value: _Parallelization) -> None:
     is_none = value is None
     is_valid_str = value in {"all", "cores"}
     is_int = isinstance(value, int)
@@ -120,7 +121,7 @@ class Options:
             None (no parallelization).
     """
 
-    static_parameters: Tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
+    static_parameters: tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
     signals: Sequence[SignalOptions] = field(
         factory=list, validator=validators.deep_iterable(validators.instance_of(SignalOptions))
     )
@@ -130,10 +131,10 @@ class Options:
     iterations: int = field(default=400, validator=[validators.instance_of(int), validators.gt(0)])
     runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
     interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
-    parallelization: _ParallelizationT = field(default=None, validator=_parallelization_validator)
+    parallelization: _Parallelization = field(default=None, validator=_parallelization_validator)
 
     @property
-    def process_count(self) -> Optional[int]:
+    def process_count(self) -> int | None:
         """Number of processes to use based on the value of the parallelization attribute."""
 
         if self.parallelization == "all":

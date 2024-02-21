@@ -28,18 +28,13 @@ class ThunkTestCase(TestCase):
         self.model = NonCallableMock(spec=Model)
         self.interval = Interval(0, 1)
         self.layout = SampleLayout(
-            static_parameters=(0, 2),
-            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},  # type: ignore
+            static_parameters=(0, 2), signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)}
         )
 
     def test_specification_noncallable(self) -> None:
         specification: Specification[Any, Any] = NonCallableMock(spec=Specification)
         thunk: Thunk[Any, Any, Any] = Thunk(
-            self.sample,
-            self.model,
-            specification,
-            self.interval,
-            self.layout,
+            self.sample, self.model, specification, self.interval, self.layout
         )
 
         self.assertEqual(thunk.specification, specification)
@@ -48,11 +43,7 @@ class ThunkTestCase(TestCase):
         specification: Specification[Any, Any] = NonCallableMock(spec=Specification)
         specification_factory: SpecificationFactory[Any, Any] = Mock(return_value=specification)
         thunk: Thunk[Any, Any, Any] = Thunk(
-            self.sample,
-            self.model,
-            specification_factory,
-            self.interval,
-            self.layout,
+            self.sample, self.model, specification_factory, self.interval, self.layout
         )
 
         factory_result = thunk.specification
@@ -64,15 +55,11 @@ class ThunkTestCase(TestCase):
     def test_specification_callable_return_type(self) -> None:
         bad_factory = Mock(return_value=None)
         thunk: Thunk[Any, Any, Any] = Thunk(
-            self.sample,
-            self.model,
-            bad_factory,
-            self.interval,
-            self.layout,
+            self.sample, self.model, bad_factory, self.interval, self.layout
         )
 
         with self.assertRaises(SpecificationError):
-            thunk.specification
+            _ = thunk.specification
 
     def test_result_evaluation(self) -> None:
         trace = Trace([0.0], [0.0])
@@ -84,11 +71,7 @@ class ThunkTestCase(TestCase):
         specification.evaluate = Mock(return_value=0)
 
         thunk: Thunk[Any, Any, Any] = Thunk(
-            self.sample,
-            model,
-            specification,
-            self.interval,
-            self.layout,
+            self.sample, model, specification, self.interval, self.layout
         )
         evaluation = thunk.evaluate()
         inputs = self.layout.decompose_sample(self.sample)
@@ -97,8 +80,7 @@ class ThunkTestCase(TestCase):
         model.simulate.assert_called_with(inputs, self.interval)
         specification.evaluate.assert_called_once()
         specification.evaluate.assert_called_with(
-            model_result.trace.states,
-            model_result.trace.times,
+            model_result.trace.states, model_result.trace.times
         )
 
         self.assertIsInstance(evaluation, Evaluation)
@@ -115,11 +97,7 @@ class ThunkTestCase(TestCase):
         specification.failure_cost = -inf
 
         thunk: Thunk[Any, Any, Any] = Thunk(
-            self.sample,
-            model,
-            specification,
-            self.interval,
-            self.layout,
+            self.sample, model, specification, self.interval, self.layout
         )
         evaluation = thunk.evaluate()
         inputs = self.layout.decompose_sample(self.sample)
@@ -144,14 +122,10 @@ class CostFnTestCase(TestCase):
         self.specification = NonCallableMock(spec=Specification)
         self.interval = Interval(0, 1)
         self.layout = SampleLayout(
-            static_parameters=(0, 2),
-            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},  # type: ignore
+            static_parameters=(0, 2), signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)}
         )
         self.cost_fn: CostFn[Any, Any, Any] = CostFn(
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
+            self.model, self.specification, self.interval, self.layout
         )
 
     def test_eval_sample(self) -> None:
@@ -185,16 +159,10 @@ class CostFnTestCase(TestCase):
     def test_single_vs_many_samples(self) -> None:
         samples = [Sample([1, 2, 3, 4]), Sample([5, 6, 7, 8])]
         single_cost_fn: CostFn[Any, Any, Any] = CostFn(
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
+            self.model, self.specification, self.interval, self.layout
         )
         many_cost_fn: CostFn[Any, Any, Any] = CostFn(
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
+            self.model, self.specification, self.interval, self.layout
         )
 
         single_costs = [single_cost_fn.eval_sample(sample) for sample in samples]

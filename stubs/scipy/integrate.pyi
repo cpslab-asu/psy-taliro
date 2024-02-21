@@ -1,20 +1,16 @@
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any, Literal
 
 from numpy import float_
 from numpy.typing import ArrayLike, NDArray
+from typing_extensions import TypeAlias
 
-_ObjectiveFun = Callable[[float, NDArray[float_]], ArrayLike]
-_Method = Union[
-    Literal["RK45"],
-    Literal["RK23"],
-    Literal["DOP853"],
-    Literal["Radau"],
-    Literal["BDF"],
-    Literal["LSODA"],
-]
-_EventFn = Callable[[float, NDArray[float_]], float]
-_Events = Union[_EventFn, List[_EventFn]]
-_Jacobian = Union[ArrayLike, Callable[[float, NDArray[float_]], ArrayLike]]
+_ObjectiveFun: TypeAlias = Callable[[float, NDArray[float_]], ArrayLike]
+_Method: TypeAlias = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]
+
+_EventFn: TypeAlias = Callable[[float, NDArray[float_]], float]
+_Events: TypeAlias = _EventFn | list[_EventFn]
+_Jacobian: TypeAlias = ArrayLike | Callable[[float, NDArray[float_]], ArrayLike]
 
 class DenseOutput:
     t_min: float
@@ -32,22 +28,22 @@ class OdeSolver:
         support_complex: bool = ...,
     ) -> None: ...
     def dense_output(self) -> DenseOutput: ...
-    def step(self) -> Optional[str]: ...
+    def step(self) -> str | None: ...
 
 class OdeSolution:
     t_min: float
     t_max: float
-    def __init__(self, ts: ArrayLike, interpolants: List[DenseOutput]) -> None: ...
+    def __init__(self, ts: ArrayLike, interpolants: list[DenseOutput]) -> None: ...
     def __call__(self, t: ArrayLike) -> NDArray[float_]: ...
 
-_EventList = List[NDArray[float_]]
+_EventList: TypeAlias = list[NDArray[float_]]
 
 class _IvpSolution:
     t: NDArray[float_]
     y: NDArray[float_]
-    sol: Optional[OdeSolution]
-    t_events: Optional[_EventList]
-    y_events: Optional[_EventList]
+    sol: OdeSolution | None
+    t_events: _EventList | None
+    y_events: _EventList | None
     nfev: int
     njev: int
     nlu: int
@@ -57,21 +53,21 @@ class _IvpSolution:
 
 def solve_ivp(
     fun: _ObjectiveFun,
-    t_span: Tuple[float, float],
+    t_span: tuple[float, float],
     y0: ArrayLike,
-    method: Union[OdeSolver, _Method] = ...,
-    t_eval: Optional[ArrayLike] = ...,
+    method: OdeSolver | _Method = ...,
+    t_eval: ArrayLike | None = ...,
     dense_output: bool = ...,
-    events: Optional[_Events] = ...,
+    events: _Events | None = ...,
     vectorized: bool = ...,
-    args: Optional[Tuple[Any, ...]] = ...,
-    first_step: Optional[float] = ...,
+    args: tuple[Any, ...] | None = ...,
+    first_step: float | None = ...,
     max_step: float = ...,
     rtol: ArrayLike = ...,
     atol: ArrayLike = ...,
-    jac: Optional[_Jacobian] = ...,
-    jac_sparsity: Optional[ArrayLike] = ...,
-    lband: Optional[int] = ...,
-    uband: Optional[int] = ...,
+    jac: _Jacobian | None = ...,
+    jac_sparsity: ArrayLike | None = ...,
+    lband: int | None = ...,
+    uband: int | None = ...,
     min_step: float = ...,
 ) -> _IvpSolution: ...

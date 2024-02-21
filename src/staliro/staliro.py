@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Sequence, TypeVar, cast
+from collections.abc import Iterable, Sequence
+from typing import Any, TypeVar, cast
 
 import numpy as np
 from attr import frozen
@@ -23,7 +24,7 @@ ExtraT = TypeVar("ExtraT")
 
 
 class SignalFactoryWrapper:
-    def __init__(self, factory: SignalFactory, signal_times: List[float]):
+    def __init__(self, factory: SignalFactory, signal_times: list[float]):
         self.factory = factory
         self.signal_times = signal_times
 
@@ -59,12 +60,9 @@ def _create_sample_layout(params: LayoutParameters) -> SampleLayout:
 
         if signal_times is None:
             times_array = np.linspace(
-                params.t_span.lower,
-                params.t_span.upper,
-                num=n_points,
-                dtype=np.float64,
+                params.t_span.lower, params.t_span.upper, num=n_points, dtype=np.float64
             )
-            signal_times = cast(List[float], times_array.tolist())
+            signal_times = cast(list[float], times_array.tolist())
 
         signal_ranges_map[signal_range] = SignalFactoryWrapper(signal_opts.factory, signal_times)
 

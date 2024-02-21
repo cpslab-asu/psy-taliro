@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Literal
 
 from pandas import DataFrame
 
@@ -6,9 +6,9 @@ def assert_frame_equal(
     left: DataFrame,
     right: DataFrame,
     check_dtype: bool = ...,
-    check_index_type: Union[bool, Literal["equiv"]] = ...,
+    check_index_type: Literal["equiv"] | bool = ...,
     check_frame_type: bool = ...,
-    check_less_precise: Union[bool, int] = ...,
+    check_less_precise: int | bool = ...,
     check_names: bool = ...,
     by_blocks: bool = ...,
     check_exact: bool = ...,

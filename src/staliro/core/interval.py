@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Tuple, Union
+from collections.abc import Iterable, Iterator
 
 from attr import Attribute, field, frozen
-
-BoundT = Union[int, float]
 
 
 class IntervalError(Exception):
     pass
 
 
-def _bound_converter(bound: BoundT) -> float:
+def _bound_converter(bound: float) -> float:
     if isinstance(bound, int):
         return float(bound)
 
@@ -54,5 +52,5 @@ class Interval(Iterable[float]):
 
         return self.upper - self.lower
 
-    def astuple(self) -> Tuple[float, float]:
+    def astuple(self) -> tuple[float, float]:
         return (self.lower, self.upper)

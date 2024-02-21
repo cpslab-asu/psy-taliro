@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import plotly.graph_objects as go
@@ -11,10 +11,10 @@ from staliro.core import BasicResult, ModelResult, Trace, best_eval, best_run
 from staliro.models import SignalTimes, SignalValues, blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options
-from staliro.specifications import TaliroPredicate, TpTaliro
+from staliro.specifications import RTAMTDense
 from staliro.staliro import simulate_model, staliro
 
-F16DataT = ModelResult[List[float], None]
+F16DataT = ModelResult[list[float], None]
 
 
 @blackbox()
@@ -43,25 +43,14 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
             result["states"][:, 12],  # altitude
         )
     )
-    timestamps: List[float] = result["times"]
+    timestamps: list[float] = result["times"]
     trace = Trace(timestamps, states.tolist())
 
     return BasicResult(trace)
 
 
-phi = "[] (alt)"
-predicates = map(
-    TaliroPredicate.from_dict,
-    [
-        {
-            "name": "alt",
-            "a": np.array(-1),
-            "b": np.array(0),
-        }
-    ],
-)
-
-specification = TpTaliro(phi, predicates)
+phi = "always (alt > 0)"
+specification = RTAMTDense(phi, {"alt": 4})
 
 optimizer = DualAnnealing()
 

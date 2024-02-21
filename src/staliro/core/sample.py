@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Sequence, Sized, Tuple, Union, cast
+from collections.abc import Iterable, Iterator, Sequence, Sized
+from typing import Any, Union, cast, overload
 
 from attr import field, frozen
 from numpy import float64, ndarray
 from numpy.typing import NDArray
-from typing_extensions import overload
+from typing_extensions import TypeAlias
 
 
 def _value_converter(value: Any) -> float:
@@ -18,12 +19,12 @@ def _value_converter(value: Any) -> float:
     raise TypeError("only int and float are valid sample value types")
 
 
-_ValuesT = Union[NDArray[Any], Sequence[int], Sequence[float]]
+_Values: TypeAlias = Union[NDArray[Any], Sequence[int], Sequence[float]]
 
 
-def _values_converter(value: _ValuesT) -> Tuple[float, ...]:
+def _values_converter(value: _Values) -> tuple[float, ...]:
     if isinstance(value, ndarray):
-        return cast(Tuple[float, ...], tuple(value.astype(float64).tolist()))
+        return cast(tuple[float, ...], tuple(value.astype(float64).tolist()))
 
     if isinstance(value, (list, tuple)):
         return tuple(_value_converter(v) for v in value)
@@ -42,7 +43,7 @@ class Sample(Sized, Iterable[float]):
         values: The sample values
     """
 
-    values: Tuple[float, ...] = field(converter=_values_converter)
+    values: tuple[float, ...] = field(converter=_values_converter)
 
     def __len__(self) -> int:
         return len(self.values)
@@ -55,10 +56,10 @@ class Sample(Sized, Iterable[float]):
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> Tuple[float, ...]:
+    def __getitem__(self, index: slice) -> tuple[float, ...]:
         ...
 
-    def __getitem__(self, index: Union[int, slice]) -> Union[float, Tuple[float, ...]]:
+    def __getitem__(self, index: int | slice) -> float | tuple[float, ...]:
         if isinstance(index, (int, slice)):
             return self.values[index]
         else:

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import statistics as stats
 from abc import abstractmethod
-from typing import Any, Generic, Iterable, Optional, Protocol, Sequence, Tuple, TypeVar, cast
+from collections.abc import Iterable, Sequence
+from typing import Any, Generic, Protocol, TypeVar, cast
 
 import numpy as np
 from attr import frozen
@@ -22,7 +23,7 @@ CostT = TypeVar("CostT")
 
 class Comparable(Protocol):
     @abstractmethod
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         pass
 
     @abstractmethod
@@ -163,10 +164,10 @@ class Result(Generic[ResultT, CostT, ExtraT]):
     runs: Sequence[Run[ResultT, CostT, ExtraT]]
     interval: Interval
     seed: int
-    processes: Optional[int]
+    processes: int | None
     layout: SampleLayout
 
-    def plot_signal(self, signal: Signal, step_size: float = 0.1) -> Tuple[Figure, Axes]:
+    def plot_signal(self, signal: Signal, step_size: float = 0.1) -> tuple[Figure, Axes]:
         fig, ax = plt.subplots()
         times = np.arange(self.interval.lower, self.interval.upper, step_size, dtype=np.float64)
         values = signal.at_times(cast(Sequence[float], times.tolist()))

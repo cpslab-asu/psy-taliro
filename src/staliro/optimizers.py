@@ -3,22 +3,23 @@ from __future__ import annotations
 import enum
 import os
 import statistics as stats
+from collections.abc import Iterable, Sequence
 from itertools import takewhile
-from typing import Iterable, Optional, Sequence, Union
+from typing import Literal
 
 import numpy as np
 from attr import frozen
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
-from typing_extensions import Literal
+from typing_extensions import TypeAlias
 
 from .core.interval import Interval
 from .core.optimizer import ObjectiveFn, Optimizer
 from .core.sample import Sample
 
-Samples = Sequence[Sample]
-Bounds = Sequence[Interval]
+Samples: TypeAlias = Sequence[Sample]
+Bounds: TypeAlias = Sequence[Interval]
 
 
 class Behavior(enum.IntEnum):
@@ -38,7 +39,7 @@ def _sample_uniform(bounds: Bounds, rng: Generator) -> Sample:
     return Sample([rng.uniform(bound.lower, bound.upper) for bound in bounds])
 
 
-def _minimize(samples: Samples, func: ObjectiveFn[float], nprocs: Optional[int]) -> Iterable[float]:
+def _minimize(samples: Samples, func: ObjectiveFn[float], nprocs: int | None) -> Iterable[float]:
     if nprocs is None:
         return func.eval_samples(samples)
     else:
@@ -77,11 +78,11 @@ class UniformRandom(Optimizer[float, UniformRandomResult]):
 
     def __init__(
         self,
-        parallelization: Union[Literal["cores"], int, None] = None,
+        parallelization: Literal["cores"] | int | None = None,
         behavior: Behavior = Behavior.FALSIFICATION,
     ):
         if isinstance(parallelization, int):
-            self.processes: Optional[int] = parallelization
+            self.processes: int | None = parallelization
         elif parallelization == "cores":
             self.processes = os.cpu_count()
         else:
@@ -116,9 +117,9 @@ class DualAnnealingResult:
         hessian_evals: Number of times the hessian of the cost function was evaluated
     """
 
-    jacobian_value: Optional[NDArray[np.float_]]
+    jacobian_value: NDArray[np.float_] | None
     jacobian_evals: int
-    hessian_value: Optional[NDArray[np.float_]]
+    hessian_value: NDArray[np.float_] | None
     hessian_evals: int
 
 
@@ -151,14 +152,14 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         )
 
         try:
-            jac: Optional[NDArray[np.float_]] = result.jac
+            jac: NDArray[np.float_] | None = result.jac
             njev = result.njev
         except AttributeError:
             jac = None
             njev = 0
 
         try:
-            hess: Optional[NDArray[np.float_]] = result.hess
+            hess: NDArray[np.float_] | None = result.hess
             nhev = result.nhev
         except AttributeError:
             hess = None

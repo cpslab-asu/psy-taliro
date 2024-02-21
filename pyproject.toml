@@ -1,83 +1,218 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
-name = "PSY-TaLiRo"
-version = "1.0.0b9"
-description = "System-level verification library using STL"
-authors = ["Quinn Thibeault <qthibeau@asu.edu>", "Jacob Anderson <jwande18@asu.edu>"]
-license = "BSD-3-Clause"
-packages = [
-    {include = "staliro", from = "src"}
+[project]
+name = "psy-taliro"
+dynamic = ["version"]
+description = "Search-based test generation framework"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = []
+authors = [
+    { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "attrs ~= 23.2",
+    "numpy ~= 1.26",
+    "scipy ~= 1.11",
+    "typing-extensions ~= 4.9",
+    "matplotlib ~= 3.8",
+    "rtamt ~= 0.3",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.8, <3.11"
-antlr4-python3-runtime = ">=4.7"
-attrs = "^21.0.0"
-numpy = "^1.21.5"
-scipy = "^1.6.2"
-typing-extensions = "^4.2.0"
-matplotlib = "^3.5.2"
-py-taliro = { version = "^0.2.1", optional = true, markers = "sys_platform == 'linux'" }
-rtamt = { version = "^0.3.5", optional = true }
-tltk-mtl = { version = "^0.0.27", optional = true, markers = "sys_platform == 'linux'" }
+[project.license-files]
+paths = ["LICENSE"]
 
-[tool.poetry.extras]
-rtamt = ["rtamt"]
-pytaliro = ["py-taliro"]
-tltk = ["tltk-mtl"]
+[project.urls]
+Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
+Issues = "https://github.com/cpslab-asu/psy-taliro/issues"
+Source = "https://github.com/cpslab-asu/psy-taliro"
 
-[tool.poetry.group.dev.dependencies]
-black = "*"
-flake8 = "^4.0.0"
-flake8-comprehensions = "^3.4.0"
-flake8-pyi = "^20.10.0"
-flake8-return = "^1.1.2"
-flake8-use-fstring = "^1.1"
-flake8-annotations-complexity = "^0.0.6"
-flake8-todo = "^0.7"
-isort = "*"
-mypy = "^0"
-pep8-naming = "^0.11.1"
+[tool.hatch.version]
+path = "src/staliro/__about__.py"
 
-[tool.poetry.group.test.dependencies]
-pandas = "^1.3.1"
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/docs",
+    "/tests",
+    "/stubs",
+    "/examples"
+]
 
-[tool.poetry.group.examples.dependencies]
-aerobench = { git = "https://github.com/cpslab-asu/aerobenchvvpython.git" }
-kaleido = "0.2.1"
-plotly = "^5.3.1"
-py-taliro = { version = "*", markers = "sys_platform == 'linux'"}
-rtamt = "*"
-tltk-mtl = { version = "*", markers = "sys_platform == 'linux'" }
+[tool.hatch.build.targets.wheel]
+packages = ["src/staliro"]
 
-[tool.poetry.group.docs]
-optional = true
+[tool.hatch.envs.default]
+dependencies = [
+    "mypy >= 1.0.0",
+    "ruff >= 0.1.2",
+    "pytest",
+    "pandas ~= 2.0",
+    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
+    "kaleido ~= 0.2.1",
+    "plotly ~= 5.3",
+]
 
-[tool.poetry.group.docs.dependencies]
-Sphinx = "^4.1.2"
-sphinx-autodocgen = "^1.2"
-sphinx-autobuild = "^2021.3.14"
-furo = "^2022.4.7"
-rstcheck = "^5.0.0"
-
-[tool.black]
-line-length = 100
-extend-exclude = '''
-/src/staliro/parser/stlParserListener.py
-| /src/staliro/parser/stlParser.py
-| /src/staliro/parser/stlLexer.py
-'''
-
-[tool.isort]
-profile = "black"
-line_length=100
-skip_gitignore = true
-src_paths = ["src"]
-extend_skip = ["stlLexer.py", "stlParser.py", "stlParserListener.py", "stlParserVisitor.py"]
-
-[tool.poe.tasks]
-test = "python3 -m unittest discover -v -s 'tests' -p 'test_*.py'"
+[tool.hatch.envs.default.scripts]
+tests = "pytest {args:tests}"
+f16 = "python3 examples/f16.py"
 nonlinear = "python3 examples/nonlinear.py"
+
+[tool.hatch.envs.style]
+detached = true
+dependencies = [
+    "ruff >= 0.1.2",
+]
+
+[tool.hatch.envs.style.scripts]
+check = "ruff check {args:.}"
+fix = [
+    "ruff check --select I --fix {args:.}",
+    "ruff format {args:.}",
+]
+
+[tool.hatch.envs.types]
+
+[tool.hatch.envs.types.scripts]
+check = "mypy --pretty"
+
+[tool.hatch.envs.docs]
+detached = true
+dependencies = [
+    "sphinx ~= 4.1",
+    "sphinx-autodocgen ~= 1.2",
+    "sphinx-autobuild >= 2021.3.14",
+    "furo >= 2022.4.7",
+    "rstcheck >= 5.0.0",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build -b html docs public"
+lint = "rstcheck"
+
+[tool.hatch.envs.all]
+[tool.hatch.envs.all.scripts]
+examples = [
+    "f16",
+    "nonlinear",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
+
+[tool.pyright]
+pythonVersion = "3.9"
+stubPath = "stubs"
+
+[tool.mypy]
+python_version = "3.9"
+mypy_path = "stubs"
+files = [
+    "src/**/*.py",
+    "stubs/**/*.pyi",
+    "tests/**/*.py",
+    "examples/*.py",
+]
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_return_any = true 
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_any_expr = false
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "staliro.parser.parser"
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = [
+    "staliro.parser.stlLexer",
+    "staliro.parser.stlParser",
+    "staliro.parser.stlParserListener",
+    "staliro.parser.stlParserVisitor",
+    "staliro.parser.stlTptlParserVisitorTranslator",
+    "tests.parser.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "antlr4.CommonTokenStream",
+    "antlr4.InputStream",
+    "plotly.*",
+    "aerobench.*",
+    "matlab.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+extend-exclude = [
+    "src/staliro/parser/stlLexer.py",
+    "src/staliro/parser/stlParser.py",
+    "src/staliro/parser/stlParserListener.py",
+    "src/staliro/parser/stlParserVisitor.py",
+    "src/staliro/parser/stlTptlParserVisitorTranslator.py",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F", "C90",  # Default Flake8 lints
+    "A",                           # Built-in shadowing lints
+    "B",                           # Bugbear lints
+    "I",                           # Isort lints
+    "UP",                          # Upgrade lints
+    "C4",                          # List comprehension lints
+    "PYI",                         # Stub file lints
+    "RET501", "RET502", "RET504",  # Return value lints
+    "N8",                          # Naming plugin
+    "TD",                          # TODO plugin
+    "FBT",                         # Boolean trap lints
+    "SIM",                         # Simplification lints
+    "PTH",                         # Pathlib migration lints
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["staliro"]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"stubs/rtamt/__init__.pyi" = [
+    "N818",    # Ignore naming of RTAMTException
+    "A002",    # Allow shadowing of built-in "type"
+]
+"stubs/scipy/interpolate.pyi" = [
+    "N801"     # Ignore naming of interp1d
+]
+"docs/conf.py" = [
+    "A001"     # Allow shadowing of built-in "copyright"
+]
+"stubs/**/*.pyi" = [
+    "FBT001",  # Allow boolean parameters
+    "N803",    # No PEP8 naming conventions
+]
+"__init__.py" = [
+    "F401",  # Allow imported but unused
+]

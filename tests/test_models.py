@@ -1,4 +1,5 @@
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock
 
@@ -54,7 +55,7 @@ class BlackboxDecoratorTestCase(TestCase):
     def test_with_args(self) -> None:
         @blackbox(sampling_interval=0.2)
         def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyResult:
-            ...
+            raise NotImplementedError()
 
         self.assertIsInstance(dummy, Blackbox)
         self.assertEqual(dummy.sampling_interval, 0.2)
@@ -62,7 +63,7 @@ class BlackboxDecoratorTestCase(TestCase):
     def test_without_args(self) -> None:
         @blackbox
         def dummy(static: StaticInput, times: SignalTimes, signals: SignalValues) -> AnyResult:
-            ...
+            raise NotImplementedError()
 
         self.assertIsInstance(dummy, Blackbox)
         self.assertEqual(dummy.sampling_interval, 0.1)
@@ -72,7 +73,7 @@ class ODEDecoratorTestCase(TestCase):
     def test_with_args(self) -> None:
         @ode(method="RK23")
         def dummy(time: float, state: State, signals: NDArray[Any]) -> State:
-            ...
+            raise NotImplementedError()
 
         self.assertIsInstance(dummy, ODE)
         self.assertEqual(dummy.method, "RK23")
@@ -80,7 +81,7 @@ class ODEDecoratorTestCase(TestCase):
     def test_without_args(self) -> None:
         @ode
         def dummy(time: float, state: State, signals: NDArray[Any]) -> State:
-            ...
+            raise NotImplementedError()
 
         self.assertIsInstance(dummy, ODE)
         self.assertEqual(dummy.method, "RK45")

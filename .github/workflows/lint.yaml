@@ -1,0 +1,33 @@
+name: Lint
+
+on:
+  workflow_call:
+  push:
+    branches-ignore: ["main"]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'pip'
+      - name: Install ruff
+        run: pip install ruff
+      - name: Lint
+        run: ruff check
+      - name: Format
+        run: ruff format --check
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'pip'
+      - name: Install hatch
+        run: pip install hatch
+      - name: Check types
+        run: hatch env run --env types check
