@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 def figure(num: int) -> None: ...
 def subplot(total: int, x: int, y: int) -> None: ...
-def plot(x_axis: NDArray[Union[float_, int_]], y_axis: NDArray[Union[float_, int_]]) -> None: ...
+def plot(x_axis: NDArray[float_ | int_], y_axis: NDArray[float_ | int_]) -> None: ...
 def show() -> None: ...
 def subplots(
     nrows: int = ...,
@@ -16,7 +16,7 @@ def subplots(
     sharex: bool = ...,
     sharey: bool = ...,
     squeeze: bool = ...,
-    subplot_kw: Optional[Dict[Any, Any]] = ...,
-    gridspec_kw: Optional[Dict[Any, Any]] = ...,
+    subplot_kw: dict[Any, Any] | None = ...,
+    gridspec_kw: dict[Any, Any] | None = ...,
     **fig_kw: Any,
-) -> Tuple[Figure, Axes]: ...
+) -> tuple[Figure, Axes]: ...

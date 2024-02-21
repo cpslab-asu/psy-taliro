@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-from os import path
+from pathlib import Path
 from unittest import TestCase
 
 import numpy as np
-import numpy.random
 import numpy.testing
 import pandas as pd
 
 from staliro.core.interval import Interval
 from staliro.signals import pchip, piecewise_constant
-
-TEST_DIR = path.dirname(__file__)
 
 
 def _random(lower: float, upper: float, size: int) -> list[float]:
@@ -21,14 +18,19 @@ def _random(lower: float, upper: float, size: int) -> list[float]:
     return [(upper - lower) * sample + lower for sample in samples]
 
 
-class ConstantSignalTestCase(TestCase):
+class SignalTestCase(TestCase):
+    TEST_DIR = Path(__file__).parent()
+
+
+class ConstantSignalTestCase(SignalTestCase):
     def test_constant_interpolator(self) -> None:
         interval = Interval(0, 100)
         y_axis = [0, 1, 0, 1, 0, 0]
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
 
         signal = piecewise_constant(x_axis, y_axis)
-        csv_data = pd.read_csv(path.join(TEST_DIR, "data", "constant_trace.csv"))
+        csv_path = self.TEST_DIR / "data" / "constant_trace.csv"
+        csv_data = pd.read_csv(str(csv_path))
         times_col = csv_data.columns[0]
         times = csv_data[times_col].tolist()
         sampled_values = np.array(signal.at_times(times))
@@ -49,7 +51,7 @@ class ConstantSignalTestCase(TestCase):
         self.assertListEqual(single_sampled_points, vector_sampled_points)
 
 
-class PchipSignalTestCase(TestCase):
+class PchipSignalTestCase(SignalTestCase):
     def test_pchip_interpolator(self) -> None:
         interval = Interval(0, 4)
         y_axis = [
@@ -67,7 +69,8 @@ class PchipSignalTestCase(TestCase):
         x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
 
         signal = pchip(x_axis, y_axis)
-        csv_data = pd.read_csv(path.join(TEST_DIR, "data", "pchip_trace.csv"))
+        csv_path = self.TEST_DIR / "data" / "pchip_trace.csv"
+        csv_data = pd.read_csv(str(csv_path))
         times_col = csv_data.columns[0]
         times = csv_data[times_col].to_numpy()
         sampled_values = np.array(signal.at_times(times))

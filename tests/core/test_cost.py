@@ -60,7 +60,7 @@ class ThunkTestCase(TestCase):
         )
 
         with self.assertRaises(SpecificationError):
-            thunk.specification
+            _ = thunk.specification
 
     def test_result_evaluation(self) -> None:
         trace = Trace([0.0], [0.0])

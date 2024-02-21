@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from itertools import islice
-from typing import Any, Callable, Generic, Iterable, Iterator, Optional, Sequence, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 from attr import Attribute, field, frozen
 from attr.validators import deep_iterable, instance_of, optional
@@ -137,7 +138,7 @@ def _min_length(length: int) -> Callable[[Any, Attribute[Any], Any], None]:
 
 
 def _subclass_of(
-    class_t: Union[type, tuple[type, ...]],
+    class_t: type | tuple[type, ...],
 ) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if not issubclass(type(value), class_t):
@@ -165,7 +166,7 @@ class Scenario(Generic[StateT, CostT, ResultT, ExtraT]):
     runs: int = field(validator=[instance_of(int), _greater_than(0)])
     iterations: int = field(validator=[instance_of(int), _greater_than(0)])
     seed: int = field(validator=[instance_of(int), _within_range(0, 2**32 - 1)])
-    processes: Optional[int] = field(validator=optional([instance_of(int), _greater_than(0)]))
+    processes: int | None = field(validator=optional([instance_of(int), _greater_than(0)]))
     bounds: Sequence[Interval] = field(
         validator=deep_iterable(instance_of(Interval), iterable_validator=_min_length(1))
     )

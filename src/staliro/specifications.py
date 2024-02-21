@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from math import inf
 from sys import platform
-from typing import TYPE_CHECKING, Any, Dict, Iterable, NewType, Optional, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, NewType, TypeVar
 
 import numpy as np
 from attrs import field, frozen
@@ -20,7 +21,7 @@ from .core import Specification, SpecificationError
 
 try:
     from .parser import parse
-except:
+except ImportError:
     _can_parse = False
 else:
     _can_parse = True
@@ -45,16 +46,16 @@ if TYPE_CHECKING:
 StateT = TypeVar("StateT")
 PredicateName = str
 ColumnT = int
-PredicateColumnMap = Dict[PredicateName, ColumnT]
+PredicateColumnMap = dict[PredicateName, ColumnT]
 
 
-class StlSpecificationException(Exception):
+class StlSpecificationError(Exception):
     pass
 
 
 _Times = NewType("_Times", NDArray[np.float64])
 _States = NewType("_States", NDArray[np.float64])
-_Parsed = Tuple[_Times, _States]
+_Parsed = tuple[_Times, _States]
 
 
 def _parse_times_states(times: Sequence[float], states: Sequence[Sequence[float]]) -> _Parsed:
@@ -62,17 +63,17 @@ def _parse_times_states(times: Sequence[float], states: Sequence[Sequence[float]
     states_ = _States(np.array(states, dtype=np.float64))
 
     if times_.ndim != 1:
-        raise StlSpecificationException("Times must be a 1-D vector")
+        raise StlSpecificationError("Times must be a 1-D vector")
 
     if states_.ndim != 2:
-        raise StlSpecificationException("States must be a 2-D matrix")
+        raise StlSpecificationError("States must be a 2-D matrix")
 
     if states_.shape[0] == times_.size:
         return (times_, states_.T)
     elif states_.shape[1] == times_.size:
         return (times_, states_)
     else:
-        raise StlSpecificationException("States must have one dimension that maches times length")
+        raise StlSpecificationError("States must have one dimension that maches times length")
 
 
 class StlSpecification(Specification[Sequence[float], float], ABC):
@@ -206,9 +207,9 @@ class TaliroPredicate:
     name: str = field(kw_only=True)
     A: NDArray[np.float_] = field(kw_only=True)
     b: NDArray[np.float_] = field(kw_only=True)
-    l: Optional[NDArray[np.float_]] = field(default=None, kw_only=True)
+    l: NDArray[np.float_] | None = field(default=None, kw_only=True)
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         pred = {
             "name": self.name,
             "a": np.array(self.A, dtype=np.double, ndmin=2),
@@ -221,7 +222,7 @@ class TaliroPredicate:
         return pred
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> TaliroPredicate:
+    def from_dict(cls, d: dict[str, Any]) -> TaliroPredicate:
         try:
             l = d["l"]
         except KeyError:

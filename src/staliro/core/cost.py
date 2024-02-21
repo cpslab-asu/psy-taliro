@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
-from typing import Callable, Generic, Iterable, Iterator, Sequence, Tuple, TypeVar, Union
+from typing import Generic, TypeVar
 
 from attr import field, frozen
 from attr.validators import instance_of
+from typing_extensions import TypeAlias
 
 from .interval import Interval
 from .layout import SampleLayout
@@ -18,8 +20,8 @@ from .specification import Specification, SpecificationError
 
 StateT = TypeVar("StateT")
 CostT = TypeVar("CostT")
-SpecificationFactory = Callable[[Sample], Specification[StateT, CostT]]
-SpecificationOrFactory = Union[Specification[StateT, CostT], SpecificationFactory[StateT, CostT]]
+SpecificationFactory: TypeAlias = Callable[[Sample], Specification[StateT, CostT]]
+SpecificationOrFactory: TypeAlias = Specification[StateT, CostT] | SpecificationFactory[StateT, CostT]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -32,7 +34,7 @@ class EvaluationError(Exception):
 T = TypeVar("T")
 
 
-def _time(func: Callable[[], T]) -> Tuple[float, T]:
+def _time(func: Callable[[], T]) -> tuple[float, T]:
     start_time = time.perf_counter()
     result = func()
     stop_time = time.perf_counter()
@@ -87,21 +89,19 @@ class Thunk(Generic[StateT, CostT, ExtraT]):
         """
 
         inputs = self.layout.decompose_sample(self.sample)
-        simulate = lambda: self.model.simulate(inputs, self.interval)
-        model_duration, model_result = _time(simulate)
+        model_time, model_result = _time(lambda: self.model.simulate(inputs, self.interval))
 
         if not isinstance(model_result, ModelResult):
             raise EvaluationError(f"Incorrect return type from model {type(model_result)}")
 
         if isinstance(model_result, FailureResult):
             cost = self.specification.failure_cost
-            cost_duration = 0.0
+            cost_time = 0.0
         else:
             trace = model_result.trace
-            compute_cost = lambda: self.specification.evaluate(trace.states, trace.times)
-            cost_duration, cost = _time(compute_cost)
+            cost_time, cost = _time(lambda: self.specification.evaluate(trace.states, trace.times))
 
-        timing_data = TimingData(model_duration, cost_duration)
+        timing_data = TimingData(model_time, cost_time)
 
         return Evaluation(cost, self.sample, model_result.extra, timing_data)
 

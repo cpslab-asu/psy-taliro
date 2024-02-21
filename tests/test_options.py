@@ -18,7 +18,7 @@ class SignalOptionsTestCase(TestCase):
         with self.assertRaises(TypeError):
             SignalOptions({1: 3, 2: 4})  # type: ignore
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(IndexError):
             SignalOptions("a")  # type: ignore
 
         with self.assertRaises(TypeError):

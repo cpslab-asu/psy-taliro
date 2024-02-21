@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import plotly.graph_objects as go
@@ -14,7 +14,7 @@ from staliro.options import Options
 from staliro.specifications import TaliroPredicate, TpTaliro
 from staliro.staliro import simulate_model, staliro
 
-F16DataT = ModelResult[List[float], None]
+F16DataT = ModelResult[list[float], None]
 
 
 @blackbox()
@@ -43,7 +43,7 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
             result["states"][:, 12],  # altitude
         )
     )
-    timestamps: List[float] = result["times"]
+    timestamps: list[float] = result["times"]
     trace = Trace(timestamps, states.tolist())
 
     return BasicResult(trace)

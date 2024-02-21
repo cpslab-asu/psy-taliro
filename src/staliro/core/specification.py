@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
-
-from typing_extensions import Protocol, runtime_checkable
+from collections.abc import Sequence
+from typing import Protocol, TypeVar, runtime_checkable
 
 StateT = TypeVar("StateT", contravariant=True)
 CostT = TypeVar("CostT", covariant=True)

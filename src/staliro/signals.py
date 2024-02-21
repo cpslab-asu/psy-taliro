@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from math import cos
-from typing import List, Sequence, cast
+from typing import cast
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator, interp1d
@@ -16,8 +17,8 @@ class Pchip(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts).tolist())
+    def at_times(self, ts: Sequence[float]) -> list[float]:
+        return cast(list[float], self.interp(ts).tolist())
 
 
 def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
@@ -31,8 +32,8 @@ class Piecewise(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> List[float]:
-        return cast(List[float], self.interp(ts).tolist())
+    def at_times(self, ts: Sequence[float]) -> list[float]:
+        return cast(list[float], self.interp(ts).tolist())
 
 
 def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:

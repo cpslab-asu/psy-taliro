@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Tuple, Union
+from collections.abc import Iterable, Iterator
 
 from attr import Attribute, field, frozen
+from typing_extensions import TypeAlias
 
-BoundT = Union[int, float]
+BoundT: TypeAlias = int | float
 
 
 class IntervalError(Exception):
@@ -54,5 +55,5 @@ class Interval(Iterable[float]):
 
         return self.upper - self.lower
 
-    def astuple(self) -> Tuple[float, float]:
+    def astuple(self) -> tuple[float, float]:
         return (self.lower, self.upper)

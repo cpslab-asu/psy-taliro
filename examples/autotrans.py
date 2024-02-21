@@ -1,5 +1,5 @@
 import logging
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import plotly.graph_objects as go
@@ -25,10 +25,10 @@ else:
 
 StaticInput = Sequence[float]
 Signals = Sequence[Signal]
-AutotransResultT = ModelResult[List[float], None]
+AutotransResultT = ModelResult[list[float], None]
 
 
-class AutotransModel(Model[List[float], None]):
+class AutotransModel(Model[list[float], None]):
     MODEL_NAME = "Autotrans_shift"
 
     def __init__(self) -> None:
@@ -45,7 +45,7 @@ class AutotransModel(Model[List[float], None]):
         self.engine = engine
         self.model_opts = engine.simset(model_opts, "SaveFormat", "Array")
 
-    def simulate(self, inputs: ModelInputs, interval: Interval) -> BasicResult[List[float]]:
+    def simulate(self, inputs: ModelInputs, interval: Interval) -> BasicResult[list[float]]:
         sim_t = matlab.double([0, interval.upper])
         n_times = interval.length // self.sampling_step
         signal_times = np.linspace(interval.lower, interval.upper, int(n_times))
@@ -58,8 +58,8 @@ class AutotransModel(Model[List[float], None]):
             self.MODEL_NAME, sim_t, self.model_opts, model_input, nargout=3
         )
 
-        timestamps_list: List[float] = np.array(timestamps).flatten().tolist()
-        data_list: List[List[float]] = list(data)
+        timestamps_list: list[float] = np.array(timestamps).flatten().tolist()
+        data_list: list[list[float]] = list(data)
         trace = Trace(timestamps_list, data_list)
 
         return BasicResult(trace)

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Sequence
-
-from typing_extensions import Protocol
+from collections.abc import Sequence
+from typing import Protocol
 
 
 class Signal(ABC):
@@ -14,7 +13,7 @@ class Signal(ABC):
         """Get the value of the signal at the specified time."""
         ...
 
-    def at_times(self, times: Sequence[float]) -> List[float]:
+    def at_times(self, times: Sequence[float]) -> list[float]:
         """Get the value of the signal at each specified time."""
 
         return [self.at_time(time) for time in times]

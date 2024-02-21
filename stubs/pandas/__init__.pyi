@@ -1,30 +1,18 @@
-from __future__ import annotations
-
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-    overload,
-)
+from collections.abc import Callable, Iterable, Iterator
+from typing import Any, Literal, overload
 
 from numpy.typing import ArrayLike, DTypeLike, NDArray
+from typing_extensions import TypeAlias
 
 class Index: ...
 
 class Series:
     def __init__(
         self,
-        data: Union[ArrayLike, Iterable[Any], Dict[str, Any]],
-        index: Union[ArrayLike, Index] = ...,
-        dtype: Union[str, DTypeLike, None] = ...,
-        name: Optional[str] = ...,
+        data: ArrayLike | Iterable[Any] | dict[str, Any],
+        index: ArrayLike | Index = ...,
+        dtype: str | DTypeLike | None = ...,
+        name: str | None = ...,
         copy: bool = ...,
     ) -> None: ...
     @overload
@@ -36,10 +24,10 @@ class Series:
     def __iter__(self) -> Iterator[Any]: ...
     def __len__(self) -> int: ...
     def to_numpy(
-        self, dtype: Optional[DTypeLike] = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
+        self, dtype: DTypeLike | None = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
     ) -> NDArray[Any]: ...
 
-_Axis = Union[Literal[0, 1], Literal["index", "columns"]]
+_Axis: TypeAlias = Literal[0, 1, "index", "column"]
 
 class _Loc:
     @overload
@@ -53,32 +41,32 @@ class _Index:
 class DataFrame:
     def __init__(
         self,
-        data: Union[NDArray[Any], Iterable[Any], Dict[str, Any], DataFrame],
-        index: Union[Index, ArrayLike],
-        columns: Union[Index, ArrayLike],
-        dtype: Optional[DTypeLike] = ...,
+        data: NDArray[Any] | Iterable[Any] | dict[str, Any] | DataFrame,
+        index: Index | ArrayLike,
+        columns: Index | ArrayLike,
+        dtype: DTypeLike | None = ...,
         copy: bool = ...,
     ) -> None: ...
     @overload
     def __getitem__(self, index: str) -> Series: ...
     @overload
-    def __getitem__(self, index: List[str]) -> DataFrame: ...
+    def __getitem__(self, index: list[str]) -> DataFrame: ...
     @overload
-    def __getitem__(self, index: _Index) -> DataFrame: ...
+    def __getitem__(self, index: _Index) -> DataFrame | Series: ...
     def apply(
         self,
         func: Callable[..., Any],
         axis: _Axis = ...,
         raw: bool = ...,
-        result_type: Optional[Literal["expand", "reduce", "broadcast"]] = ...,
-        args: Tuple[Any] = ...,
+        result_type: Literal["expand", "reduce", "broadcast"] | None = ...,
+        args: tuple[Any, ...] = ...,
         **kwds: Any,
     ) -> DataFrame: ...
     def set_axis(
-        self, labels: Union[List[str], List[int], Index], axis: _Axis = ..., inplace: bool = ...
+        self, labels: list[str] | list[int] | Index, axis: _Axis = ..., inplace: bool = ...
     ) -> DataFrame: ...
     def to_numpy(
-        self, dtype: Optional[DTypeLike] = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
+        self, dtype: DTypeLike | None = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
     ) -> NDArray[Any]: ...
     @property
     def loc(self) -> _Loc: ...
@@ -87,41 +75,41 @@ class DataFrame:
     @property
     def columns(self) -> _Index: ...
 
-_UsecolsPredicate = Callable[[str], bool]
-_DtypeDict = Dict[str, DTypeLike]
-_SkiprowsPredicate = Callable[[int], bool]
-_Converters = Dict[Union[int, str], Callable[..., Any]]
-_AnyDict = Dict[Union[str, int], Any]
-_ParseDateDict = Dict[str, List[int]]
-_IntMatrix = List[List[int]]
-_StrMatrix = List[List[int]]
+_UsecolsPredicate: TypeAlias = Callable[[str], bool]
+_DtypeDict: TypeAlias = dict[str, DTypeLike]
+_SkiprowsPredicate: TypeAlias = Callable[[int], bool]
+_Converters: TypeAlias = dict[int | str, Callable[..., Any]]
+_AnyDict: TypeAlias = dict[str | int, Any]
+_ParseDateDict: TypeAlias = dict[str, list[int]]
+_IntMatrix: TypeAlias = list[list[int]]
+_StrMatrix: TypeAlias = list[list[int]]
 
 def read_csv(
     filepath_or_buffer: str,
     sep: str = ...,
-    delimiter: Optional[str] = ...,
-    header: Union[int, List[int], Literal["infer"]] = ...,
-    names: Optional[List[str]] = ...,
-    index_col: Union[int, str, List[int], List[str], Literal[False], None] = ...,
-    usecols: Union[List[int], List[str], _UsecolsPredicate] = ...,
+    delimiter: str | None = ...,
+    header: int | list[int] | Literal["infer"] = ...,
+    names: list[str] | None = ...,
+    index_col: int | str | list[int] | list[str] | Literal[False] | None = ...,
+    usecols: list[int] | list[str] | _UsecolsPredicate = ...,
     squeeze: bool = ...,
-    prefix: Optional[str] = ...,
+    prefix: str | None = ...,
     mangle_dupe_cols: bool = ...,
-    dtype: Union[DTypeLike, _DtypeDict, None] = ...,
+    dtype: DTypeLike | _DtypeDict | None = ...,
     engine: Literal["c", "python"] = ...,
-    converters: Optional[_Converters] = ...,
-    true_values: Optional[List[Any]] = ...,
-    false_values: Optional[List[Any]] = ...,
+    converters: _Converters | None = ...,
+    true_values: list[Any] | None = ...,
+    false_values: list[Any] | None = ...,
     skipinitialspace: bool = ...,
-    skiprows: Union[List[int], List[str], int, _SkiprowsPredicate, None] = ...,
+    skiprows: list[int] | list[str] | int | _SkiprowsPredicate | None = ...,
     skipfooter: int = ...,
-    nrows: Optional[int] = ...,
-    na_values: Union[float, str, List[float], _AnyDict, None] = ...,
+    nrows: int | None = ...,
+    na_values: float | str | list[float] | _AnyDict | None = ...,
     keep_default_na: bool = ...,
     na_filter: bool = ...,
     verbose: bool = ...,
     skip_blank_lines: bool = ...,
-    parse_dates: Union[bool, List[int], List[str], _IntMatrix, _StrMatrix, _ParseDateDict] = ...,
+    parse_dates: bool | list[int] | list[str] | _IntMatrix | _StrMatrix | _ParseDateDict = ...,
     infer_datetime_format: bool = ...,
     keep_date_col: bool = ...,
     date_parser: Any = ...,

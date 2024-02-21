@@ -8,8 +8,8 @@ class ParserTestCase(TestCase):
     def setUpClass(cls) -> None:
         try:
             import tltk_mtl as mtl
-        except ImportError:
-            raise SkipTest("TLTK library is unavailable")
+        except ImportError as err:
+            raise SkipTest("TLTK library is unavailable") from err
 
         cls._preds = {
             "pred1": mtl.Predicate("pred1", np.array([1]), np.array([2])),

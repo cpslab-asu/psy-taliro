@@ -202,6 +202,16 @@ known-first-party = ["staliro"]
 split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
+"stubs/rtamt/__init__.pyi" = [
+    "N818",    # Ignore naming of RTAMTException
+    "A002",    # Allow shadowing of built-in "type"
+]
+"stubs/scipy/interpolate.pyi" = [
+    "N801"     # Ignore naming of interp1d
+]
+"docs/conf.py" = [
+    "A001"     # Allow shadowing of built-in "copyright"
+]
 "stubs/**/*.pyi" = [
     "FBT001",  # Allow boolean parameters
     "N803",    # No PEP8 naming conventions

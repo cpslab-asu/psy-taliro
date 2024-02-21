@@ -1,4 +1,5 @@
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 from unittest import TestCase
 from unittest.mock import Mock, NonCallableMock
 

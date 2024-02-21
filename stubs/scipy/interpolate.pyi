@@ -1,16 +1,18 @@
-from typing import Literal, Optional, Sequence, Union, overload
+from collections.abc import Sequence
+from typing import Literal, overload
 
 from numpy import float_, int_
 from numpy.typing import ArrayLike, NDArray
+from typing_extensions import TypeAlias
 
-_Extrapolate = Union[bool, Literal["periodic"], None]
-_IntegralArray = NDArray[Union[float_, int_]]
+_Extrapolate: TypeAlias = bool | Literal["periodic"] | None
+_IntegralArray: TypeAlias = NDArray[float_ | int_]
 
-_Vector = Union[NDArray[float_], NDArray[int_], Sequence[float]]
+_Vector: TypeAlias = NDArray[float_] | NDArray[int_] | Sequence[float]
 
 class PchipInterpolator:
     def __init__(
-        self, x: _Vector, y: _Vector, axis: int = ..., extrapolate: Optional[bool] = ...
+        self, x: _Vector, y: _Vector, axis: int = ..., extrapolate: bool | None = ...
     ) -> None: ...
     @overload
     def __call__(self, x: float, nu: int = ..., extrapolate: _Extrapolate = ...) -> float: ...
@@ -19,7 +21,7 @@ class PchipInterpolator:
         self, x: _Vector, nu: int = ..., extrapolate: _Extrapolate = ...
     ) -> NDArray[float_]: ...
 
-_Kind = Literal[
+_Kind: TypeAlias = Literal[
     "linear", "nearest", "nearest-up", "zero", "slinear", "quadratic", "cubic", "previous", "next"
 ]
 
@@ -31,11 +33,11 @@ class interp1d:
         kind: _Kind = ...,
         axis: int = ...,
         copy: bool = ...,
-        bounds_error: Optional[bool] = ...,
-        fill_value: Union[ArrayLike, Literal["extrapolate"]] = ...,
+        bounds_error: bool | None = ...,
+        fill_value: ArrayLike | Literal["extrapolate"] = ...,
         assume_sorted: bool = ...,
     ) -> None: ...
     @overload
     def __call__(self, x: float) -> float: ...
     @overload
-    def __call__(self, x: Union[Sequence[float], _IntegralArray]) -> NDArray[float_]: ...
+    def __call__(self, x: Sequence[float] | _IntegralArray) -> NDArray[float_]: ...

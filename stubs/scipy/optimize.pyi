@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
+from typing import Any, Literal
 
 from numpy import float_
 from numpy.typing import NDArray
@@ -20,17 +21,17 @@ class OptimizeResult:
 
 def dual_annealing(
     func: Callable[[NDArray[float_]], float],
-    bounds: Sequence[Tuple[float, float]],
-    args: Tuple[Any, ...] = ...,
+    bounds: Sequence[tuple[float, float]],
+    args: tuple[Any, ...] = ...,
     maxiter: int = ...,
-    local_search_options: Dict[str, Any] = ...,
+    local_search_options: dict[str, Any] = ...,
     initial_temp: float = ...,
     restart_temp_ratio: float = ...,
     visit: float = ...,
     accept: float = ...,
     maxfun: int = ...,
-    seed: Optional[int] = ...,
+    seed: int | None = ...,
     no_local_search: bool = ...,
-    callback: Optional[Callable[[NDArray[float_], float, Literal[-1, 0, 1]], bool]] = ...,
-    x0: Optional[NDArray[float_]] = ...,
+    callback: Callable[[NDArray[float_], float, Literal[-1, 0, 1]], bool] | None = ...,
+    x0: NDArray[float_] | None = ...,
 ) -> OptimizeResult: ...
