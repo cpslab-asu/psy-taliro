@@ -137,4 +137,3 @@ class RTAMTDense(StlSpecification):
 
         robustness = spec.evaluate(*traces)
         return robustness[0][1]
-

@@ -20,7 +20,9 @@ Signals: TypeAlias = Sequence[Signal]
 StaticParameters: TypeAlias = Sequence[float]
 SignalTimes: TypeAlias = NDArray[np.float_]
 SignalValues: TypeAlias = NDArray[np.float_]
-BlackboxFunc: TypeAlias = Callable[[StaticParameters, SignalTimes, SignalValues], ModelResult[StateT, ExtraT]]
+BlackboxFunc: TypeAlias = Callable[
+    [StaticParameters, SignalTimes, SignalValues], ModelResult[StateT, ExtraT]
+]
 
 
 class Blackbox(Model[StateT, ExtraT]):

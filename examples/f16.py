@@ -50,7 +50,7 @@ def f16_model(static: Sequence[float], times: SignalTimes, signals: SignalValues
 
 
 phi = "always (alt > 0)"
-specification = RTAMTDense(phi, { "alt": 4 })
+specification = RTAMTDense(phi, {"alt": 4})
 
 optimizer = DualAnnealing()
 

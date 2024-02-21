@@ -137,9 +137,7 @@ def _min_length(length: int) -> Callable[[Any, Attribute[Any], Any], None]:
     return validator
 
 
-def _subclass_of(
-    class_t: type | tuple[type, ...],
-) -> Callable[[Any, Attribute[Any], Any], None]:
+def _subclass_of(class_t: type | tuple[type, ...]) -> Callable[[Any, Attribute[Any], Any], None]:
     def validator(_: Any, attr: Attribute[Any], value: Any) -> None:
         if not issubclass(type(value), class_t):
             raise TypeError(f"Expected {attr.name} to have type {class_t}. Got {type(value)}")
