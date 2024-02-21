@@ -8,10 +8,7 @@ else:
     _can_parse = True
 
 
-@skipIf(
-    _can_parse is False,
-    "Translation test case is not available without parsing functionality",
-)
+@skipIf(_can_parse is False, "Translation test case is not available without parsing functionality")
 class StlTptlTranslationTestCase(TestCase):
     """Test the equivalency translations from STL to TPTL."""
 
@@ -108,7 +105,9 @@ class StlTptlTranslationTestCase(TestCase):
         source = r"always[0, 100] a"
         translation = translate(source, TemporalLogic.STL, TemporalLogic.TPTL)
 
-        self.assertEqual(r"@Var_t0 [](({ Var_t0 >= 0.0 } /\ { Var_t0 <= 100.0 }) -> a)", translation)
+        self.assertEqual(
+            r"@Var_t0 [](({ Var_t0 >= 0.0 } /\ { Var_t0 <= 100.0 }) -> a)", translation
+        )
 
     def test_translate_bounded_until(self) -> None:
         source = r"a until[0, 2] b"

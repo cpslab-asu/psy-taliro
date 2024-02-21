@@ -118,13 +118,7 @@ class ThunkGenerator(Generic[StateT, CostT, ExtraT], Iterable[Thunk[StateT, Cost
 
     def __iter__(self) -> Iterator[Thunk[StateT, CostT, ExtraT]]:
         for sample in self.samples:
-            yield Thunk(
-                sample,
-                self.model,
-                self.specification,
-                self.interval,
-                self.layout,
-            )
+            yield Thunk(sample, self.model, self.specification, self.interval, self.layout)
 
 
 @frozen()
@@ -161,13 +155,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
 
         logger.debug(f"Evaluating sample {sample}")
 
-        thunk = Thunk(
-            sample,
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
-        )
+        thunk = Thunk(sample, self.model, self.specification, self.interval, self.layout)
         evaluation = thunk.evaluate()
 
         self.history.append(evaluation)
@@ -186,13 +174,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
 
         logger.debug(f"Evaluating samples {samples}")
 
-        thunks = ThunkGenerator(
-            samples,
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
-        )
+        thunks = ThunkGenerator(samples, self.model, self.specification, self.interval, self.layout)
         evaluations = [thunk.evaluate() for thunk in thunks]
 
         self.history.extend(evaluations)
@@ -214,13 +196,7 @@ class CostFn(Generic[StateT, CostT, ExtraT], ObjectiveFn[CostT]):
 
         logger.debug(f"Evaluating samples {samples} with {processes} processes")
 
-        thunks = ThunkGenerator(
-            samples,
-            self.model,
-            self.specification,
-            self.interval,
-            self.layout,
-        )
+        thunks = ThunkGenerator(samples, self.model, self.specification, self.interval, self.layout)
 
         with ProcessPoolExecutor(max_workers=processes) as executor:
             futures: Iterable[Evaluation[CostT, ExtraT]] = executor.map(Thunk.evaluate, thunks)

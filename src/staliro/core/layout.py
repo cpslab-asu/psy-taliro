@@ -19,7 +19,7 @@ def _to_signals(mapping: Mapping[Tuple[int, int], SignalConstructor]) -> Constru
 
 
 def _validate_signals(_: Any, attr: Any, signals: ConstructorMap) -> None:
-    for (lo, hi) in signals.keys():
+    for lo, hi in signals.keys():
         if (hi - lo) < 1:
             raise ValueError("Interval must contain at least one element")
 

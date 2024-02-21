@@ -10,32 +10,17 @@ _Vector = Union[NDArray[float_], NDArray[int_], Sequence[float]]
 
 class PchipInterpolator:
     def __init__(
-        self,
-        x: _Vector,
-        y: _Vector,
-        axis: int = ...,
-        extrapolate: Optional[bool] = ...,
+        self, x: _Vector, y: _Vector, axis: int = ..., extrapolate: Optional[bool] = ...
     ) -> None: ...
     @overload
     def __call__(self, x: float, nu: int = ..., extrapolate: _Extrapolate = ...) -> float: ...
     @overload
     def __call__(
-        self,
-        x: _Vector,
-        nu: int = ...,
-        extrapolate: _Extrapolate = ...,
+        self, x: _Vector, nu: int = ..., extrapolate: _Extrapolate = ...
     ) -> NDArray[float_]: ...
 
 _Kind = Literal[
-    "linear",
-    "nearest",
-    "nearest-up",
-    "zero",
-    "slinear",
-    "quadratic",
-    "cubic",
-    "previous",
-    "next",
+    "linear", "nearest", "nearest-up", "zero", "slinear", "quadratic", "cubic", "previous", "next"
 ]
 
 class interp1d:

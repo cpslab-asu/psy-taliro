@@ -166,6 +166,13 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 100
 indent-width = 4
+extend-exclude = [
+    "src/staliro/parser/stlLexer.py",
+    "src/staliro/parser/stlParser.py",
+    "src/staliro/parser/stlParserListener.py",
+    "src/staliro/parser/stlParserVisitor.py",
+    "src/staliro/parser/stlTptlParserVisitorTranslator.py",
+]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -189,19 +196,12 @@ select = [
     "SIM",                         # Simplification lints
     "PTH",                         # Pathlib migration lints
 ]
-extend-exclude = [
-    "src/staliro/parser/stlLexer.py",
-    "src/staliro/parser/stlParser.py",
-    "src/staliro/parser/stlParserListener.py",
-    "src/staliro/parser/stlParserVisitor.py",
-    "src/staliro/parser/stlTptlParserVisitorTranslator.py",
-]
 
 [tool.ruff.lint.isort]
 known-first-party = ["staliro"]
 split-on-trailing-comma = false
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "stubs/**/*.pyi" = [
     "FBT001",  # Allow boolean parameters
     "N803",    # No PEP8 naming conventions

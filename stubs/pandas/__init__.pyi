@@ -75,10 +75,7 @@ class DataFrame:
         **kwds: Any,
     ) -> DataFrame: ...
     def set_axis(
-        self,
-        labels: Union[List[str], List[int], Index],
-        axis: _Axis = ...,
-        inplace: bool = ...,
+        self, labels: Union[List[str], List[int], Index], axis: _Axis = ..., inplace: bool = ...
     ) -> DataFrame: ...
     def to_numpy(
         self, dtype: Optional[DTypeLike] = ..., copy: bool = ..., na_value: Any = ..., **kwargs: Any
@@ -124,14 +121,7 @@ def read_csv(
     na_filter: bool = ...,
     verbose: bool = ...,
     skip_blank_lines: bool = ...,
-    parse_dates: Union[
-        bool,
-        List[int],
-        List[str],
-        _IntMatrix,
-        _StrMatrix,
-        _ParseDateDict,
-    ] = ...,
+    parse_dates: Union[bool, List[int], List[str], _IntMatrix, _StrMatrix, _ParseDateDict] = ...,
     infer_datetime_format: bool = ...,
     keep_date_col: bool = ...,
     date_parser: Any = ...,

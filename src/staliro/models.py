@@ -80,10 +80,7 @@ class ODE(Model[List[float], None]):
     def simulate(self, inputs: ModelInputs, interval: Interval) -> ODEResult:
         integration_fn = IntegrationFunc(inputs.signals, self.func)
         integration = integrate.solve_ivp(
-            fun=integration_fn,
-            t_span=interval.astuple(),
-            y0=inputs.static,
-            method=self.method,
+            fun=integration_fn, t_span=interval.astuple(), y0=inputs.static, method=self.method
         )
         times = cast(List[float], integration.t.tolist())
         states = cast(List[List[float]], integration.y.tolist())

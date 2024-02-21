@@ -59,10 +59,7 @@ def _create_sample_layout(params: LayoutParameters) -> SampleLayout:
 
         if signal_times is None:
             times_array = np.linspace(
-                params.t_span.lower,
-                params.t_span.upper,
-                num=n_points,
-                dtype=np.float64,
+                params.t_span.lower, params.t_span.upper, num=n_points, dtype=np.float64
             )
             signal_times = cast(List[float], times_array.tolist())
 
