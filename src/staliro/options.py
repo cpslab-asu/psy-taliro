@@ -3,14 +3,14 @@ from __future__ import annotations
 import os
 import random
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal, Union, cast
 
 import numpy as np
 from attr import Attribute, converters, field, frozen, validators
 from numpy.typing import NDArray
 from typing_extensions import TypeAlias
 
-from .core.interval import BoundT, Interval
+from .core.interval import Interval
 from .core.signal import SignalFactory
 from .signals import pchip
 
@@ -19,10 +19,10 @@ class OptionsError(Exception):
     pass
 
 
-_Interval: TypeAlias = Sequence[BoundT] | NDArray[Any]
+IntervalLike: TypeAlias = Union[Interval, Sequence[float], NDArray[Any]]
 
 
-def _to_interval(interval: Interval | _Interval) -> Interval:
+def _to_interval(interval: IntervalLike) -> Interval:
     """Convert a value to an interval.
 
     This function only supports ordered collections because the order of values in the iterable
@@ -45,7 +45,7 @@ def _to_interval(interval: Interval | _Interval) -> Interval:
     return Interval(interval[0], interval[1])
 
 
-_Intervals: TypeAlias = Sequence[_Interval]
+_Intervals: TypeAlias = Sequence[IntervalLike]
 
 
 def _to_intervals(intervals: _Intervals) -> tuple[Interval, ...]:
@@ -90,7 +90,7 @@ def _seed_factory() -> int:
     return random.randint(0, 2**32 - 1)
 
 
-_Parallelization: TypeAlias = Literal["all", "cores"] | int | None
+_Parallelization: TypeAlias = Union[Literal["all", "cores"], int, None]
 
 
 def _parallelization_validator(_: Any, attr: Attribute[Any], value: _Parallelization) -> None:

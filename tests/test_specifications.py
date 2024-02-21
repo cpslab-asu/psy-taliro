@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest import TestCase, skipIf
+from unittest import TestCase
 
 import numpy as np
 import pandas as pd
@@ -17,8 +17,8 @@ class SpecificationTestCase(TestCase):
         self._expected_robustness = -0.0160623609618824
 
         # trajectory data
-        testdir = Path(__file__).parent
-        self._data = pd.read_csv(testdir / "data" / "trajectory.csv")
+        csv_path = Path(__file__).parent / "data" / "trajectory.csv"
+        self._data = pd.read_csv(str(csv_path))
 
     def test_rtamt_discrete_specification(self) -> None:
         predicates = {"x1": 0}

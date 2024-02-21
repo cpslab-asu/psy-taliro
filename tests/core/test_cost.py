@@ -29,7 +29,7 @@ class ThunkTestCase(TestCase):
         self.interval = Interval(0, 1)
         self.layout = SampleLayout(
             static_parameters=(0, 2),
-            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},  # type: ignore
+            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},
         )
 
     def test_specification_noncallable(self) -> None:
@@ -124,7 +124,7 @@ class CostFnTestCase(TestCase):
         self.interval = Interval(0, 1)
         self.layout = SampleLayout(
             static_parameters=(0, 2),
-            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},  # type: ignore
+            signals={(2, 4): lambda vs: factory([1.0, 2.0], vs)},
         )
         self.cost_fn: CostFn[Any, Any, Any] = CostFn(
             self.model, self.specification, self.interval, self.layout

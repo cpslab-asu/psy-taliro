@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Sequence, Sized
-from typing import Any, cast, overload
+from typing import Any, Union, cast, overload
 
 from attr import field, frozen
 from numpy import float64, ndarray
@@ -19,7 +19,7 @@ def _value_converter(value: Any) -> float:
     raise TypeError("only int and float are valid sample value types")
 
 
-_Values: TypeAlias = NDArray[Any] | Sequence[int] | Sequence[float]
+_Values: TypeAlias = Union[NDArray[Any], Sequence[int], Sequence[float]]
 
 
 def _values_converter(value: _Values) -> tuple[float, ...]:

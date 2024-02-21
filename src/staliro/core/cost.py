@@ -4,7 +4,7 @@ import logging
 import time
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Union
 
 from attr import field, frozen
 from attr.validators import instance_of
@@ -21,7 +21,7 @@ from .specification import Specification, SpecificationError
 StateT = TypeVar("StateT")
 CostT = TypeVar("CostT")
 SpecificationFactory: TypeAlias = Callable[[Sample], Specification[StateT, CostT]]
-SpecificationOrFactory: TypeAlias = Specification[StateT, CostT] | SpecificationFactory[StateT, CostT]
+SpecificationOrFactory: TypeAlias = Union[Specification[StateT, CostT], SpecificationFactory[StateT, CostT]]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

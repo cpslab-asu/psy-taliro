@@ -3,16 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 
 from attr import Attribute, field, frozen
-from typing_extensions import TypeAlias
-
-BoundT: TypeAlias = int | float
 
 
 class IntervalError(Exception):
     pass
 
 
-def _bound_converter(bound: BoundT) -> float:
+def _bound_converter(bound: float) -> float:
     if isinstance(bound, int):
         return float(bound)
 
