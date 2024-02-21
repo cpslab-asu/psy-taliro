@@ -11,7 +11,7 @@ from staliro.core.result import best_eval, best_run
 from staliro.core.signal import Signal
 from staliro.optimizers import DualAnnealing
 from staliro.options import Options, SignalOptions
-from staliro.specifications import TLTK
+from staliro.specifications import RTAMTDiscrete
 from staliro.staliro import simulate_model, staliro
 
 try:
@@ -68,7 +68,7 @@ class AutotransModel(Model[list[float], None]):
 model = AutotransModel()
 
 phi = "always[0,30] (rpm >= 3000) -> (always[0,4] speed >= 35)"
-specification = TLTK(phi, {"rpm": 0, "speed": 1})
+specification = RTAMTDiscrete(phi, {"rpm": 0, "speed": 1})
 
 optimizer = DualAnnealing()
 

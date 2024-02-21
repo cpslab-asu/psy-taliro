@@ -22,7 +22,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "antlr4-python3-runtime ~= 4.7.0",
     "attrs ~= 23.2",
     "numpy ~= 1.26",
     "scipy ~= 1.11",
@@ -81,8 +80,7 @@ fix = [
 ]
 
 [tool.hatch.envs.types]
-template = "types"
-dependencies = [
+extra-dependencies = [
     "mypy >= 1.0.0",
 ]
 

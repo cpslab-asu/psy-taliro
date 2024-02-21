@@ -19,7 +19,7 @@ def _random(lower: float, upper: float, size: int) -> list[float]:
 
 
 class SignalTestCase(TestCase):
-    TEST_DIR = Path(__file__).parent()
+    TEST_DIR = Path(__file__).parent
 
 
 class ConstantSignalTestCase(SignalTestCase):
