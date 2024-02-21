@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 try:
-    from rtamt import Language, Semantics, StlDenseTimeSpecification, StlDiscreteTimeSpecification
+    from rtamt import StlDenseTimeSpecification, StlDiscreteTimeSpecification
 except ImportError:
     _has_rtamt = False
 else:
