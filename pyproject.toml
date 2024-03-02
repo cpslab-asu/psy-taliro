@@ -25,6 +25,7 @@ dependencies = [
     "attrs ~= 23.2",
     "numpy ~= 1.26",
     "scipy ~= 1.11",
+    "sortedcontainers ~= 2.4",
     "typing-extensions ~= 4.9",
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
