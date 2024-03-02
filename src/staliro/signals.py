@@ -1,13 +1,33 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from math import cos
-from typing import cast
+from typing import Protocol, cast
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator, interp1d
 
-from .core.signal import Signal, SignalFactory
+
+class Signal(ABC):
+    """Representation of a time-varying input to a system."""
+
+    @abstractmethod
+    def at_time(self, time: float) -> float:
+        """Get the value of the signal at the specified time."""
+
+        raise NotImplementedError()
+
+    def at_times(self, times: Sequence[float]) -> list[float]:
+        """Get the value of the signal at each specified time."""
+
+        return [self.at_time(time) for time in times]
+
+
+
+class SignalFactory(Protocol):
+    def __call__(self, __times: Iterable[float], __values: Iterable[float]) -> Signal:
+        ...
 
 
 class Pchip(Signal):
@@ -21,8 +41,8 @@ class Pchip(Signal):
         return cast(list[float], self.interp(ts).tolist())
 
 
-def pchip(times: Sequence[float], signal_values: Sequence[float]) -> Pchip:
-    return Pchip(PchipInterpolator(times, signal_values))
+def pchip(times: Iterable[float], values: Iterable[float]) -> Pchip:
+    return Pchip(PchipInterpolator(list(times), list(values)))
 
 
 class Piecewise(Signal):
@@ -36,12 +56,12 @@ class Piecewise(Signal):
         return cast(list[float], self.interp(ts).tolist())
 
 
-def piecewise_linear(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
-    return Piecewise(interp1d(times, signal_values))
+def piecewise_linear(times: Iterable[float], values: Iterable[float]) -> Piecewise:
+    return Piecewise(interp1d(list(times), list(values)))
 
 
-def piecewise_constant(times: Sequence[float], signal_values: Sequence[float]) -> Piecewise:
-    return Piecewise(interp1d(times, signal_values, kind="zero", fill_value="extrapolate"))
+def piecewise_constant(times: Iterable[float], values: Iterable[float]) -> Piecewise:
+    return Piecewise(interp1d(list(times), list(values), kind="zero", fill_value="extrapolate"))
 
 
 class Delayed(Signal):
@@ -57,16 +77,15 @@ class Delayed(Signal):
 
 
 def delayed(signal_factory: SignalFactory, *, delay: int) -> SignalFactory:
-    def factory(times: Sequence[float], signal_values: Sequence[float]) -> Signal:
+    def _factory(times: Iterable[float], values: Iterable[float]) -> Signal:
+        values = list(values)
         stop_time = max(times)
-        new_times = np.linspace(
-            start=delay, stop=stop_time, num=len(signal_values), dtype=np.float64
-        )
-        signal = signal_factory(new_times.tolist(), signal_values)
+        new_times = np.linspace(start=delay, stop=stop_time, num=len(values), dtype=float)
+        signal = signal_factory(new_times.tolist(), values)
 
         return Delayed(signal, delay)
 
-    return factory
+    return _factory
 
 
 class Sequenced(Signal):
@@ -80,19 +99,17 @@ class Sequenced(Signal):
 
 
 def sequenced(factory1: SignalFactory, factory2: SignalFactory, *, t_switch: int) -> SignalFactory:
-    def factory(times: Sequence[float], signal_values: Sequence[float]) -> Signal:
-        signal1_indices = [i for i, t in enumerate(times) if t < t_switch]
-        signal2_indices = [i for i, t in enumerate(times) if t >= t_switch]
-        signal1 = factory1(
-            [times[i] for i in signal1_indices], [signal_values[i] for i in signal1_indices]
-        )
-        signal2 = factory2(
-            [times[i] for i in signal2_indices], [signal_values[i] for i in signal2_indices]
-        )
+    def _factory(times: Iterable[float], values: Iterable[float]) -> Signal:
+        times_values = zip(times, values)
+        s1_data = [(time, value) for time, value in times_values if time < t_switch]
+        s1 = factory1((time for time, _ in s1_data), (value for _, value in s1_data))
 
-        return Sequenced(signal1, signal2, t_switch)
+        s2_data = [(time, value) for time, value in times_values if time >= t_switch]
+        s2 = factory2((time for time, _ in s2_data), (value for _, value in s2_data))
 
-    return factory
+        return Sequenced(s1, s2, t_switch)
+
+    return _factory
 
 
 class Harmonic(Signal):
@@ -113,7 +130,9 @@ class Harmonic(Signal):
         return self.bias + sum(component.at_time(time) for component in self.components)
 
 
-def harmonic(_: Sequence[float], values: Sequence[float]) -> Harmonic:
+def harmonic(_: Iterable[float], values: Iterable[float]) -> Harmonic:
+    values = list(values)
+
     if len(values[1:]) % 3 != 0:
         raise RuntimeError("Insufficient number of values to generate a harmonic signal")
 
@@ -135,7 +154,7 @@ class Clamped(Signal):
 
 
 def clamped(factory: SignalFactory, *, lo: float, hi: float) -> SignalFactory:
-    def _factory(times: Sequence[float], values: Sequence[float]) -> Clamped:
+    def _factory(times: Iterable[float], values: Iterable[float]) -> Clamped:
         return Clamped(factory(times, values), lo, hi)
 
     return _factory
