@@ -1,5 +1,13 @@
 from .blackbox import Blackbox, blackbox
-from .model import Inputs, Model, Trace
+from .model import Model, Trace, model
 from .ode import Ode, ode
 
-__all__ = ["Inputs", "Model", "Trace", "Blackbox", "blackbox", "Ode", "ode"]
+__all__ = [
+    "Blackbox",
+    "Model",
+    "Ode",
+    "Trace",
+    "blackbox",
+    "model",
+    "ode",
+]

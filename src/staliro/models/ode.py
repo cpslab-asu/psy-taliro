@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-from typing import Literal, Protocol, cast
+from collections.abc import Callable
+from typing import Literal, cast
 
 from numpy import array, float_
 from numpy.typing import NDArray
 from scipy import integrate
 from typing_extensions import TypeAlias
 
-from ..options import Interval
 from .model import Inputs, Model, Trace
 
 Static: TypeAlias = NDArray[float_]
 Signals: TypeAlias = NDArray[float_]
-
-
-class Func(Protocol):
-    def __call__(self, __time: float, __static: Static, __signals: Signals) -> NDArray[float_]:
-        ...
+Func: TypeAlias = Callable[[float, Static, Signals], NDArray[float_]]
 
 
 class Ode(Model[list[float], None]):
@@ -32,7 +28,7 @@ class Ode(Model[list[float], None]):
         self.func = func
         self.method = method
 
-    def __call__(self, inputs: Inputs, interval: Interval) -> tuple[Trace[list[float]], None]:
+    def simulate(self, inputs: Inputs) -> tuple[Trace[list[float]], None]:
         def integration_fn(time: float, state: NDArray[float_]) -> NDArray[float_]:
             return self.func(
                 time,
@@ -42,7 +38,7 @@ class Ode(Model[list[float], None]):
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
-            t_span=interval.astuple(),
+            t_span=inputs.interval.astuple(),
             y0=inputs.static,
             method=self.method,
         )
@@ -54,12 +50,7 @@ class Ode(Model[list[float], None]):
         return (trace, None)
 
 
-class Decorator(Protocol):
-    def __call__(self, __func: Func) -> Ode:
-        ...
-
-
-def ode(*, method: Ode.Method = "RK45") -> Decorator:
+def ode(*, method: Ode.Method = "RK45") -> Callable[[Func], Ode]:
     def decorator(func: Func) -> Ode:
         return Ode(func, method)
 

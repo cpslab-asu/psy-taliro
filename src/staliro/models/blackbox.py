@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from math import floor
-from typing import Protocol, TypeVar, overload
+from typing import Protocol, TypeVar, Union, overload
 
+from attrs import frozen
 from numpy import linspace
 from typing_extensions import TypeAlias
 
-from ..options import Interval
-from .model import Inputs, Model, Trace
+from .model import Model, Result, Sample, Trace
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
 
-Static: TypeAlias = Sequence[float]
-Times: TypeAlias = Sequence[float]
-Signals: TypeAlias = Sequence[Sequence[float]]
 
-
-class Func(Protocol[S, E]):
-    def __call__(self, __xs: Static, __ts: Times, __us: Signals) -> tuple[Trace[S], E]:
+class UserResultFunc(Protocol[S, E]):
+    def __call__(self, __inputs: Blackbox.Inputs) -> Result[Trace[S], E]:
         ...
 
 
-class Blackbox(Model[S, E]):
+class UserTraceFunc(Protocol[S]):
+    def __call__(self, __inputs: Blackbox.Inputs) -> Trace[S]:
+        ...
+
+
+class Blackbox(Model[S, Union[E, None]]):
     """General system model which does not make assumptions about the underlying system.
 
     Attributes:
@@ -34,51 +34,60 @@ class Blackbox(Model[S, E]):
                            interval
     """
 
-    def __init__(self, func: Func[S, E], step_size: float):
+    @frozen(slots=True)
+    class Inputs:
+        static: dict[str, float]
+        times: list[float]
+        signals: dict[str, list[float]]
+
+    def __init__(self, func: UserResultFunc[S, E] | UserTraceFunc[S], step_size: float):
         self.func = func
         self.step_size = step_size
 
-    def __call__(self, inputs: Inputs, interval: Interval) -> tuple[Trace[S], E]:
-        step_count = floor(interval.length / self.step_size)
-        signal_times = linspace(start=interval.lower, stop=interval.upper, num=step_count)
-        signal_times_list: list[float] = signal_times.tolist()
-        signal_values = [signal.at_times(signal_times_list) for signal in inputs.signals]
+    def simulate(self, sample: Sample) -> Result[Trace[S], E | None]:
+        tstart, tend = sample.signals.tspan
+        duration = tend - tstart
+        step_count = floor(duration / self.step_size)
 
-        return self.func(inputs.static, signal_times_list, signal_values)
+        times: list[float] = linspace(tstart, tend, num=step_count, dtype=float).tolist()
+        signals = {name: sample.signals[name].at_times(times) for name in sample.signals.names}
+        result = self.func(Blackbox.Inputs(sample.static, times, signals))
 
+        if isinstance(result, Trace):
+            return Result(result, None)
 
-class BareFunc(Protocol[S]):
-    def __call__(self, __xs: Static, __ts: Times, __us: Signals) -> Trace[S]:
-        ...
-
-
-T = TypeVar("T")
-U = TypeVar("U")
-
-
-class Decorator:
-    def __init__(self, step_size: float):
-        self.step_size = step_size
-
-    @overload
-    def __call__(self, f: BareFunc[T]) -> Blackbox[T, None]:
-        ...
-
-    @overload
-    def __call__(self, f: Func[T, U]) -> Blackbox[T, U]:
-        pass
-
-    def __call__(self, f: BareFunc[T] | Func[T, U]) -> Blackbox[T, U | None]:
-        def wrapper(xs: Static, ts: Times, us: Signals) -> tuple[Trace[T], U | None]:
-            result = f(xs, ts, us)
-
-            if isinstance(result, Trace):
-                return (result, None)
-
+        if isinstance(result, Result):
             return result
 
-        return Blackbox(wrapper, self.step_size)
+        raise TypeError("Blackbox function must return Result or Trace")
+
+
+class Decorator(Protocol):
+    @overload
+    def __call__(self, __func: UserResultFunc[S, E]) -> Blackbox[S, E]:
+        ...
+
+    @overload
+    def __call__(self, __func: UserTraceFunc[S]) -> Blackbox[S, None]:
+        ...
+
+
+UserFunc: TypeAlias = Union[UserTraceFunc[S], UserResultFunc[S, E]]
 
 
 def blackbox(*, step_size: float = 0.1) -> Decorator:
-    return Decorator(step_size)
+    @overload
+    def _decorator(func: UserResultFunc[S, E]) -> Blackbox[S, E]:
+        ...
+
+    @overload
+    def _decorator(func: UserTraceFunc[S]) -> Blackbox[S, None]:
+        ...
+
+    def _decorator(func: UserFunc[S, E]) -> Blackbox[S, E | None]:
+        return Blackbox(func, step_size)
+
+    return _decorator
+
+
+__all__ = ["Blackbox", "blackbox"]
