@@ -6,20 +6,14 @@ from collections.abc import Sequence
 from typing import Any, Literal, Union, cast
 
 import numpy as np
-from attr import Attribute, converters, field, frozen, validators
+from attr import Attribute, converters, define, field, validators
 from numpy.typing import NDArray
 from typing_extensions import TypeAlias
 
-from .core.interval import Interval
-from .core.signal import SignalFactory
-from .signals import pchip
+from .signals import SignalFactory, pchip
 
-
-class OptionsError(Exception):
-    pass
-
-
-IntervalLike: TypeAlias = Union[Interval, Sequence[float], NDArray[Any]]
+IntervalLike: TypeAlias = Union[Sequence[float], NDArray[Any]]
+Interval: TypeAlias = tuple[float, float]
 
 
 def _to_interval(interval: IntervalLike) -> Interval:
@@ -36,32 +30,87 @@ def _to_interval(interval: IntervalLike) -> Interval:
         An instance of Interval using the values provided in the ordered collection
     """
 
-    if isinstance(interval, Interval):
-        return interval
-
     if isinstance(interval, np.ndarray):
-        interval = interval.astype(float)
+        if interval.ndim != 1:
+            raise ValueError("Only 1 dimensional arrays can be used as intervals")
 
-    return Interval(interval[0], interval[1])
+        if interval.size != 2:
+            raise ValueError("Only 2 value arrays can be used as intervals")
+
+        interval = interval.astype(dtype=float)
+
+    lower = interval[0]
+    upper = interval[1]
+
+    if lower >= upper:
+        raise ValueError("Lower endpoint is >= upper endpoint")
+
+    return lower, upper
 
 
-_Intervals: TypeAlias = Sequence[IntervalLike]
-
-
-def _to_intervals(intervals: _Intervals) -> tuple[Interval, ...]:
+def _to_intervals(intervals: Sequence[IntervalLike] | NDArray[np.float_]) -> list[Interval]:
     """Convert a sequence of values into a sequence on intervals."""
 
-    return tuple(_to_interval(interval) for interval in intervals)
+    if isinstance(intervals, np.ndarray):
+        pass
+
+    return [_to_interval(interval) for interval in intervals]
 
 
 def _to_signal_times(times: Sequence[float] | NDArray[np.float_]) -> list[float]:
     if isinstance(times, np.ndarray):
-        return cast(list[float], np.array(times, dtype=float).tolist())
+        return cast(list[float], times.astype(dtype=float).tolist())
 
-    return list(times)
+    signal_times = []
+
+    for time in times:
+        if not isinstance(time, float):
+            raise TypeError(f"Signal times must be floating point values, found {type(time)}")
+
+        signal_times.append(time)
+
+    return signal_times
 
 
-@frozen()
+def _seed_factory() -> int:
+    return random.randint(0, 2**32 - 1)
+
+
+def _parallelization(_: Any, attr: Attribute[Any], value: Literal["all", "cores"] | int | None) -> None:
+    if value is None:
+        return
+
+    if isinstance(value, int) and value < 1:
+            raise ValueError("Parallelization must be <= 1")
+
+    if isinstance(value, str) and value != "all" and value != "cores":
+            raise ValueError("Only 'all' and 'cores' are supported parallelization options")
+
+    raise TypeError(f"Unsupported type {type(value)} for parallelization.")
+
+
+def _to_static_parameters(params: dict[str, IntervalLike]) -> dict[str, Interval]:
+    converted = {}
+
+    for name, interval in params.items():
+        if not isinstance(name, str):
+            raise TypeError("Only string keys supported in static parameters")
+
+        converted[name] = _to_interval(interval)
+
+    return converted
+
+
+def _signals(_: Any, attr: Attribute[Any], signals: dict[str, SignalOptions]) -> None:
+    for name, signal in signals.items():
+        if not isinstance(name, str):
+            raise TypeError("Only string keys supported in signals")
+
+        if not isinstance(signal, SignalOptions):
+            raise TypeError("Signals must be values of type Options.Signal")
+
+
+@define()
 class SignalOptions:
     """Options for signal generation.
 
@@ -74,38 +123,23 @@ class SignalOptions:
                       variable (EXPERIMENTAL)
     """
 
-    control_points: tuple[Interval, ...] = field(converter=_to_intervals)
-    factory: SignalFactory = field(default=pchip, validator=validators.is_callable())
+    control_points: list[Interval] = field(converter=_to_intervals)
+
+    factory: SignalFactory = field(
+        default=pchip,
+        validator=validators.is_callable(),
+    )
+
     signal_times: list[float] | None = field(
         default=None,
         converter=converters.optional(_to_signal_times),
-        validator=validators.optional(
-            validators.deep_iterable(validators.instance_of(float), validators.instance_of(list))
-        ),
     )
+
     time_varying: bool = field(default=False)
 
 
-def _seed_factory() -> int:
-    return random.randint(0, 2**32 - 1)
-
-
-_Parallelization: TypeAlias = Union[Literal["all", "cores"], int, None]
-
-
-def _parallelization_validator(_: Any, attr: Attribute[Any], value: _Parallelization) -> None:
-    is_none = value is None
-    is_valid_str = value in {"all", "cores"}
-    is_int = isinstance(value, int)
-
-    if not is_none and not is_valid_str and not is_int:
-        raise OptionsError(
-            "invalid parallelization value. Allowed types are: [None, 'all', 'cores', int]"
-        )
-
-
-@frozen()
-class Options:
+@define()
+class TestOptions:
     """General options for controlling falsification behavior.
 
     Attributes:
@@ -121,25 +155,52 @@ class Options:
             None (no parallelization).
     """
 
-    static_parameters: tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
-    signals: Sequence[SignalOptions] = field(
-        factory=list, validator=validators.deep_iterable(validators.instance_of(SignalOptions))
+    static_parameters: dict[str, Interval] = field(
+        factory=dict,
+        converter=_to_static_parameters,
     )
+
+    signals: dict[str, SignalOptions] = field(
+        factory=dict,
+        validator=_signals,
+    )
+
     seed: int = field(
-        factory=_seed_factory, validator=[validators.instance_of(int), validators.gt(0)]
+        factory=_seed_factory,
+        validator=[validators.instance_of(int), validators.gt(0)],
     )
-    iterations: int = field(default=400, validator=[validators.instance_of(int), validators.gt(0)])
-    runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
-    interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
-    parallelization: _Parallelization = field(default=None, validator=_parallelization_validator)
+
+    iterations: int = field(
+        default=400,
+        validator=[validators.instance_of(int), validators.gt(0)],
+    )
+
+    runs: int = field(
+        default=1,
+        validator=[validators.instance_of(int), validators.gt(0)]
+    )
+
+    tspan: Interval = field(
+        default=(0.0, 1.0),
+        converter=_to_interval,
+    )
+
+    parallelization: Literal["all", "cores"] | int | None = field(
+        default=None,
+        validator=_parallelization,
+    )
 
     @property
-    def process_count(self) -> int | None:
-        """Number of processes to use based on the value of the parallelization attribute."""
-
+    def processes(self) -> int | None:
         if self.parallelization == "all":
             return self.runs
-        elif self.parallelization == "cores":
+
+        if self.parallelization == "cores":
             return os.cpu_count()
-        else:
-            return self.parallelization
+
+        return self.parallelization
+
+    @property
+    def layout(self) -> object:
+        pass
+
