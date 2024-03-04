@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor
+from collections.abc import Iterable, Iterator, Sequence
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from os import cpu_count
 from typing import Generic, Literal, TypeVar, Union, overload
 
@@ -34,19 +34,29 @@ class ModelSpecExtra(Generic[S, E1, E2]):
     spec: E2
 
 
-@frozen(slots=True)
 class ModelSpec(Generic[S, C, E1, E2], CostFunc[C, ModelSpecExtra[S, E1, E2]]):
-    model: Model[S, E1]
-    spec: Specification[S, C, E2]
+    __slots__ = ["model", "spec"]
+
+    def __init__(self, model: Model[S, E1], spec: Specification[S, C, E2]):
+        self.model = model
+        self.spec = spec
 
     def evaluate(self, sample: Sample) -> Result[C, ModelSpecExtra[S, E1, E2]]:
         model_result = self.model.simulate(sample)
+
+        if not isinstance(model_result, Result):
+            raise TypeError("Model must return value of type Result")
+
         trace = model_result.value
         spec_result = self.spec.evaluate(trace)
-        cost = spec_result.value
-        extra = ModelSpecExtra(trace, model_result.extra, spec_result.extra)
 
-        return Result(cost, extra)
+        if not isinstance(spec_result, Result):
+            raise TypeError("Specification must return value of type Result")
+
+        return Result(
+            value=spec_result.value,
+            extra=ModelSpecExtra(trace, model_result.extra, spec_result.extra),
+        )
 
 
 @frozen(slots=True)
@@ -57,6 +67,8 @@ class Evaluation(Generic[C, E]):
 
 
 class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
+    __slots__ = ["_func", "_order", "_options", "_evaluations"]
+
     def __init__(self, func: CostFunc[C, E], order: Sample.Order, options: TestOptions):
         self._func = func
         self._order = order
@@ -66,6 +78,10 @@ class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
     def eval_sample(self, sample: SampleLike) -> C:
         s = Sample(sample, self._order, self._options)
         result = self._func.evaluate(s)
+
+        if not isinstance(result, Result):
+            raise TypeError("Cost function must return value of type Result")
+
         evaluation = Evaluation(s, result.value, result.extra)
         self._evaluations.append(evaluation)
 
@@ -73,8 +89,33 @@ class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
 
 
 class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
-    def eval_samples(self, sample: Sequence[SampleLike]) -> list[C]:
-        raise NotImplementedError()
+    __slots__ = ["_func", "_order", "_options", "_evaluations", "_executor"]
+
+    def __init__(self, func: CostFunc[C, E], order: Sample.Order, options: TestOptions):
+        super().__init__(func, order, options)
+
+        if options.processes is None:
+            raise TestError("Parallel cost function requires parallelization to be an int")
+
+        self._executor = ThreadPoolExecutor(options.processes)
+
+    def eval_samples(self, samples: Sequence[SampleLike]) -> list[C]:
+        def eval_sample(sample: Sample) -> Evaluation[C, E]:
+            result = self._func.evaluate(sample)
+
+            if not isinstance(result, Result):
+                raise TypeError("Cost function must return value of type Result")
+
+            return Evaluation(sample, result.value, result.extra)
+
+        futures = self._executor.map(
+            eval_sample, [Sample(s, self._order, self._options) for s in samples]
+        )
+
+        evaluations = list(futures)
+        self._evaluations.extend(evaluations)
+
+        return [evaluation.cost for evaluation in evaluations]
 
 
 @frozen(slots=True)
@@ -99,32 +140,8 @@ def _make_bounds(order: Sample.Order, options: TestOptions) -> list[Interval]:
     return bounds
 
 
-def _run_seq(f: CostFunc[C, E], opt: Optimizer[C, R], opts: TestOptions) -> Runs[R, C, E]:
-    rng = default_rng()
-    seeds = [rng.integers(0, 100) for _ in range(opts.runs)]
-    order = _make_order(opts)
-    bounds = _make_bounds(order, opts)
-
-    for name in order.signals:
-        bounds.extend(opts.signals[name].control_points)
-
-    def _run(seed: int) -> Run[R, C, E]:
-        ps = Optimizer.Params(
-            seed=seed,
-            budget=opts.iterations,
-            input_bounds=bounds,
-        )
-
-        wrapper = CostFuncWrapper(f, order, opts)
-        result = opt.optimize(wrapper, ps)
-
-        return Run(result, wrapper._evaluations)
-
-    return [_run(seed) for seed in seeds]
-
-
 @frozen(slots=True)
-class _ParallelContext(Generic[R, C, E]):
+class TestContext(Generic[R, C, E]):
     func: CostFunc[C, E]
     optimizer: Optimizer[C, R]
     options: TestOptions
@@ -133,7 +150,7 @@ class _ParallelContext(Generic[R, C, E]):
     seed: int
 
 
-def _do_par_run(ctx: _ParallelContext[R, C, E]) -> Run[R, C, E]:
+def _run_context(ctx: TestContext[R, C, E]) -> Run[R, C, E]:
     ps = Optimizer.Params(
         seed=ctx.seed,
         budget=ctx.options.iterations,
@@ -146,20 +163,35 @@ def _do_par_run(ctx: _ParallelContext[R, C, E]) -> Run[R, C, E]:
     return Run(result, wrapper._evaluations)
 
 
-def _run_par(
-    func: CostFunc[C, E], opt: Optimizer[C, R], opts: TestOptions, nprocs: int
-) -> Runs[R, C, E]:
-    executor = ProcessPoolExecutor(nprocs)
-    rng = default_rng()
-    order = _make_order(opts)
-    bounds = _make_bounds(order, opts)
-    runs = executor.map(
-        _do_par_run,
-        [
-            _ParallelContext(func, opt, opts, order, bounds, rng.integers(0, 100))
-            for _ in range(opts.runs)
-        ],
-    )
+class TestContexts(Generic[R, C, E], Iterable[TestContext[R, C, E]]):
+    def __init__(self, func: CostFunc[C, E], opt: Optimizer[C, R], opts: TestOptions):
+        self.func = func
+        self.optimizer = opt
+        self.options = opts
+
+    def __iter__(self) -> Iterator[TestContext[R, C, E]]:
+        rng = default_rng(self.options.seed)
+        order = _make_order(self.options)
+        bounds = _make_bounds(order, self.options)
+
+        for _ in range(self.options.runs):
+            yield TestContext(
+                func=self.func,
+                optimizer=self.optimizer,
+                options=self.options,
+                order=order,
+                bounds=bounds,
+                seed=rng.integers(0, 2**32 - 1),
+            )
+
+
+def _run_seq(f: CostFunc[C, E], opt: Optimizer[C, R], opts: TestOptions) -> Runs[R, C, E]:
+    return [_run_context(ctx) for ctx in TestContexts(f, opt, opts)]
+
+
+def _run_par(f: CostFunc[C, E], opt: Optimizer[C, R], opts: TestOptions, n: int) -> Runs[R, C, E]:
+    executor = ProcessPoolExecutor(max_workers=n)
+    runs = executor.map(_run_context, TestContexts(f, opt, opts))
 
     return list(runs)
 
