@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 from typing import Generic, NewType, Protocol, TypeVar, Union, overload
 
 import numpy as np
@@ -154,92 +154,72 @@ class RTAMTDense(StlSpecification):
         return Result(cost, None)
 
 
-Func: TypeAlias = Callable[[Trace[S]], tuple[C, E]]
-NoExtraFunc: TypeAlias = Callable[[Trace[S]], C]
-
-
-class UserSpecification(Specification[S, C, E]):
-    @overload
-    def __init__(self: UserSpecification[S, C, E], func: Func[S, C, E]):
+class UserResultFunc(Protocol[S, C, E]):
+    def __call__(self, trace: Trace[S]) -> Result[C, E]:
         ...
 
-    @overload
-    def __init__(self: UserSpecification[S, C, None], func: NoExtraFunc[S, C]):
+
+class UserCostFunc(Protocol[S, C]):
+    def __call__(self, trace: Trace[S]) -> C:
         ...
 
-    def __init__(self, func: Func[S, C, E] | NoExtraFunc[S, C]):
+
+class UserSpecification(Specification[S, C, Union[E, None]]):
+    def __init__(self, func: UserResultFunc[S, C, E] | UserCostFunc[S, C]):
         self.func = func
-
-    @overload
-    def evaluate(self: UserSpecification[S, C, None], trace: Trace[S]) -> tuple[C, None]:
-        ...
-
-    @overload
-    def evaluate(self: UserSpecification[S, C, E], trace: Trace[S]) -> tuple[C, E]:
-        ...
 
     def evaluate(self, trace: Trace[S]) -> Result[C, E | None]:
         cost = self.func(trace)
 
-        if isinstance(cost, tuple):
+        if isinstance(cost, Result):
             return cost
 
-        return cost, None
+        return Result(cost, None)
 
 
 class Decorator(Protocol):
     @overload
-    def __call__(self, func: Func[S, C, E]) -> UserSpecification[S, C, E]:
+    def __call__(self, __f: UserResultFunc[S, C, E]) -> Specification[S, C, E]:
         ...
 
     @overload
-    def __call__(self, func: NoExtraFunc[S, C]) -> UserSpecification[S, C, None]:
+    def __call__(self, __f: UserCostFunc[S, C]) -> Specification[S, C, None]:
         ...
 
 
-SpecificationFuncParam: TypeAlias = Union[Func[S, C, E], NoExtraFunc[S, C]]
-DecoratorResult: TypeAlias = Union[Specification[S, C, Union[E, None]], Decorator]
+UserFunc: TypeAlias = Union[UserResultFunc[S, C, E], UserCostFunc[S, C]]
+SpecificationOrDecorator: TypeAlias = Union[Specification[S, C, Union[E, None]], Decorator]
+
+T = TypeVar("T")
+U = TypeVar("U")
+V = TypeVar("V")
 
 
 @overload
-def specification(f: Func[S, C, E]) -> UserSpecification[S, C, E]:
+def specification(func: UserResultFunc[S, C, E]) -> Specification[S, C, E]:
     ...
 
 
 @overload
-def specification(f: NoExtraFunc[S, C]) -> UserSpecification[S, C, None]:
+def specification(func: UserCostFunc[S, C]) -> Specification[S, C, None]:
     ...
 
 
 @overload
-def specification(f: None = ...) -> Decorator:
+def specification(func: None = ...) -> Decorator:
     ...
 
 
-def specification(f: Func[S, C, E] | NoExtraFunc[S, C] | None = None) -> DecoratorResult[S, C, E]:
+def specification(func: UserFunc[S, C, E] | None = None) -> SpecificationOrDecorator[S, C, E]:
     @overload
-    def _wrap_func(func: Func[S, C, E]) -> Func[S, C, E]:
+    def _decorator(f: UserResultFunc[T, U, V]) -> Specification[T, U, V]:
         ...
 
     @overload
-    def _wrap_func(func: NoExtraFunc[S, E]) -> Func[S, C, None]:
+    def _decorator(f: UserCostFunc[T, U]) -> Specification[T, U, None]:
         ...
 
-    def _wrap_func(func: Func[S, C, E] | NoExtraFunc[S, E]) -> Func[S, C, None]:
-        def wrapper(trace: Trace[S]) -> Result[C, E | None]:
-            pass
+    def _decorator(f: UserFunc[T, U, V]) -> Specification[T, U, V | None]:
+        return UserSpecification(f)
 
-        return wrapper
-
-    @overload
-    def _decorator(f: Func[S, C, E]) -> UserSpecification[S, C, E]:
-        ...
-
-    @overload
-    def _decorator(f: NoExtraFunc[S, C]) -> UserSpecification[S, C, None]:
-        ...
-
-    def _decorator(f: SpecificationFuncParam[S, C, E]) -> UserSpecification[S, C, E | None]:
-        return UserSpecification(_wrap_func(f))
-
-    return _decorator(f) if f  else _decorator
+    return _decorator(func) if func else _decorator
