@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Literal, cast
+from collections.abc import Sequence
+from typing import Literal, Protocol
 
-from numpy import array, float_
+from attrs import frozen
+from numpy import array, float_, ndarray
 from numpy.typing import NDArray
 from scipy import integrate
 from typing_extensions import TypeAlias
 
-from .model import Inputs, Model, Trace
+from .model import Model, Result, Sample, Trace
 
-Static: TypeAlias = NDArray[float_]
-Signals: TypeAlias = NDArray[float_]
-Func: TypeAlias = Callable[[float, Static, Signals], NDArray[float_]]
+
+class UserFunc(Protocol):
+    def __call__(self, __inputs: Ode.Inputs) -> Sequence[float] | NDArray[float_]:
+        ...
 
 
 class Ode(Model[list[float], None]):
@@ -24,34 +26,51 @@ class Ode(Model[list[float], None]):
     """
     Method: TypeAlias = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]
 
-    def __init__(self, func: Func, method: Ode.Method):
+    @frozen(slots=True)
+    class Inputs:
+        time: float
+        state: dict[str, float]
+        signals: dict[str, float]
+
+    def __init__(self, func: UserFunc, method: Ode.Method):
         self.func = func
         self.method = method
 
-    def simulate(self, inputs: Inputs) -> tuple[Trace[list[float]], None]:
+    def simulate(self, sample: Sample) -> Result[Trace[list[float]], None]:
+        order = list(sample.static.keys())
+        static = [sample.static[name] for name in order]
+
         def integration_fn(time: float, state: NDArray[float_]) -> NDArray[float_]:
-            return self.func(
-                time,
-                state,
-                array([signal.at_time(time) for signal in inputs.signals]),
-            )
+            static = {name: state[idx] for idx, name in enumerate(order)}
+            signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
+            deriv = self.func(Ode.Inputs(time, static, signals))
+
+            if not isinstance(deriv, ndarray):
+                return array(deriv)
+
+            return deriv
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
-            t_span=inputs.interval.astuple(),
-            y0=inputs.static,
+            t_span=sample.signals.tspan,
+            y0=static,
             method=self.method,
         )
 
-        times = cast(list[float], integration.t.tolist())
-        states = cast(list[list[float]], integration.y.tolist())
+        times: list[float] = integration.t.tolist()
+        states: list[list[float]] = integration.y.tolist()
         trace = Trace(times, states)
 
-        return (trace, None)
+        return Result(trace, None)
 
 
-def ode(*, method: Ode.Method = "RK45") -> Callable[[Func], Ode]:
-    def decorator(func: Func) -> Ode:
+class Decorator(Protocol):
+    def __call__(self, func: UserFunc) -> Ode:
+        ...
+
+
+def ode(*, method: Ode.Method = "RK45") -> Decorator:
+    def _decorator(func: UserFunc) -> Ode:
         return Ode(func, method)
 
-    return decorator
+    return _decorator
