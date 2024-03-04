@@ -90,7 +90,7 @@ Samples: TypeAlias = Sequence[SampleLike]
 
 
 def _sample_uniform(bounds: Iterable[Interval], rng: Generator) -> list[float]:
-    return [rng.uniform(bound.lower, bound.upper) for bound in bounds]
+    return [rng.uniform(bound[0], bound[1]) for bound in bounds]
 
 
 def _minimize(samples: Samples, func: ObjFunc[float]) -> Iterable[float]:
@@ -190,7 +190,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
         result = optimize.dual_annealing(
             func=lambda x: func.eval_sample(x),
-            bounds=[bound.astuple() for bound in params.input_bounds],
+            bounds=list(params.input_bounds),
             seed=params.seed,
             maxfun=params.budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
