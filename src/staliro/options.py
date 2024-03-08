@@ -2,143 +2,35 @@ from __future__ import annotations
 
 import os
 import random
-from collections.abc import Sequence
-from typing import Any, Literal, Union, cast
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Literal
 
-import numpy as np
-from attr import Attribute, converters, define, field, validators
-from numpy.typing import NDArray
+from attrs import Attribute, converters, define, field, validators
 from typing_extensions import TypeAlias
 
-from .signals import SignalFactory, pchip
+from .signals import Interval, IntervalLike, SignalInput, _to_interval
 
-IntervalLike: TypeAlias = Union[Sequence[float], NDArray[Any]]
-Interval: TypeAlias = tuple[float, float]
-
-
-def _to_interval(interval: IntervalLike) -> Interval:
-    """Convert a value to an interval.
-
-    This function only supports ordered collections because the order of values in the iterable
-    matters when trying to construct an interval. Iterables like Set do not guarantee the order of
-    iteration, which can lead to non-deterministic failures.
-
-    Arguments:
-        value: The value to convert to an interval. Must be an Interval instance, list or tuple
-
-    Returns:
-        An instance of Interval using the values provided in the ordered collection
-    """
-
-    if isinstance(interval, np.ndarray):
-        if interval.ndim != 1:
-            raise ValueError("Only 1 dimensional arrays can be used as intervals")
-
-        if interval.size != 2:
-            raise ValueError("Only 2 value arrays can be used as intervals")
-
-        interval = interval.astype(dtype=float)
-
-    lower = interval[0]
-    upper = interval[1]
-
-    if lower >= upper:
-        raise ValueError("Lower endpoint is >= upper endpoint")
-
-    return lower, upper
-
-
-def _to_intervals(intervals: Sequence[IntervalLike] | NDArray[np.float_]) -> list[Interval]:
-    """Convert a sequence of values into a sequence on intervals."""
-
-    if isinstance(intervals, np.ndarray):
-        pass
-
-    return [_to_interval(interval) for interval in intervals]
-
-
-def _to_signal_times(times: Sequence[float] | NDArray[np.float_]) -> list[float]:
-    if isinstance(times, np.ndarray):
-        return cast(list[float], times.astype(dtype=float).tolist())
-
-    signal_times = []
-
-    for time in times:
-        if not isinstance(time, float):
-            raise TypeError(f"Signal times must be floating point values, found {type(time)}")
-
-        signal_times.append(time)
-
-    return signal_times
+if TYPE_CHECKING:
+    AnyAttr: TypeAlias = Attribute[object]
 
 
 def _seed_factory() -> int:
     return random.randint(0, 2**32 - 1)
 
 
-def _parallelization(_: Any, attr: Attribute[Any], value: Literal["all", "cores"] | int | None) -> None:
-    if value is None:
-        return
-
-    if isinstance(value, int) and value < 1:
-            raise ValueError("Parallelization must be <= 1")
-
-    if isinstance(value, str) and value != "all" and value != "cores":
-            raise ValueError("Only 'all' and 'cores' are supported parallelization options")
-
-    raise TypeError(f"Unsupported type {type(value)} for parallelization.")
+def _to_static_inputs(inputs: Mapping[str, IntervalLike]) -> dict[str, Interval]:
+    return {name: _to_interval(interval) for name, interval in inputs.items()}
 
 
-def _to_static_parameters(params: dict[str, IntervalLike]) -> dict[str, Interval]:
-    converted = {}
-
-    for name, interval in params.items():
-        if not isinstance(name, str):
-            raise TypeError("Only string keys supported in static parameters")
-
-        converted[name] = _to_interval(interval)
-
-    return converted
+def _to_signals(signals: Mapping[str, SignalInput]) -> dict[str, SignalInput]:
+    return dict(signals)
 
 
-def _signals(_: Any, attr: Attribute[Any], signals: dict[str, SignalOptions]) -> None:
-    for name, signal in signals.items():
-        if not isinstance(name, str):
-            raise TypeError("Only string keys supported in signals")
-
-        if not isinstance(signal, SignalOptions):
-            raise TypeError("Signals must be values of type Options.Signal")
+class EmptyInterval:
+    pass
 
 
-@define()
-class SignalOptions:
-    """Options for signal generation.
-
-    Attributes:
-        interval: The interval the signal should be generated for
-        factory: Factory to produce interpolators for the signal
-        control_points: The number of points the optimizer should generate for the signal
-        signal_times: Time values for the generated control points
-        time_varying: Flag that indicates that the signal times should be considered a search
-                      variable (EXPERIMENTAL)
-    """
-
-    control_points: list[Interval] = field(converter=_to_intervals)
-
-    factory: SignalFactory = field(
-        default=pchip,
-        validator=validators.is_callable(),
-    )
-
-    signal_times: list[float] | None = field(
-        default=None,
-        converter=converters.optional(_to_signal_times),
-    )
-
-    time_varying: bool = field(default=False)
-
-
-@define()
+@define(kw_only=True)
 class TestOptions:
     """General options for controlling falsification behavior.
 
@@ -155,14 +47,26 @@ class TestOptions:
             None (no parallelization).
     """
 
-    static_parameters: dict[str, Interval] = field(
-        factory=dict,
-        converter=_to_static_parameters,
+    tspan: Interval | None = field(
+        default=None,
+        converter=converters.optional(_to_interval),
     )
 
-    signals: dict[str, SignalOptions] = field(
+    static_inputs: dict[str, Interval] = field(
         factory=dict,
-        validator=_signals,
+        converter=_to_static_inputs,
+    )
+
+    signals: dict[str, SignalInput] = field(
+        factory=dict,
+        converter=_to_signals,
+    )
+
+    runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
+
+    iterations: int = field(
+        default=400,
+        validator=[validators.instance_of(int), validators.gt(0)],
     )
 
     seed: int = field(
@@ -170,25 +74,35 @@ class TestOptions:
         validator=[validators.instance_of(int), validators.gt(0)],
     )
 
-    iterations: int = field(
-        default=400,
-        validator=[validators.instance_of(int), validators.gt(0)],
-    )
+    parallelization: Literal["all", "cores"] | int | None = field(default=None)
 
-    runs: int = field(
-        default=1,
-        validator=[validators.instance_of(int), validators.gt(0)]
-    )
+    @tspan.validator
+    def _tspan(self, _: AnyAttr, tspan: Interval) -> None:
+        if tspan and tspan[0] >= tspan[1]:
+            raise ValueError("Interval lower bound must be less than upper bound")
 
-    tspan: Interval = field(
-        default=(0.0, 1.0),
-        converter=_to_interval,
-    )
+    @static_inputs.validator
+    def _static_inputs(self, _: AnyAttr, inputs: dict[str, Interval]) -> None:
+        for interval in inputs.values():
+            if interval[0] >= interval[1]:
+                raise ValueError("Interval lower bound must be less than upper bound")
 
-    parallelization: Literal["all", "cores"] | int | None = field(
-        default=None,
-        validator=_parallelization,
-    )
+    @signals.validator
+    def _signals(self, _: AnyAttr, signals: dict[str, SignalInput]) -> None:
+        for signal in signals.values():
+            if not isinstance(signal, SignalInput):
+                raise TypeError("Signal inputs must be values of type SignalInput")
+
+        if len(signals) > 0 and not self.tspan:
+            raise ValueError("Must define tspan if signal inputs are present")
+
+    @parallelization.validator
+    def _parallelization(self, _: AnyAttr, p: Literal["all", "cores"] | int | None) -> None:
+        if isinstance(p, int) and p < 1:
+            raise ValueError("Parallelization must be <= 1")
+
+        if isinstance(p, str) and p != "all" and p != "cores":
+            raise ValueError("Only 'all' and 'cores' are supported parallelization options")
 
     @property
     def processes(self) -> int | None:
@@ -199,8 +113,3 @@ class TestOptions:
             return os.cpu_count()
 
         return self.parallelization
-
-    @property
-    def layout(self) -> object:
-        pass
-

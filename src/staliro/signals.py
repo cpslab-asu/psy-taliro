@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from math import cos
-from typing import Protocol, cast
+from typing import Protocol, SupportsFloat, Union, cast
 
 import numpy as np
+from attrs import Attribute, define, field, validators
+from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
+from typing_extensions import TypeAlias
 
 
 class Signal(ABC):
@@ -158,3 +162,97 @@ def clamped(factory: SignalFactory, *, lo: float, hi: float) -> SignalFactory:
         return Clamped(factory(times, values), lo, hi)
 
     return _factory
+
+
+IntervalLike: TypeAlias = Union[Sequence[SupportsFloat], NDArray[np.float_]]
+Interval: TypeAlias = tuple[float, float]
+
+
+def _to_interval(interval: IntervalLike) -> Interval:
+    """Convert a value to an interval.
+
+    This function only supports ordered collections because the order of values in the iterable
+    matters when trying to construct an interval. Iterables like Set do not guarantee the order of
+    iteration, which can lead to non-deterministic failures.
+
+    Arguments:
+        value: The value to convert to an interval. Must be an Interval instance, list or tuple
+
+    Returns:
+        An instance of Interval using the values provided in the ordered collection
+    """
+
+    if isinstance(interval, np.ndarray):
+        interval = interval.astype(dtype=float)
+
+    if len(interval) > 2:
+        warnings.warn("Interval endpoints past 2 will be ignored.", stacklevel=2)
+
+    return float(interval[0]), float(interval[1])
+
+
+ControlPointsLike: TypeAlias = Union[Mapping[SupportsFloat, IntervalLike], Sequence[IntervalLike]]
+ControlPoints: TypeAlias = Union[list[Interval], dict[float, Interval]]
+
+
+def _to_control_points(pts: ControlPointsLike) -> ControlPoints:
+    if isinstance(pts, Mapping):
+        return {float(time): _to_interval(interval) for time, interval in pts.items()}
+
+    return [_to_interval(interval) for interval in pts]
+
+
+def _iter_pts(pts: list[Interval] | dict[float, Interval]) -> Iterable[Interval]:
+    if isinstance(pts, dict):
+        return pts.values()
+
+    return pts
+
+
+@define(kw_only=True)
+class SignalInput:
+    """Options for signal generation.
+
+    Attributes:
+        interval: The interval the signal should be generated for
+        factory: Factory to produce interpolators for the signal
+        control_points: The number of points the optimizer should generate for the signal
+        signal_times: Time values for the generated control points
+        time_varying: Flag that indicates that the signal times should be considered a search
+                      variable (EXPERIMENTAL)
+    """
+
+    control_points: list[Interval] | dict[float, Interval] = field(
+        converter=_to_control_points,
+        validator=validators.min_len(1),
+    )
+
+    factory: SignalFactory = field(
+        default=pchip,
+        validator=validators.is_callable(),
+    )
+
+    time_varying: bool = field(default=False)
+
+    @control_points.validator
+    def _control_pts(self, _: Attribute[object], pts: ControlPoints) -> None:
+        if len(pts) < 1:
+            raise ValueError("Must provide at least 1 control point to signal")
+
+        for pt in _iter_pts(pts):
+            if pt[0] >= pt[1]:
+                raise ValueError("Interval lower bound must be less than upper bound.")
+
+
+__all__ = [
+    "Signal",
+    "SignalFactory",
+    "SignalInput",
+    "clamped",
+    "delayed",
+    "harmonic",
+    "pchip",
+    "piecewise_constant",
+    "piecewise_linear",
+    "sequenced",
+]
