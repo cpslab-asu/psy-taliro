@@ -1,88 +1,55 @@
-from unittest import TestCase
+import os
 
 import numpy as np
+import pytest
 
-from staliro.core import Interval
-from staliro.options import Options, OptionsError, SignalOptions
-
-
-class SignalOptionsTestCase(TestCase):
-    def test_bound_conversion(self) -> None:
-        SignalOptions([[1, 2]])
-        SignalOptions([(1.0, 2.0)])
-        SignalOptions([np.array([1, 2], dtype=np.float32)])
-
-        with self.assertRaises(TypeError):
-            SignalOptions({1, 2})  # type: ignore
-
-        with self.assertRaises(TypeError):
-            SignalOptions({1: 3, 2: 4})  # type: ignore
-
-        with self.assertRaises(IndexError):
-            SignalOptions("a")  # type: ignore
-
-        with self.assertRaises(TypeError):
-            SignalOptions(1)  # type: ignore
-
-    def test_signal_times(self) -> None:
-        i = [(0, 1)]
-
-        SignalOptions(i, signal_times=np.linspace(0, 10, 10))
-        SignalOptions(i, signal_times=[1.0, 2.0, 3.0, 4.0])
-        SignalOptions(i, signal_times=(1.0, 2.0, 3.0, 4.0))
-
-        with self.assertRaises(TypeError):
-            SignalOptions(i, signal_times="1234")  # type: ignore
-
-        with self.assertRaises(TypeError):
-            SignalOptions(i, signal_times={1, 2, 3, 4})  # type: ignore
-
-        with self.assertRaises(TypeError):
-            SignalOptions(i, signal_times={1: 2, 3: 4})  # type: ignore
+from staliro.options import SignalInput, TestOptions, _to_interval
 
 
-class OptionsTestCast(TestCase):
-    def test_static_parameters(self) -> None:
-        Options([[1, 2], (3, 4)])
-        Options(([1, 2], (3, 4)))
+def test_interval_conversion() -> None:
+    assert _to_interval([1, 2]) == (1, 2)
+    assert _to_interval((1, 2)) == (1, 2)
+    assert _to_interval(np.array([1, 2])) == (1, 2)
 
-        with self.assertRaises(TypeError):
-            Options([{1, 2}, {1: 2, 3: 4}])  # type: ignore
 
-        with self.assertRaises(TypeError):
-            Options({1, (3, 4), Interval(5, 6)})  # type: ignore
+def test_static_inputs() -> None:
+    options = TestOptions(static_inputs={"x": [0, 1], "y": (2, 4), "z": np.array([3, 7])})
 
-        with self.assertRaises(TypeError):
-            Options({1: [1, 2], 2: (3, 4), 3: Interval(5, 6)})  # type: ignore
+    print(options)
 
-    def test_signals(self) -> None:
-        Options(signals=[SignalOptions([(0, 1)])])
+    assert options.static_inputs["x"] == (0, 1)
+    assert options.static_inputs["y"] == (2, 4)
+    assert options.static_inputs["z"] == (3, 7)
 
-        with self.assertRaises(TypeError):
-            Options(signals=[Interval(0, 1)])  # type: ignore
 
-    def test_runs(self) -> None:
-        Options(runs=1)
+def test_seed() -> None:
+    options = TestOptions()
+    assert options.seed >= 0 and options.seed <= (2**32 - 1)
 
-        with self.assertRaises(TypeError):
-            Options(runs=1.0)  # type: ignore
 
-        with self.assertRaises(TypeError):
-            Options(runs="a")  # type: ignore
+def test_parallelization() -> None:
+    none = TestOptions()
+    assert none.processes is None
 
-        with self.assertRaises(TypeError):
-            Options(runs=[1, 2])  # type: ignore
+    num = TestOptions(parallelization=4)
+    assert num.processes == 4
 
-    def test_parallelization(self) -> None:
-        Options(parallelization="all")
-        Options(parallelization="cores")
-        Options(parallelization=10)
+    with pytest.raises(ValueError):
+        TestOptions(parallelization=-1)
 
-        with self.assertRaises(OptionsError):
-            Options(parallelization="foo")  # type: ignore
+    all = TestOptions(runs=12, parallelization="all")  # noqa: A001
+    assert all.processes == all.runs
 
-        with self.assertRaises(OptionsError):
-            Options(parallelization=Interval(0, 1))  # type: ignore
+    cores = TestOptions(parallelization="cores")
+    assert cores.processes == os.cpu_count()
 
-        with self.assertRaises(OptionsError):
-            Options(parallelization=int)  # type: ignore
+    with pytest.raises(ValueError):
+        TestOptions(parallelization="foo")  # type: ignore
+
+
+def test_control_points() -> None:
+    with_times = SignalInput(control_points={0.1: [8, 12.5], 3.2: (0, 2.1)})
+    assert with_times.control_points == {0.1: (8, 12.5), 3.2: (0, 2.1)}
+
+    without_times = SignalInput(control_points=[[8, 12.5], (0, 2.1)])
+    assert without_times.control_points == [(8, 12.5), (0, 2.1)]
