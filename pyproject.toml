@@ -86,7 +86,7 @@ fix = [
 [tool.hatch.envs.types]
 
 [tool.hatch.envs.types.scripts]
-check = "mypy --pretty {args:.}"
+check = "mypy --pretty {args:}"
 
 [tool.hatch.envs.docs]
 detached = true
