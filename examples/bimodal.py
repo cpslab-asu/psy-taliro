@@ -1,3 +1,5 @@
+import math
+
 import aerobench.examples.gcas.gcas_autopilot as autopilot
 import aerobench.run_f16_sim as f16_sim
 import numpy as np
@@ -7,13 +9,12 @@ import staliro.models as models
 import staliro.optimizers as optimizers
 import staliro.specifications as specifications
 
-SIM_TSPAN = (0, 15)
+TSPAN = (0, 15)
 
 
 @staliro.costfunc()
 def outer(sample: staliro.Sample) -> float:
-
-    @models.blackbox(step_size = 0.1)
+    @models.blackbox(step_size=0.1)
     def inner(inputs: models.Blackbox.Inputs) -> models.Trace[list[float]]:
         power = 9
         alpha = np.deg2rad(2.1215)
@@ -27,7 +28,7 @@ def outer(sample: staliro.Sample) -> float:
         initial_state = [vel, alpha, beta, phi, theta, psi, 0, 0, 0, 0, 0, 0, alt, power]
         step = 1.0 / 30.0
         system = autopilot.GcasAutopilot(init_mode="roll", stdout=False)
-        result = f16_sim.run_f16_sim(initial_state, SIM_TSPAN[1], system, step, extended_states=True)
+        result = f16_sim.run_f16_sim(initial_state, TSPAN[1], system, step, extended_states=True)
         states = np.vstack(
             (
                 np.array([0 if x == "standby" else 1 for x in result["modes"]]),
@@ -44,8 +45,13 @@ def outer(sample: staliro.Sample) -> float:
     optimizer = optimizers.UniformRandom(behavior=optimizers.Behavior.MINIMIZATION)
     options = staliro.TestOptions(
         runs=1,
+        tspan=TSPAN,
         iterations=500,
-        static_inputs={"phi": (1, 2)},
+        static_inputs={
+            "phi": math.pi / 4 + np.array([-math.pi / 20, math.pi / 30]),
+            "theta": -math.pi / 2 * 0.8 + np.array([0, math.pi / 20]),
+            "psi": -math.pi / 4 + np.array([-math.pi / 8, math.pi / 8]),
+        },
     )
 
     results = staliro.test(inner, spec, optimizer, options)
