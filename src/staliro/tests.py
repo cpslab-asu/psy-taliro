@@ -69,14 +69,13 @@ class Evaluation(Generic[C, E]):
 class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
     __slots__ = ["_func", "_order", "_options", "_evaluations"]
 
-    def __init__(self, func: CostFunc[C, E], order: Sample.Order, options: TestOptions):
+    def __init__(self, func: CostFunc[C, E], options: TestOptions):
         self._func = func
-        self._order = order
         self._options = options
         self._evaluations: list[Evaluation[C, E]] = []
 
     def eval_sample(self, sample: SampleLike) -> C:
-        s = Sample(sample, self._order, self._options)
+        s = Sample(sample, self._options)
         result = self._func.evaluate(s)
 
         if not isinstance(result, Result):
@@ -91,8 +90,8 @@ class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
 class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
     __slots__ = ["_func", "_order", "_options", "_evaluations", "_executor"]
 
-    def __init__(self, func: CostFunc[C, E], order: Sample.Order, options: TestOptions):
-        super().__init__(func, order, options)
+    def __init__(self, func: CostFunc[C, E], options: TestOptions):
+        super().__init__(func, options)
 
         if options.processes is None:
             raise TestError("Parallel cost function requires parallelization to be an int")
@@ -109,7 +108,7 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
             return Evaluation(sample, result.value, result.extra)
 
         futures = self._executor.map(
-            eval_sample, [Sample(s, self._order, self._options) for s in samples]
+            eval_sample, [Sample(s, self._options) for s in samples]
         )
 
         evaluations = list(futures)
@@ -127,15 +126,16 @@ class Run(Generic[R, C, E]):
 Runs: TypeAlias = list[Run[R, C, E]]
 
 
-def _make_order(options: TestOptions) -> Sample.Order:
-    return Sample.Order(list(options.static_parameters), list(options.signals))
+def _make_bounds(options: TestOptions) -> list[Interval]:
+    bounds = list(options.static_inputs.values())
 
+    for name in options.signals:
+        control_points = options.signals[name].control_points
 
-def _make_bounds(order: Sample.Order, options: TestOptions) -> list[Interval]:
-    bounds = [options.static_parameters[name] for name in order.static]
-
-    for name in order.signals:
-        bounds.extend(options.signals[name].control_points)
+        if isinstance(control_points, dict):
+            bounds.extend(control_points.values())
+        else:
+            bounds.extend(control_points)
 
     return bounds
 
@@ -145,7 +145,6 @@ class TestContext(Generic[R, C, E]):
     func: CostFunc[C, E]
     optimizer: Optimizer[C, R]
     options: TestOptions
-    order: Sample.Order
     bounds: list[Interval]
     seed: int
 
@@ -157,7 +156,7 @@ def _run_context(ctx: TestContext[R, C, E]) -> Run[R, C, E]:
         input_bounds=ctx.bounds,
     )
 
-    wrapper = CostFuncWrapper(ctx.func, ctx.order, ctx.options)
+    wrapper = CostFuncWrapper(ctx.func, ctx.options)
     result = ctx.optimizer.optimize(wrapper, ps)
 
     return Run(result, wrapper._evaluations)
@@ -171,15 +170,13 @@ class TestContexts(Generic[R, C, E], Iterable[TestContext[R, C, E]]):
 
     def __iter__(self) -> Iterator[TestContext[R, C, E]]:
         rng = default_rng(self.options.seed)
-        order = _make_order(self.options)
-        bounds = _make_bounds(order, self.options)
+        bounds = _make_bounds(self.options)
 
         for _ in range(self.options.runs):
             yield TestContext(
                 func=self.func,
                 optimizer=self.optimizer,
                 options=self.options,
-                order=order,
                 bounds=bounds,
                 seed=rng.integers(0, 2**32 - 1),
             )
