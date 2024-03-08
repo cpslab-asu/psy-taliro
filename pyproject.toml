@@ -218,3 +218,6 @@ split-on-trailing-comma = false
 "__init__.py" = [
     "F401",  # Allow imported but unused
 ]
+
+[tool.pytest.ini_options]
+python_classes = ""
