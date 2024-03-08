@@ -64,7 +64,7 @@ options = TestOptions(
     signals={
         "throttle": SignalInput(control_points=[(0, 100)] * 7),
         "brake": SignalInput(control_points=[(0, 350)] * 3),
-    }
+    },
 )
 
 if __name__ == "__main__":

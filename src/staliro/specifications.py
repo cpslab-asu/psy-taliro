@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
-from typing import Generic, NewType, Protocol, TypeVar, Union, overload
+from typing import Generic, NewType, TypeVar, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -74,8 +74,7 @@ PredicateColumnMap: TypeAlias = dict[PredicateName, Column]
 
 class StlSpecification(Specification[Sequence[float], float, None]):
     @abstractmethod
-    def __init__(self, requirement: str, column_map: PredicateColumnMap):
-        ...
+    def __init__(self, requirement: str, column_map: PredicateColumnMap): ...
 
 
 class RTAMTDiscrete(StlSpecification):
@@ -165,37 +164,31 @@ class UserSpecification(Specification[S, C, E]):
 
 class Decorator:
     @overload
-    def __call__(self, func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
-        ...
+    def __call__(self, func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]: ...
 
     @overload
-    def __call__(self, func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
-        ...
+    def __call__(self, func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]: ...
 
     def __call__(
-        self,
-        func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R]
+        self, func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R]
     ) -> UserSpecification[S, C, E] | UserSpecification[S, R, None]:
         return UserSpecification(FuncWrapper(func))
 
 
 @overload
-def specification(func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
-    ...
+def specification(func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]: ...
 
 
 @overload
-def specification(func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
-    ...
+def specification(func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]: ...
 
 
 @overload
-def specification(func: None = ...) -> Decorator:
-    ...
+def specification(func: None = ...) -> Decorator: ...
 
 
 def specification(
-    func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R] | None = None
+    func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R] | None = None,
 ) -> UserSpecification[S, C, E] | UserSpecification[S, R, None] | Decorator:
     decorator = Decorator()
 

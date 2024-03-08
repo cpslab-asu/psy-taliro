@@ -21,12 +21,10 @@ R = TypeVar("R", covariant=True)
 
 class Trace(Generic[S], Iterable[tuple[float, S]]):
     @overload
-    def __init__(self, *, times: Iterable[SupportsFloat], states: Iterable[S]):
-        ...
+    def __init__(self, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
 
     @overload
-    def __init__(self, states: Mapping[float, S], /):
-        ...
+    def __init__(self, states: Mapping[float, S], /): ...
 
     def __init__(
         self,
@@ -78,8 +76,7 @@ class Model(Generic[S, E], ABC):
     """Representation of the system under test (SUT)."""
 
     @abstractmethod
-    def simulate(self, sample: Sample) -> Result[Trace[S], E]:
-        ...
+    def simulate(self, sample: Sample) -> Result[Trace[S], E]: ...
 
 
 class ModelWrapper(Model[S, E]):
@@ -98,30 +95,25 @@ ModelFunc: TypeAlias = Union[
 
 class ModelDecorator:
     @overload
-    def __call__(self, func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]:
-        ...
+    def __call__(self, func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
 
     @overload
-    def __call__(self, func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]:
-        ...
+    def __call__(self, func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]: ...
 
     def __call__(self, func: ModelFunc[S, E, R]) -> ModelWrapper[S, E] | ModelWrapper[R, None]:
         return ModelWrapper(FuncWrapper(func))
 
 
 @overload
-def model(func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]:
-    ...
+def model(func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
 
 
 @overload
-def model(func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]:
-    ...
+def model(func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]: ...
 
 
 @overload
-def model(func: None = ...) -> ModelDecorator:
-    ...
+def model(func: None = ...) -> ModelDecorator: ...
 
 
 def model(
@@ -196,12 +188,12 @@ class BlackboxDecorator:
         self.step_size = step_size
 
     @overload
-    def __call__(self, func: Callable[[Blackbox.Inputs], Result[Trace[S], E]]) -> Blackbox[S, E]:
-        ...
+    def __call__(
+        self, func: Callable[[Blackbox.Inputs], Result[Trace[S], E]]
+    ) -> Blackbox[S, E]: ...
 
     @overload
-    def __call__(self, func: Callable[[Blackbox.Inputs], Trace[R]]) -> Blackbox[R, None]:
-        ...
+    def __call__(self, func: Callable[[Blackbox.Inputs], Trace[R]]) -> Blackbox[R, None]: ...
 
     def __call__(self, func: BlackboxFunc[S, E, R]) -> Blackbox[S, E] | Blackbox[R, None]:
         return Blackbox(FuncWrapper(func), self.step_size)
@@ -212,8 +204,7 @@ def blackbox(
     func: Callable[[Blackbox.Inputs], Result[Trace[S], E]],
     *,
     step_size: float = ...,
-) -> Blackbox[S, E]:
-    ...
+) -> Blackbox[S, E]: ...
 
 
 @overload
@@ -221,13 +212,11 @@ def blackbox(
     func: Callable[[Blackbox.Inputs], Trace[R]],
     *,
     step_size: float = ...,
-) -> Blackbox[R, None]:
-    ...
+) -> Blackbox[R, None]: ...
 
 
 @overload
-def blackbox(func: None = ..., *, step_size: float = ...) -> BlackboxDecorator:
-    ...
+def blackbox(func: None = ..., *, step_size: float = ...) -> BlackboxDecorator: ...
 
 
 def blackbox(
@@ -303,8 +292,7 @@ class OdeDecorator:
 @overload
 def ode(
     func: Callable[[Ode.Inputs], Sequence[float] | NDArray[float_]], *, method: Ode.Method = ...
-) -> Ode:
-    ...
+) -> Ode: ...
 
 
 @overload

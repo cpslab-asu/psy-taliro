@@ -78,4 +78,3 @@ if __name__ == "__main__":
     )
 
     figure.write_image("f16.jpeg")
-

@@ -15,7 +15,7 @@ def nonlinear_model(inputs: models.Ode.Inputs) -> list[float]:
     x2 = inputs.state["x2"]
 
     return [
-        x1 - x2 + 0.1 * inputs.time,                          # x1_dot
+        x1 - x2 + 0.1 * inputs.time,  # x1_dot
         x2 * math.cos(2 * math.pi * x1) + 0.1 * inputs.time,  # x2_dot
     ]
 

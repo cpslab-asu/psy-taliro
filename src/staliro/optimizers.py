@@ -215,8 +215,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
 
 class UserFunc(Protocol[C, R]):
-    def __call__(self, __func: ObjFunc[C], __params: Optimizer.Params) -> R:
-        ...
+    def __call__(self, __func: ObjFunc[C], __params: Optimizer.Params) -> R: ...
 
 
 class UserOptimizer(Optimizer[C, R]):
@@ -228,8 +227,7 @@ class UserOptimizer(Optimizer[C, R]):
 
 
 class Decorator(Protocol):
-    def __call__(self, __f: UserFunc[C, R]) -> UserOptimizer[C, R]:
-        ...
+    def __call__(self, __f: UserFunc[C, R]) -> UserOptimizer[C, R]: ...
 
 
 T = TypeVar("T", covariant=True)
@@ -237,13 +235,11 @@ U = TypeVar("U", covariant=True)
 
 
 @overload
-def optimizer(func: UserFunc[C, R]) -> UserOptimizer[C, R]:
-    ...
+def optimizer(func: UserFunc[C, R]) -> UserOptimizer[C, R]: ...
 
 
 @overload
-def optimizer(func: None = ...) -> Decorator:
-    ...
+def optimizer(func: None = ...) -> Decorator: ...
 
 
 def optimizer(func: UserFunc[C, R] | None = None) -> UserOptimizer[C, R] | Decorator:

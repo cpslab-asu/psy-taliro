@@ -107,9 +107,7 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
 
             return Evaluation(sample, result.value, result.extra)
 
-        futures = self._executor.map(
-            eval_sample, [Sample(s, self._options) for s in samples]
-        )
+        futures = self._executor.map(eval_sample, [Sample(s, self._options) for s in samples])
 
         evaluations = list(futures)
         self._evaluations.extend(evaluations)
@@ -226,8 +224,7 @@ def staliro(
     /,
     *,
     processes: Processes = ...,
-) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]:
-    ...
+) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]: ...
 
 
 @overload
@@ -238,8 +235,7 @@ def staliro(
     /,
     *,
     processes: Processes = ...,
-) -> list[Run[R, C, E]]:
-    ...
+) -> list[Run[R, C, E]]: ...
 
 
 def staliro(

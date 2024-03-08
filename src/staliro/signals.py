@@ -28,10 +28,8 @@ class Signal(ABC):
         return [self.at_time(time) for time in times]
 
 
-
 class SignalFactory(Protocol):
-    def __call__(self, __times: Iterable[float], __values: Iterable[float]) -> Signal:
-        ...
+    def __call__(self, __times: Iterable[float], __values: Iterable[float]) -> Signal: ...
 
 
 class Pchip(Signal):

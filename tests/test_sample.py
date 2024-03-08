@@ -55,10 +55,7 @@ def test_signals() -> None:
         },
     )
 
-    sample = Sample(
-        values=[1.0, 3.0, 2.0, 4.0, 3.1, 2.9, 4.1],
-        opts=options
-    )
+    sample = Sample(values=[1.0, 3.0, 2.0, 4.0, 3.1, 2.9, 4.1], opts=options)
 
     assert len(sample.static) == 0
     assert len(sample.signals) == 2
