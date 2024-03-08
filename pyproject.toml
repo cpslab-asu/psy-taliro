@@ -57,6 +57,7 @@ packages = ["src/staliro"]
 dependencies = [
     "mypy >= 1.0.0",
     "ruff >= 0.1.2",
+    "pyarrow",
     "pytest",
     "pandas ~= 2.0",
     "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
