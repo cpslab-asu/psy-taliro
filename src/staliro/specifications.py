@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from typing import Generic, NewType, Protocol, TypeVar, Union, overload
 
 import numpy as np
@@ -9,12 +9,13 @@ from numpy.typing import NDArray
 from rtamt import StlDenseTimeSpecification, StlDiscreteTimeSpecification
 from typing_extensions import TypeAlias
 
-from .cost_func import Result
+from .cost_func import FuncWrapper, Result
 from .models import Trace
 
 S = TypeVar("S", contravariant=True)
 C = TypeVar("C", covariant=True)
 E = TypeVar("E", covariant=True)
+R = TypeVar("R", covariant=True)
 
 
 class Specification(Generic[S, C, E], ABC):
@@ -49,8 +50,8 @@ _Parsed: TypeAlias = tuple[_Times, _States]
 
 
 def _parse_times_states(times: Iterable[float], states: Iterable[Sequence[float]]) -> _Parsed:
-    times_ = _Times(np.array(times, dtype=np.float64))
-    states_ = _States(np.array(states, dtype=np.float64))
+    times_ = _Times(np.array(list(times), dtype=np.float64))
+    states_ = _States(np.array(list(states), dtype=np.float64))
 
     if times_.ndim != 1:
         raise StlSpecificationError("Times must be a 1-D vector")
@@ -67,8 +68,8 @@ def _parse_times_states(times: Iterable[float], states: Iterable[Sequence[float]
 
 
 PredicateName: TypeAlias = str
-ColumnT: TypeAlias = int
-PredicateColumnMap: TypeAlias = dict[PredicateName, ColumnT]
+Column: TypeAlias = int
+PredicateColumnMap: TypeAlias = dict[PredicateName, Column]
 
 
 class StlSpecification(Specification[Sequence[float], float, None]):
@@ -154,54 +155,37 @@ class RTAMTDense(StlSpecification):
         return Result(cost, None)
 
 
-class UserResultFunc(Protocol[S, C, E]):
-    def __call__(self, trace: Trace[S]) -> Result[C, E]:
-        ...
-
-
-class UserCostFunc(Protocol[S, C]):
-    def __call__(self, trace: Trace[S]) -> C:
-        ...
-
-
-class UserSpecification(Specification[S, C, Union[E, None]]):
-    def __init__(self, func: UserResultFunc[S, C, E] | UserCostFunc[S, C]):
+class UserSpecification(Specification[S, C, E]):
+    def __init__(self, func: Callable[[Trace[S]], Result[C, E]]):
         self.func = func
 
-    def evaluate(self, trace: Trace[S]) -> Result[C, E | None]:
-        cost = self.func(trace)
-
-        if isinstance(cost, Result):
-            return cost
-
-        return Result(cost, None)
+    def evaluate(self, trace: Trace[S]) -> Result[C, E]:
+        return self.func(trace)
 
 
-class Decorator(Protocol):
+class Decorator:
     @overload
-    def __call__(self, __f: UserResultFunc[S, C, E]) -> Specification[S, C, E]:
+    def __call__(self, func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
         ...
 
     @overload
-    def __call__(self, __f: UserCostFunc[S, C]) -> Specification[S, C, None]:
+    def __call__(self, func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
         ...
 
-
-UserFunc: TypeAlias = Union[UserResultFunc[S, C, E], UserCostFunc[S, C]]
-SpecificationOrDecorator: TypeAlias = Union[Specification[S, C, Union[E, None]], Decorator]
-
-T = TypeVar("T")
-U = TypeVar("U")
-V = TypeVar("V")
+    def __call__(
+        self,
+        func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R]
+    ) -> UserSpecification[S, C, E] | UserSpecification[S, R, None]:
+        return UserSpecification(FuncWrapper(func))
 
 
 @overload
-def specification(func: UserResultFunc[S, C, E]) -> Specification[S, C, E]:
+def specification(func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
     ...
 
 
 @overload
-def specification(func: UserCostFunc[S, C]) -> Specification[S, C, None]:
+def specification(func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
     ...
 
 
@@ -210,16 +194,12 @@ def specification(func: None = ...) -> Decorator:
     ...
 
 
-def specification(func: UserFunc[S, C, E] | None = None) -> SpecificationOrDecorator[S, C, E]:
-    @overload
-    def _decorator(f: UserResultFunc[T, U, V]) -> Specification[T, U, V]:
-        ...
+def specification(
+    func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R] | None = None
+) -> UserSpecification[S, C, E] | UserSpecification[S, R, None] | Decorator:
+    decorator = Decorator()
 
-    @overload
-    def _decorator(f: UserCostFunc[T, U]) -> Specification[T, U, None]:
-        ...
+    if func:
+        return decorator(func)
 
-    def _decorator(f: UserFunc[T, U, V]) -> Specification[T, U, V | None]:
-        return UserSpecification(f)
-
-    return _decorator(func) if func else _decorator
+    return decorator
