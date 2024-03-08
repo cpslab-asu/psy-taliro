@@ -1,9 +1,11 @@
 from .cost_func import CostFunc, Result, Sample, SampleLike, costfunc
-from .models import Blackbox, Trace, blackbox, model, ode
-from .options import SignalOptions, TestOptions
-from .signals import Signal
+from .models import Trace
+from .options import TestOptions
+from .signals import Signal, Interval, SignalInput
 from .specifications import Specification, specification
 from .tests import staliro
+
+test = staliro
 
 __all__ = [
     "CostFunc",
@@ -11,15 +13,12 @@ __all__ = [
     "Sample",
     "SampleLike",
     "Signal",
-    "SignalOptions",
+    "SignalInput",
     "Specification",
     "TestOptions",
     "Trace",
-    "Blackbox",
-    "blackbox",
     "costfunc",
-    "model",
-    "ode",
     "specification",
     "staliro",
+    "test",
 ]
