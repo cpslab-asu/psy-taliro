@@ -91,7 +91,7 @@ check = "mypy --pretty {args:}"
 [tool.hatch.envs.docs]
 detached = true
 dependencies = [
-    "sphinx ~= 4.1",
+    "sphinx ~= 7.2",
     "sphinx-autodocgen ~= 1.2",
     "sphinx-autobuild >= 2021.3.14",
     "furo >= 2022.4.7",
