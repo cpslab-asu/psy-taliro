@@ -89,7 +89,7 @@ fix = [
 check = "mypy --pretty {args:}"
 
 [tool.hatch.envs.docs]
-detached = true
+template = "docs"
 dependencies = [
     "sphinx ~= 7.2",
     "sphinx-autodocgen ~= 1.2",
@@ -100,7 +100,8 @@ dependencies = [
 
 [tool.hatch.envs.docs.scripts]
 build = "sphinx-build -b html docs public"
-lint = "rstcheck"
+check = "rstcheck {args:--recursive docs}"
+serve = "sphinx-autobuild docs public"
 
 [tool.hatch.envs.all]
 [tool.hatch.envs.all.scripts]
