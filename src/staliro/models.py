@@ -12,7 +12,8 @@ from scipy import integrate
 from sortedcontainers import SortedDict
 from typing_extensions import TypeAlias
 
-from .cost_func import FuncWrapper, Result, Sample
+from .cost_func import FuncWrapper, Sample
+from .cost_func import Result as CostResult
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -69,7 +70,30 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
         return iter(self.elements.values())
 
 
-ModelResult: TypeAlias = Result[Trace[S], E]
+class Result(Generic[S, E], CostResult[Trace[S], E]):
+    @overload
+    def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E):
+        ...
+
+    @overload
+    def __init__(self, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E):
+        ...
+
+    def __init__(
+        self,
+        states: Mapping[SupportsFloat, S] | Iterable[S],
+        extra: E,
+        times: Iterable[SupportsFloat] | None = None,
+    ):
+        if isinstance(states, Mapping):
+            trace = Trace(states)
+        else:
+            if times is None:
+                raise ValueError("Must provide times if states is not a dict")
+
+            trace = Trace(states=states, times = times)
+
+        super().__init__(trace, extra)
 
 
 class Model(Generic[S, E], ABC):
