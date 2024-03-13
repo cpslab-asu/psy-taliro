@@ -24,11 +24,11 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
     def __init__(self, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
 
     @overload
-    def __init__(self, states: Mapping[float, S], /): ...
+    def __init__(self, states: Mapping[SupportsFloat, S], /): ...
 
     def __init__(
         self,
-        times: Iterable[SupportsFloat] | Mapping[float, S],
+        times: Iterable[SupportsFloat] | Mapping[SupportsFloat, S],
         states: Iterable[S] | None = None,
     ):
         if not isinstance(times, Mapping):
