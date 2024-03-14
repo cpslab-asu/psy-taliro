@@ -72,12 +72,10 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
 
 class Result(Generic[S, E], _Result[Trace[S], E]):
     @overload
-    def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E):
-        ...
+    def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E): ...
 
     @overload
-    def __init__(self, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E):
-        ...
+    def __init__(self, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
 
     def __init__(
         self,
@@ -91,7 +89,7 @@ class Result(Generic[S, E], _Result[Trace[S], E]):
             if times is None:
                 raise ValueError("Must provide times if states is not a dict")
 
-            trace = Trace(states=states, times = times)
+            trace = Trace(states=states, times=times)
 
         super().__init__(trace, extra)
 
