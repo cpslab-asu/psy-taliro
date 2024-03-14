@@ -13,7 +13,7 @@ from sortedcontainers import SortedDict
 from typing_extensions import TypeAlias
 
 from .cost_func import FuncWrapper, Sample
-from .cost_func import Result as CostResult
+from .cost_func import Result as _Result
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -70,7 +70,7 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
         return iter(self.elements.values())
 
 
-class Result(Generic[S, E], CostResult[Trace[S], E]):
+class Result(Generic[S, E], _Result[Trace[S], E]):
     @overload
     def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E):
         ...
@@ -100,26 +100,26 @@ class Model(Generic[S, E], ABC):
     """Representation of the system under test (SUT)."""
 
     @abstractmethod
-    def simulate(self, sample: Sample) -> Result[Trace[S], E]: ...
+    def simulate(self, sample: Sample) -> _Result[Trace[S], E]: ...
 
 
 class ModelWrapper(Model[S, E]):
-    def __init__(self, func: Callable[[Sample], Result[Trace[S], E]]):
+    def __init__(self, func: Callable[[Sample], _Result[Trace[S], E]]):
         self.func = func
 
-    def simulate(self, sample: Sample) -> Result[Trace[S], E]:
+    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
         return self.func(sample)
 
 
 ModelFunc: TypeAlias = Union[
-    Callable[[Sample], Result[Trace[S], E]],
+    Callable[[Sample], _Result[Trace[S], E]],
     Callable[[Sample], Trace[R]],
 ]
 
 
 class ModelDecorator:
     @overload
-    def __call__(self, func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
+    def __call__(self, func: Callable[[Sample], _Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
 
     @overload
     def __call__(self, func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]: ...
@@ -129,7 +129,7 @@ class ModelDecorator:
 
 
 @overload
-def model(func: Callable[[Sample], Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
+def model(func: Callable[[Sample], _Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
 
 
 @overload
@@ -178,7 +178,7 @@ class Blackbox(Model[S, E]):
         static: dict[str, float]
         times: dict[float, dict[str, float]]
 
-    def __init__(self, func: Callable[[Blackbox.Inputs], Result[Trace[S], E]], step_size: float):
+    def __init__(self, func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]], step_size: float):
         self._func = func
         self.step_size = step_size
 
@@ -198,12 +198,13 @@ class Blackbox(Model[S, E]):
 
         return Blackbox.Inputs(sample.static, signals)
 
-    def simulate(self, sample: Sample) -> Result[Trace[S], E]:
+    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
         return self._func(self._create_inputs(sample))
 
 
 BlackboxFunc: TypeAlias = Union[
-    Callable[[Blackbox.Inputs], Result[Trace[S], E]], Callable[[Blackbox.Inputs], Trace[R]]
+    Callable[[Blackbox.Inputs], _Result[Trace[S], E]],
+    Callable[[Blackbox.Inputs], Trace[R]],
 ]
 
 
@@ -213,7 +214,7 @@ class BlackboxDecorator:
 
     @overload
     def __call__(
-        self, func: Callable[[Blackbox.Inputs], Result[Trace[S], E]]
+        self, func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]]
     ) -> Blackbox[S, E]: ...
 
     @overload
@@ -225,7 +226,7 @@ class BlackboxDecorator:
 
 @overload
 def blackbox(
-    func: Callable[[Blackbox.Inputs], Result[Trace[S], E]],
+    func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]],
     *,
     step_size: float = ...,
 ) -> Blackbox[S, E]: ...
