@@ -272,34 +272,36 @@ class Ode(Model[list[float], None]):
         signals: dict[str, float]
 
     def __init__(
-        self, func: Callable[[Ode.Inputs], Sequence[float] | NDArray[float_]], method: Ode.Method
+        self,
+        func: Callable[[Ode.Inputs], Mapping[str, float]],
+        method: Ode.Method,
     ):
         self.func = func
         self.method = method
 
-    def simulate(self, sample: Sample) -> Result[Trace[list[float]], None]:
+    def simulate(self, sample: Sample) -> Result[list[float], None]:
         if sample.signals.tspan is None:
             raise RuntimeError("ODE model requires tspan to be defined in TestOptions")
+
+        names = list(sample.static)
 
         def integration_fn(time: float, state: NDArray[float_]) -> NDArray[float_]:
             static = {name: state[idx] for idx, name in enumerate(sample.static)}
             signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
-            deriv = self.func(Ode.Inputs(time, static, signals))
+            derivs = self.func(Ode.Inputs(time, static, signals))
 
-            return array(deriv)
+            return array([derivs[name] for name in names])
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
             t_span=sample.signals.tspan,
-            y0=[sample.static[name] for name in sample.static],
+            y0=[sample.static[name] for name in names],
             method=self.method,
         )
 
         return Result(
-            value=Trace(
-                times=integration.t.tolist(),
-                states=integration.y.T.astype(dtype=float).tolist(),
-            ),
+            times=integration.t.tolist(),
+            states=integration.y.T.astype(dtype=float).tolist(),
             extra=None,
         )
 
@@ -308,13 +310,15 @@ class OdeDecorator:
     def __init__(self, method: Ode.Method):
         self.method = method
 
-    def __call__(self, func: Callable[[Ode.Inputs], Sequence[float] | NDArray[float_]]) -> Ode:
+    def __call__(self, func: Callable[[Ode.Inputs], Mapping[str, float]]) -> Ode:
         return Ode(func, self.method)
 
 
 @overload
 def ode(
-    func: Callable[[Ode.Inputs], Sequence[float] | NDArray[float_]], *, method: Ode.Method = ...
+    func: Callable[[Ode.Inputs], Mapping[str, float]],
+    *,
+    method: Ode.Method = ...,
 ) -> Ode: ...
 
 
@@ -324,7 +328,7 @@ def ode(func: None = ..., *, method: Ode.Method = ...) -> OdeDecorator:
 
 
 def ode(
-    func: Callable[[Ode.Inputs], Sequence[float] | NDArray[float_]] | None = None,
+    func: Callable[[Ode.Inputs], Mapping[str, float]] | None = None,
     *,
     method: Ode.Method = "RK45",
 ) -> Ode | OdeDecorator:
