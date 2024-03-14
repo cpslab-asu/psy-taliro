@@ -40,7 +40,7 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
             states_ = list(states)
 
             if len(times_) != len(states_):
-                raise ValueError("length of times and states iterables must be the same")
+                raise ValueError("times and states must have the same length")
 
             self.elements = SortedDict(zip(times_, states_))
         else:
