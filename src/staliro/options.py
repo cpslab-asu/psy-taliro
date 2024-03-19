@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import os
 import random
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from attrs import Attribute, converters, define, field, validators
 from typing_extensions import TypeAlias
@@ -11,7 +10,7 @@ from typing_extensions import TypeAlias
 from .signals import Interval, IntervalLike, SignalInput, _to_interval
 
 if TYPE_CHECKING:
-    AnyAttr: TypeAlias = Attribute[object]
+    AnyAttr: TypeAlias = Attribute[Any]
 
 
 def _seed_factory() -> int:
@@ -26,8 +25,15 @@ def _to_signals(signals: Mapping[str, SignalInput]) -> dict[str, SignalInput]:
     return dict(signals)
 
 
-class EmptyInterval:
-    pass
+def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -> None:
+    if value is None:
+        return
+
+    if isinstance(value, int) and value < 1:
+        raise ValueError(f"{a.name} must be greater than 0")
+
+    if isinstance(value, str) and value != "cores":
+        raise ValueError(f"{a.name} only supports literal option 'cores'")
 
 
 @define(kw_only=True)
@@ -74,7 +80,15 @@ class TestOptions:
         validator=[validators.instance_of(int), validators.gt(0)],
     )
 
-    parallelization: Literal["all", "cores"] | int | None = field(default=None)
+    processes: Literal["cores"] | int | None = field(
+        default=None,
+        validator=_parallelization
+    )
+
+    threads: Literal["cores"] | int | None = field(
+        default=None,
+        validator=_parallelization
+    )
 
     @tspan.validator
     def _tspan(self, _: AnyAttr, tspan: Interval) -> None:
@@ -95,21 +109,3 @@ class TestOptions:
 
         if len(signals) > 0 and not self.tspan:
             raise ValueError("Must define tspan if signal inputs are present")
-
-    @parallelization.validator
-    def _parallelization(self, _: AnyAttr, p: Literal["all", "cores"] | int | None) -> None:
-        if isinstance(p, int) and p < 1:
-            raise ValueError("Parallelization must be <= 1")
-
-        if isinstance(p, str) and p != "all" and p != "cores":
-            raise ValueError("Only 'all' and 'cores' are supported parallelization options")
-
-    @property
-    def processes(self) -> int | None:
-        if self.parallelization == "all":
-            return self.runs
-
-        if self.parallelization == "cores":
-            return os.cpu_count()
-
-        return self.parallelization
