@@ -99,9 +99,9 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs.scripts]
-build = "sphinx-build -b html docs public"
+build = "sphinx-build -b html docs docs/_build/html"
 check = "rstcheck {args:--recursive docs}"
-serve = "sphinx-autobuild docs public"
+serve = "sphinx-autobuild --watch src/staliro/ docs docs/_build/html"
 
 [tool.hatch.envs.all]
 [tool.hatch.envs.all.scripts]
