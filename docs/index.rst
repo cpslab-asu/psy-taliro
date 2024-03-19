@@ -1,97 +1,177 @@
-Welcome to PSY-TaLiRo
-=====================
+.. include:: _substitutions.rst
 
-PSY-TaLiRo is a python toolbox for general, system-level testing. Every component of PSY-TaLiRo can
-be extended or replaced, but implementations for a few common use cases are included of the box.
+=======================
+Welcome to |psy-taliro|
+=======================
 
-PSY-TaLiRo aims to make writing and testing requirements for systems fast and easy to help
-facilitate adoption of formal methods for verifying all kinds of systems. To assist with this,
-PSY-TaLiRo tries to be as general as possible in the interfaces of its components. The toolbox also
-takes advantage of the python type annotations defined in PEP484 which allows testers to use static
-analysis tools like MyPy to verify their code during development.
+|psy-taliro| is a python toolbox for search-based test generation, typically at the system
+level. The objective of this library is to make writing and testing requirements for systems fast
+and easy in order to help facilitate the adoption of formal and semi-formal methods for verifying
+systems of all kinds. To this end, |psy-taliro| defines several testing interfaces and
+multiple ready-to-use implementations so that users can quickly set up tests to ensure no bugs or
+behavioral violations hide in their systems.
 
-A test using PSY-TaLiRo requires 4 components to be defined:
+Motivation
+----------
 
-- A model
-- A specification
-- An optimizer
-- An options object
+Consider that we are designing a simple switching thermostat system described by the following state
+machine:
 
-Using some of the pre-build components, a simple PSY-TaLiRo test might look like:
+.. _thermostat:
 
-.. code-block:: python
+.. figure:: _images/thermostat.svg
+    :width: 600
+    :align: center
 
-   import staliro
+    *Source: An Algebra of Hybrid Systems by Bernhard Moller and Peter Hofner (2009).*
 
-   # Type aliases
-   StaticParamT = staliro.models.StaticParameters
-   TimesT = staliro.models.SignalTimes
-   SignalsT = staliro.models.SignalValues
-   ModelResultT = staliro.models.SimulationResult[None]
+When designing a system such as this one, we may be curious if there are any system inputs that
+cause the system to violate its operating bounds. A naive approach would be to test all possible
+inputs, but in a continuous input space like ours this approach is infeasible. Furthermore, for more
+complex systems the input space may be very large, making a brute force approach even more
+intractable. Therefore, we will instead leverage search techniques to test a subset of inputs, using
+the results from each test to try and select inputs that will put the system closer to violating its
+operating bounds. In order to do this, we must first create a representation of our system that we
+can use to simulate its behavior. One possible representation of this system is the following Python
+class:
 
+.. code-block:: Python
 
-   @staliro.blackbox()
-   def model(static_params: StaticParamT, times: TimesT, signals: SignalsT) -> ModelResultT:
-      simulator = ...  # Prepare simulator given static parameters
-      simulation_data = ...  # Simulate system given signal times and values
+    import enum
 
-      return models.SimulationResult(simulation_data["trajectories"], simulation_data["timestamps"])
+    class Thermostat:
+        class Mode(enum.IntEnum):
+            HEATING = 1
+            COOLING = 2
 
+        def __init__(self, initial_temp: float):
+            self.temp = initial_temp
+            self.mode = Thermostat.Mode.COOLING
 
-   requirement = "always (height <= 10)"
-   specification = staliro.RTAMTDense(requirement, {"height": staliro.PredicateProps(0)})
-   optimizer = staliro.UniformRandom()
-   options = staliro.Options(runs=1, iterations=10, static_parameters=[(1, 10)])
+        def step(self, step_size: float):
+            if self.mode is Thermostat.Mode.COOLING and self.temp < 19:
+                self.mode = Thermostat.Mode.HEATING
 
-   if __name__ == "__main__":
-      result = staliro.staliro(model, specification, optimizer, options)
+            if self.mode is Thermostat.Mode.COOLING and self.temp > 21:
+                self.mode = Thermostat.Mode.COOLING
 
-      for run in result.runs:
-         for evaluation in run.history:
-            print(f"Sample: {evalutation.sample} -> Cost: {evaluation.cost}")
+            temp_dot = -0.1 * self.temp
 
+            if self.mode is Thermostat.Mode.HEATING:
+                temp_dot = 5 + temp_dot
 
-In this example, we use a blackbox model, which is a type of model that makes no assumptions about
-the underlying system being tested. We also use an RTAMT dense-time specification, which evaluates
-the result of the simulation using requirements written in Signal Temporal Logic (STL). Finally,
-the options object defines a couple of attributes to control the behavior of the test:
+            self.temp = self.temp + temp_dot * step_size
 
-- the number of times to run the optimizer
-- The number of samples the optimizer should generate
-- The bounds of the static parameters to be generated by the optimizer each iteration
+Using this definition, we can define a :any:`model <models>` component that is responsible for
+encapsulating the execution logic of the model given a set of inputs.
 
-To get started using PSY-TaLiRo you can install it directory from PyPI
+.. code-block:: Python
 
-.. code-block:: console
+    from staliro import models
 
-   pip install psy-taliro
+    STEP_SIZE = 0.1
 
-If you do choose to use PSY-TaLiRo for academic work, please make sure you cite our paper:
+    @models.model()
+    def thermostat(inputs: models.Sample) -> models.Trace[list[float]]:
+        system = Thermostat(inputs.static["temp"])
+        states = {}
+
+        for step in range(100):
+            time = step * STEP_SIZE
+            states[time] = [system.temp]
+            system.step(STEP_SIZE)
+
+        return models.Trace(states)
+
+Then we can represent a requirement of our system (in this case that the temperature of the system
+stays within the interval :math:`[18.0, 22.0]`) using
+:ref:`Signal Temporal Logic <signal-temporal-logic>`.
+
+.. code-block:: Python
+
+    from staliro import specifications
+
+    req = specifications.RTAMTDense("(always (temp >= 18.0 and temp <= 22.0)", {"temp": 0})
+
+Finally, we can instantiate an optimizer and define the test parameters in order to begin executing tests
+
+.. code-block:: Python
+    
+    from staliro import TestOptions, optimizers, staliro
+
+    optimizer = optimizers.UniformRandom()
+    options = TestOptions(
+        runs=1,
+        iterations=100,
+        static_inputs={
+            "temp": (18.0, 22.0),
+        }
+    )
+
+    runs = staliro(thermostat, req, optimizer, options)
+
+The optimizer we have chosen to use is the :ref:`Uniform Random <uniform-random>` optimizer which
+will generate samples uniformly across the input space. For our test parameters, we run a single
+optimization attempt, with a sample budget of 100 samples, and we generate a single system input
+called :math:`temp` which will be within the interval :math:`[18.0, 22.0]`. We execute the test by
+calling the :py:func:`~staliro.staliro` function, which returns a set of :py:class:`~staliro.Run`
+values containing all the samples generated by the optimizer, as well as their associated cost
+values.
+
+To quickly begin setting up your own tests, please refer to the :any:`quickstart` and
+:any:`examples` pages. For more in-depth descriptions of the interfaces and components provided
+by |psy-taliro| please refer to the :any:`API documentation <api/index>`.
+
+Citing this project
+-------------------
+
+To cite our work, please include a reference to the following paper or include our :math:`Bib\TeX`
+entry in your bibliography file.
+
 `PSY-TaLiRo: A Python Toolbox for Search-Based Test Generation for Cyber-Physical Systems <https://arxiv.org/abs/2106.02200>`_
 
-Usage
------
-Get started quickly with set up guides and examples to start developing your tests fast!
+..
+    cSpell: disable
+
+.. code-block:: BibTeX
+
+   @InProceedings{10.1007/978-3-030-85248-1_15,
+       author="Thibeault, Quinn and Anderson, Jacob and Chandratre, Aniruddh and Pedrielli, Giulia and Fainekos, Georgios",
+       editor="Lluch Lafuente, Alberto and Mavridou, Anastasia",
+       title="PSY-TaLiRo: A Python Toolbox for Search-Based Test Generation for Cyber-Physical Systems",
+       booktitle="Formal Methods for Industrial Critical Systems",
+       year="2021",
+       publisher="Springer International Publishing",
+       address="Cham",
+       pages="223--231",
+       isbn="978-3-030-85248-1"
+   }
+
+..
+    cSpell: enable
 
 .. toctree::
-   :maxdepth: 2
+    :hidden:
 
-   quickstart
-   examples
-
-Documentation
--------------
-  
-Interface specifications, and implementation guides for each of these components can be found
-on the following pages:
+    quickstart
+    installation
+    examples
 
 .. toctree::
-   :maxdepth: 2
+    :hidden:
+    :caption: Components
 
-   architecture
-   models
-   signals
-   specifications
-   optimizers
-   options
-   results
+    signals
+    cost_func
+    models
+    specifications
+    optimizers
+
+.. toctree::
+    :hidden:
+    :caption: Library
+
+    options
+    architecture
+    API <api/index>
+    caveats
