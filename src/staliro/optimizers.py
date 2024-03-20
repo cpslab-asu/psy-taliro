@@ -59,7 +59,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from enum import IntEnum
 from typing import Generic, Literal, Protocol, TypeVar, overload
 
 from attrs import frozen
@@ -140,19 +139,6 @@ class Optimizer(Generic[C, R], ABC):
         :returns: The cost value
         """
         ...
-
-
-class Behavior(IntEnum):
-    """Behavior when falsifying case for system is encountered.
-
-    Attributes:
-        FALSIFICATION: Stop searching when the first falsifying case is encountered
-        MINIMIZATION: Continue searching after encountering a falsifying case until iteration
-                      budget is exhausted
-    """
-
-    FALSIFICATION = 0
-    MINIMIZATION = 1
 
 
 Samples: TypeAlias = Iterable[SampleLike]
