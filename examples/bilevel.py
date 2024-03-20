@@ -41,8 +41,8 @@ def outer(sample: staliro.Sample) -> float:
 
         return models.Trace(times=result["times"], states=np.transpose(states).tolist())
 
-    spec = specifications.RTAMTDense("[] alt >= 0", {"alt": 0})
-    optimizer = optimizers.UniformRandom(behavior=optimizers.Behavior.MINIMIZATION)
+    spec = specifications.rtamt.parse_dense("[] alt >= 0", {"alt": 0})
+    optimizer = optimizers.UniformRandom[float]()
     options = staliro.TestOptions(
         runs=1,
         tspan=TSPAN,
@@ -61,7 +61,7 @@ def outer(sample: staliro.Sample) -> float:
 
 
 if __name__ == "__main__":
-    optimizer = optimizers.UniformRandom(behavior=optimizers.Behavior.FALSIFICATION)
+    optimizer = optimizers.UniformRandom(min_cost=0.0)
     options = staliro.TestOptions(
         runs=1,
         iterations=100,
