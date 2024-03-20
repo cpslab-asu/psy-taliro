@@ -230,12 +230,12 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
     :param min_cost: The minimum cost to use as a termination condition
     """
 
-    def __init__(self, behavior: Behavior = Behavior.FALSIFICATION):
-        self.behavior = behavior
+    def __init__(self, min_cost: float | None = None):
+        self.min_cost = min_cost
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
         def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if cost < 0 and self.behavior is Behavior.FALSIFICATION:
+            if self.min_cost and cost < self.min_cost:
                 return True
 
             return False
