@@ -75,7 +75,7 @@ names and values for the current time.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
 from typing import Generic, Literal, SupportsFloat, TypeVar, Union, cast, overload
 
@@ -93,6 +93,8 @@ S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
 R = TypeVar("R", covariant=True)
 
+T = TypeVar("T", bound=SupportsFloat)
+
 
 class Trace(Generic[S], Iterable[tuple[float, S]]):
     """A time-annotated set of system states.
@@ -109,29 +111,23 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
     """
 
     @overload
-    def __init__(self, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
+    def __init__(self, elements: Mapping[T, S], /): ...
 
     @overload
-    def __init__(self, states: Mapping[SupportsFloat, S], /): ...
+    def __init__(self, *, times: Iterable[T], states: Iterable[S]): ...
 
     def __init__(
         self,
-        times: Iterable[SupportsFloat] | Mapping[SupportsFloat, S],
+        times: Mapping[T, S] | Iterable[T],
         states: Iterable[S] | None = None,
     ):
-        if not isinstance(times, Mapping):
-            if states is None:
-                raise ValueError("Must provide states with times")
-
-            times_ = [float(time) for time in times]
-            states_ = list(states)
-
-            if len(times_) != len(states_):
-                raise ValueError("times and states must have the same length")
-
-            self.elements = SortedDict(zip(times_, states_))
-        else:
+        if isinstance(times, Mapping):
             self.elements = SortedDict({float(time): state for time, state in times.items()})
+        else:
+            if states is None:
+                raise ValueError("must provide states with times")
+
+            self.elements = SortedDict({float(time): state for time, state in zip(times, states)})
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trace):
