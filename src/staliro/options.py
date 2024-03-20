@@ -1,3 +1,26 @@
+"""
+Definitions for the options that can be used to customize the testing behavior.
+
+Behavior customization is accomplished through the `TestObject` class, which must
+be provided as an argument to either the `staliro` or `setup` functions.
+
+Examples
+--------
+
+.. code-block:: python
+
+    import staliro
+
+    options = staliro.TestOptions(
+        runs = 10,
+        iterations = 450,
+        static_inputs={
+            "speed": (0, 100),
+            "fuel": [0, 255],
+        },
+    )
+"""
+
 from __future__ import annotations
 
 import random
@@ -40,17 +63,14 @@ def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -
 class TestOptions:
     """General options for controlling falsification behavior.
 
-    Attributes:
-        static_parameters: Parameters that will be provided to the system at the beginning and are
-            time invariant (initial conditions)
-        signals: System inputs that will vary over time
-        seed: The initial seed of the random number generator
-        iterations: The number of search iterations to perform in a run
-        runs: The number times to run the optimizer
-        interval: The time interval of the system simulation
-        parallelization: Number of processes to use to parallelize runs of the optimizer. Acceptable
-            values are: "cores" (all available cores), "all" (all runs), int (number of processes),
-            None (no parallelization).
+    :param tspan: The time interval for testing
+    :param static_inputs: Parameters that will be provided to the system at the beginning and are time invariant (initial conditions).
+    :param signals: System inputs that will vary over time
+    :param seed: The initial seed of the random number generator
+    :param iterations: The number of search iterations to perform in a run
+    :param runs: The number times to run the optimizer
+    :param processes: Number of processes to use to parallelize sample evaluation
+    :param threads: Number of threads to use to parallelize sample evaluation
     """
 
     tspan: Interval | None = field(
@@ -68,7 +88,10 @@ class TestOptions:
         converter=_to_signals,
     )
 
-    runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
+    runs: int = field(
+        default=1,
+        validator=[validators.instance_of(int), validators.gt(0)],
+    )
 
     iterations: int = field(
         default=400,
@@ -106,6 +129,3 @@ class TestOptions:
         for signal in signals.values():
             if not isinstance(signal, SignalInput):
                 raise TypeError("Signal inputs must be values of type SignalInput")
-
-        if len(signals) > 0 and not self.tspan:
-            raise ValueError("Must define tspan if signal inputs are present")
