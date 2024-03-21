@@ -26,6 +26,18 @@ jobs:
       - name: Run Tests
         run: hatch run tests
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'pip'
+      - name: Install Hatch
+        run: pip install hatch
+      - name: Run Tests
+        run: hatch run docs:build
+
   f16:
     runs-on: ubuntu-latest
     strategy:
@@ -42,3 +54,18 @@ jobs:
       - name: Run Tests
         run: hatch run f16
 
+  nonlinear:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Install Hatch
+        run: pip install hatch
+      - name: Run Tests
+        run: hatch run nonlinear
