@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pytest
 
@@ -27,24 +25,36 @@ def test_seed() -> None:
     assert options.seed >= 0 and options.seed <= (2**32 - 1)
 
 
-def test_parallelization() -> None:
+def test_processes() -> None:
     none = TestOptions()
     assert none.processes is None
 
-    num = TestOptions(parallelization=4)
+    num = TestOptions(processes=4)
     assert num.processes == 4
 
     with pytest.raises(ValueError):
-        TestOptions(parallelization=-1)
+        TestOptions(processes=-1)
 
-    all = TestOptions(runs=12, parallelization="all")  # noqa: A001
-    assert all.processes == all.runs
-
-    cores = TestOptions(parallelization="cores")
-    assert cores.processes == os.cpu_count()
+    _ = TestOptions(processes="cores")
 
     with pytest.raises(ValueError):
-        TestOptions(parallelization="foo")  # type: ignore
+        TestOptions(processes="foo")  # type: ignore
+
+
+def test_threads() -> None:
+    none = TestOptions()
+    assert none.threads is None
+
+    num = TestOptions(threads=4)
+    assert num.threads == 4
+
+    with pytest.raises(ValueError):
+        TestOptions(threads=-1)
+
+    _ = TestOptions(threads="cores")
+
+    with pytest.raises(ValueError):
+        TestOptions(threads="foo")  # type: ignore
 
 
 def test_control_points() -> None:
