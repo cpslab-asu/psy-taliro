@@ -13,6 +13,7 @@ the `optimizer()` decorator. The decorated function should accept the sample inp
 ``optimize()`` method.
 
 ::
+
     from staliro import optimizers
 
     class Optimizer(optimizers.Optimizer[float, None]):
@@ -34,6 +35,7 @@ You can configure the optimizer to exit early if a cost threshold is reached by 
 of the cost value so long as, if a ``min_cost`` is provided, the value supports comparison.
 
 ::
+
     from staliro.optimizers import UniformRandom
 
     opt = UniformRandom()
@@ -49,6 +51,7 @@ can provide a cost threshold using the ``min_cost`` argument to the constructor.
 returned to the optimizer must be `float`.
 
 ::
+
     from staliro.optimizers import DualAnnealing
 
     opt = DualAnnealing()
