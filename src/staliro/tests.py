@@ -16,9 +16,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
+from enum import IntEnum
+from logging import Logger, NullHandler, getLogger
 from os import cpu_count
 from typing import Generic, Literal, TypeVar, cast, overload
-from warnings import warn
+from uuid import UUID, uuid4
 
 from attrs import define, field, frozen
 from numpy.random import default_rng
@@ -29,6 +31,12 @@ from .models import Model, Trace
 from .optimizers import ObjFunc, Optimizer
 from .options import Interval, TestOptions
 from .specifications import Specification
+
+_test_logger = getLogger("staliro.test")
+_test_logger.addHandler(NullHandler())
+
+_eval_logger = getLogger("staliro.evaluations")
+_eval_logger.addHandler(NullHandler())
 
 S = TypeVar("S")
 C = TypeVar("C")
@@ -56,6 +64,13 @@ class Evaluation(Generic[C, E]):
     extra: E
 
 
+def _cost_func_logger() -> Logger:
+    logger = getLogger("staliro.evaluations")
+    logger.addHandler(NullHandler())
+
+    return logger
+
+
 @define(slots=True)
 class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
@@ -70,6 +85,8 @@ class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
 
     def eval_sample(self, sample: SampleLike) -> C:
         s = Sample(sample, self._options)
+
+        _eval_logger.debug(f"Evaluating sample: {s.values}")
         result = self._func.evaluate(s)
 
         if not isinstance(result, Result):
@@ -111,32 +128,6 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
         return [evaluation.cost for evaluation in evaluations]
 
 
-def _create_wrapper(ctx: _TestContext[R, C, E]) -> CostFuncWrapper[C, E]:
-    processes = ctx.options.processes
-    threads = ctx.options.threads
-
-    if processes and not threads and ctx.use_threads:
-        warn("Using processes for both runs and sample evaluations is not supported", stacklevel=1)
-
-    if processes and not ctx.use_threads:
-        return ParallelCostFuncWrapper(
-            func=ctx.func,
-            options=ctx.options,
-            executor=ProcessPoolExecutor(
-                max_workers=cpu_count() if processes == "cores" else processes
-            ),
-        )
-
-    if threads:
-        return ParallelCostFuncWrapper(
-            func=ctx.func,
-            options=ctx.options,
-            executor=ThreadPoolExecutor(max_workers=cpu_count() if threads == "cores" else threads),
-        )
-
-    return CostFuncWrapper(ctx.func, ctx.options)
-
-
 @frozen(slots=True)
 class Run(Generic[R, C, E]):
     """The result of an optimization attempt.
@@ -152,25 +143,59 @@ class Run(Generic[R, C, E]):
 Runs: TypeAlias = list[Run[R, C, E]]
 
 
+@define(slots=True)
+class _Parallelization:
+    class Kind(IntEnum):
+        THREAD = 0
+        PROCESS = 1
+
+    count: Literal["cores"] | int
+    kind: _Parallelization.Kind
+
+    def executor(self) -> Executor:
+        count = cpu_count() if self.count == "cores" else self.count
+
+        if self.kind is _Parallelization.Kind.THREAD:
+            return ThreadPoolExecutor(max_workers=count)
+
+        if self.kind is _Parallelization.Kind.PROCESS:
+            return ProcessPoolExecutor(max_workers=count)
+
+        raise ValueError("Unknown kind")
+
+
 @frozen(slots=True)
 class _TestContext(Generic[R, C, E]):
-    func: CostFunc[C, E]
-    optimizer: Optimizer[C, R]
-    options: TestOptions
-    bounds: list[Interval]
-    seed: int
-    use_threads: bool
+    func: CostFunc[C, E] = field()
+    optimizer: Optimizer[C, R] = field()
+    options: TestOptions = field()
+    bounds: list[Interval] = field()
+    seed: int = field()
+    parallelization: _Parallelization | None = field(default=None)
+    id: UUID = field(init=False, factory=uuid4)
+
+    def make_wrapper(self) -> CostFuncWrapper[C, E]:
+        if not self.parallelization:
+            return CostFuncWrapper(self.func, self.options)
+
+        return ParallelCostFuncWrapper(self.func, self.options, self.parallelization.executor())
+
+    @property
+    def params(self) -> Optimizer.Params:
+        return Optimizer.Params(
+            seed=self.seed,
+            budget=self.options.iterations,
+            input_bounds=self.bounds,
+        )
 
 
 def _run_context(ctx: _TestContext[R, C, E]) -> Run[R, C, E]:
-    ps = Optimizer.Params(
-        seed=ctx.seed,
-        budget=ctx.options.iterations,
-        input_bounds=ctx.bounds,
-    )
+    _test_logger.debug(f"Beginning run {ctx.id}")
 
-    wrapper = _create_wrapper(ctx)
-    result = ctx.optimizer.optimize(wrapper, ps)
+    wrapper = ctx.make_wrapper()
+    result = ctx.optimizer.optimize(wrapper, ctx.params)
+
+    _test_logger.debug(f"Finished run {ctx.id}")
 
     return Run(result, wrapper._evaluations)
 
@@ -194,7 +219,7 @@ class _TestContexts(Generic[R, C, E], Iterable[_TestContext[R, C, E]]):
     func: CostFunc[C, E]
     optimizer: Optimizer[C, R]
     options: TestOptions
-    nprocs: int | None = None
+    parallelization: _Parallelization | None
 
     def __iter__(self) -> Iterator[_TestContext[R, C, E]]:
         rng = default_rng(self.options.seed)
@@ -212,7 +237,7 @@ class _TestContexts(Generic[R, C, E], Iterable[_TestContext[R, C, E]]):
                 options=self.options,
                 bounds=bounds,
                 seed=rng.integers(0, 2**32 - 1),
-                use_threads=self.nprocs is not None,
+                parallelization=self.parallelization,
             )
 
 
@@ -229,15 +254,40 @@ class Test(Generic[R, C, E]):
     optimizer: Optimizer[C, R]
     options: TestOptions
 
+    def _contexts(self, parallelization: _Parallelization | None) -> _TestContexts[R, C, E]:
+        return _TestContexts(self.func, self.optimizer, self.options, parallelization)
+
     def _run_sequential(self) -> Runs[R, C, E]:
-        return [_run_context(ctx) for ctx in _TestContexts(self.func, self.optimizer, self.options)]
+        parallelization: _Parallelization | None = None
+        processes = self.options.processes
+        threads = self.options.threads
+
+        if processes:
+            parallelization = _Parallelization(count=processes, kind=_Parallelization.Kind.PROCESS)
+            _test_logger.debug(f"Sample parallelization: kind=Processes, n={processes}")
+        elif threads:
+            parallelization = _Parallelization(count=threads, kind=_Parallelization.Kind.THREAD)
+            _test_logger.debug(f"Sample parallelization: kind=Threads, n={threads}")
+        else:
+            _test_logger.debug("Sample parallelization: None")
+
+        return [_run_context(ctx) for ctx in self._contexts(parallelization)]
 
     def _run_parallel(self, nprocs: int) -> Runs[R, C, E]:
+        if self.options.processes:
+            _test_logger.warning("Using processes for both runs and sample evaluations is supported")
+
+        parallelization: _Parallelization | None = None
+        threads = self.options.threads
+
+        if threads:
+            parallelization = _Parallelization(count=threads, kind=_Parallelization.Kind.THREAD)
+            _test_logger.debug(f"Sample parallelization: kind=Threads, n={threads}")
+        else:
+            _test_logger.debug("Sample parallelization: None")
+
         executor = ProcessPoolExecutor(max_workers=nprocs)
-        runs = executor.map(
-            _run_context,
-            _TestContexts(self.func, self.optimizer, self.options, nprocs),
-        )
+        runs = executor.map(_run_context, self._contexts(parallelization))
 
         return list(runs)
 
@@ -250,6 +300,10 @@ class Test(Generic[R, C, E]):
         :param processes: The number of processes to use to parallelize the runs
         :returns: A list of `Run` values containing the data for each optimization attempt
         """
+
+        _test_logger.debug("Beginning test")
+        _test_logger.debug(f"Initial seed: {self.options.seed}")
+        _test_logger.debug(f"Run parallelization: {processes}")
 
         # This check is done here because cpu_count can return None and we want to default to
         # sequential evaluation if we can't determine the number of cpu cores
