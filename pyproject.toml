@@ -69,6 +69,7 @@ dependencies = [
 tests = "pytest {args:tests}"
 f16 = "python3 examples/f16.py"
 nonlinear = "python3 examples/nonlinear.py"
+bilevel = "python3 examples/bilevel.py"
 
 [tool.hatch.envs.style]
 detached = true
