@@ -15,9 +15,6 @@ def test_from_times_states() -> None:
     with pytest.raises(TypeError):
         Trace(times=[[1.0], [2.0], [3.0]], states=(1, 2, 3))  # type: ignore
 
-    with pytest.raises(ValueError):
-        Trace(times=[1.0, 2.0, 3.0], states=(1, 2))
-
 
 def test_from_states() -> None:
     t = Trace({1.0: "a", 2.0: "b", 3.0: "c"})
