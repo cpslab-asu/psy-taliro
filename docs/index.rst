@@ -62,7 +62,7 @@ class:
 
             self.temp = self.temp + temp_dot * step_size
 
-Using this definition, we can define a :any:`model <models>` component that is responsible for
+Using this definition, we can define a :doc:`model <models>` component that is responsible for
 encapsulating the execution logic of the model given a set of inputs.
 
 .. code-block:: Python
