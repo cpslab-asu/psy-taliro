@@ -4,9 +4,10 @@ build:
   os: ubuntu-22.04
   tools:
     python: latest
-  pre_create_environment:
-    - pip install hatch
-    - hatch --env docs dep show requirements > requirements.txt
+  jobs:
+    pre_create_environment:
+      - pip install hatch
+      - hatch --env docs dep show requirements > requirements.txt
 
 python:
   install:
