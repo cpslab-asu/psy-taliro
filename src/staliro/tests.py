@@ -275,7 +275,9 @@ class Test(Generic[R, C, E]):
 
     def _run_parallel(self, nprocs: int) -> Runs[R, C, E]:
         if self.options.processes:
-            _test_logger.warning("Using processes for both runs and sample evaluations is supported")
+            _test_logger.warning(
+                "Using processes for both runs and sample evaluations is supported"
+            )
 
         parallelization: _Parallelization | None = None
         threads = self.options.threads
@@ -373,8 +375,7 @@ def setup(
     specification: Specification[S, C, E2],
     optimizer: Optimizer[C, R],
     options: TestOptions,
-) -> Test[R, C, ModelSpecExtra[S, E1, E2]]:
-    ...
+) -> Test[R, C, ModelSpecExtra[S, E1, E2]]: ...
 
 
 @overload
@@ -383,8 +384,7 @@ def setup(
     optimizer: Optimizer[C, R],
     options: TestOptions,
     /,
-) -> Test[R, C, E]:
-    ...
+) -> Test[R, C, E]: ...
 
 
 def setup(
@@ -425,8 +425,7 @@ def staliro(
     options: TestOptions,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]:
-    ...
+) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]: ...
 
 
 @overload
@@ -437,8 +436,7 @@ def staliro(
     /,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, E]]:
-    ...
+) -> list[Run[R, C, E]]: ...
 
 
 def staliro(

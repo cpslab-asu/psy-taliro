@@ -15,13 +15,13 @@ _States: TypeAlias = dict[str, list[float]]
 
 
 @overload
-def _parse_trace(trace: Trace[dict[str, float]]) -> tuple[_Times, _States]:
-    ...
+def _parse_trace(trace: Trace[dict[str, float]]) -> tuple[_Times, _States]: ...
 
 
 @overload
-def _parse_trace(trace: Trace[Sequence[float]], columns: dict[str, int]) -> tuple[_Times, _States]:
-    ...
+def _parse_trace(
+    trace: Trace[Sequence[float]], columns: dict[str, int]
+) -> tuple[_Times, _States]: ...
 
 
 def _parse_trace(
@@ -115,13 +115,11 @@ Discrete: TypeAlias = Union[DiscreteMapped, DiscreteNamed]
 
 
 @overload
-def parse_discrete(formula: str, columns: Mapping[str, int]) -> DiscreteMapped:
-    ...
+def parse_discrete(formula: str, columns: Mapping[str, int]) -> DiscreteMapped: ...
 
 
 @overload
-def parse_discrete(formula: str, columns: None = ...) -> DiscreteNamed:
-    ...
+def parse_discrete(formula: str, columns: None = ...) -> DiscreteNamed: ...
 
 
 def parse_discrete(formula: str, columns: Mapping[str, int] | None = None) -> Discrete:
@@ -202,13 +200,11 @@ Dense: TypeAlias = Union[DenseMapped, DenseNamed]
 
 
 @overload
-def parse_dense(requirement: str, columns: Mapping[str, int]) -> DenseMapped:
-    ...
+def parse_dense(requirement: str, columns: Mapping[str, int]) -> DenseMapped: ...
 
 
 @overload
-def parse_dense(requirement: str, columns: None = ...) -> DenseNamed:
-    ...
+def parse_dense(requirement: str, columns: None = ...) -> DenseNamed: ...
 
 
 def parse_dense(requirement: str, columns: Mapping[str, int] | None = None) -> Dense:
