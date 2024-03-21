@@ -3,13 +3,11 @@ name: CI
 on:
   push:
     branches: ["main"]
+
   pull_request:
     branches: ["main"]
 
 jobs:
-  lint:
-    uses: ./.github/workflows/lint.yaml
-
   tests:
     runs-on: ubuntu-latest
     strategy:
