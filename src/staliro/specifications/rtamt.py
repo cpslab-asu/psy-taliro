@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Union, cast, overload
 
 from rtamt import StlDenseTimeSpecification, StlDiscreteTimeSpecification
@@ -66,6 +66,19 @@ def _evaluate_discrete(formula: str, times: list[float], states: dict[str, list[
 
 
 class DiscreteMapped(Specification[Sequence[float], float, None]):
+    """A discrete-time STL specification using a variable-column map.
+
+    The variable-column map is a mapping from the variable names in the formula to columns in the
+    state, which is a vector. In addition, the trace used for evaluation must fulfill the following
+    criteria:
+
+    - There is an equal amount of time between each state in the trace
+    - There are at least two states in the trace
+
+    :param requirement: The formula to evaluate using the `Trace`
+    :param columns: A mapping from variables names to columns of the state vector
+    """
+
     def __init__(self, requirement: str, columns: dict[str, int]):
         self.requirement = requirement
         self.columns = columns
@@ -78,6 +91,16 @@ class DiscreteMapped(Specification[Sequence[float], float, None]):
 
 
 class DiscreteNamed(Specification[dict[str, float], float, None]):
+    """A discrete-time STL specification using the variable names in the state.
+
+    The trace used for evaluation must fulfill the following criteria:
+
+    - There is an equal amount of time between each state in the trace
+    - There are at least two states in the trace
+
+    :param requirement: The formula to evaluate using the `Trace`
+    """
+
     def __init__(self, requirement: str):
         self.requirement = requirement
 
@@ -92,7 +115,7 @@ Discrete: TypeAlias = Union[DiscreteMapped, DiscreteNamed]
 
 
 @overload
-def parse_discrete(formula: str, columns: dict[str, int]) -> DiscreteMapped:
+def parse_discrete(formula: str, columns: Mapping[str, int]) -> DiscreteMapped:
     ...
 
 
@@ -101,9 +124,24 @@ def parse_discrete(formula: str, columns: None = ...) -> DiscreteNamed:
     ...
 
 
-def parse_discrete(formula: str, columns: dict[str, int] | None = None) -> Discrete:
+def parse_discrete(formula: str, columns: Mapping[str, int] | None = None) -> Discrete:
+    """Create a discrete-time requirement from a formula and an optional variable-column mapping.
+
+    If a variable-column mapping is provided, the created specification will expect states in the
+    system trace to be a `Sequence[float]`. If the mapping is omitted then the specification will
+    expect the states to be `dict[str, float]`. The discrete-time specification also imposes the
+    following contraints on any `Trace` it evaluates:
+
+    - The amount of time between each state must be equal
+    - There must be at least two states in the trace
+
+    :param requirement: The requirement to use to evaluate the `Trace`
+    :param columns: The optional variable-column mapping
+    :returns: A dense time specification
+    """
+
     if columns:
-        return DiscreteMapped(formula, columns)
+        return DiscreteMapped(formula, dict(columns))
 
     return DiscreteNamed(formula)
 
@@ -124,6 +162,15 @@ def _evaluate_dense(phi: str, times: list[float], states: dict[str, list[float]]
 
 
 class DenseMapped(Specification[Sequence[float], float, None]):
+    """A dense-time STL specification using a variable-column map.
+
+    The variable-column map is a mapping from the variable names in the formula to columns in the
+    state, which is a vector.
+
+    :param requirement: The formula to evaluate using the `Trace`
+    :param columns: A mapping from variables names to columns of the state vector
+    """
+
     def __init__(self, requirement: str, columns: dict[str, int]):
         self.requirement = requirement
         self.columns = columns
@@ -136,6 +183,11 @@ class DenseMapped(Specification[Sequence[float], float, None]):
 
 
 class DenseNamed(Specification[dict[str, float], float, None]):
+    """A dense-time STL specification using the variable names in the state.
+
+    :param requirement: The requirement to evaluate using the `Trace`
+    """
+
     def __init__(self, requirement: str):
         self.requirement = requirement
 
@@ -150,7 +202,7 @@ Dense: TypeAlias = Union[DenseMapped, DenseNamed]
 
 
 @overload
-def parse_dense(requirement: str, columns: dict[str, int]) -> DenseMapped:
+def parse_dense(requirement: str, columns: Mapping[str, int]) -> DenseMapped:
     ...
 
 
@@ -159,10 +211,22 @@ def parse_dense(requirement: str, columns: None = ...) -> DenseNamed:
     ...
 
 
-def parse_dense(requirement: str, columns: dict[str, int] | None = None) -> Dense:
+def parse_dense(requirement: str, columns: Mapping[str, int] | None = None) -> Dense:
+    """Create a dense-time requirement from a formula and an optional variable-column mapping.
+
+    If a variable-column mapping is provided, the created specification will expect states in the
+    system trace to be a `Sequence[float]`. If the mapping is omitted then the specification will
+    expect the states to be `dict[str, float]`.
+
+    :param requirement: The requirement to use to evaluate the `Trace`
+    :param columns: The optional variable-column mapping
+    :returns: A dense time specification
+    """
+
     if columns:
-        return DenseMapped(requirement, columns)
+        return DenseMapped(requirement, dict(columns))
 
     return DenseNamed(requirement)
 
 
+__all__ = ["parse_discrete", "parse_dense"]
