@@ -15,7 +15,6 @@ space.
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
 from enum import IntEnum
 from logging import Logger, NullHandler, getLogger
 from os import cpu_count
@@ -24,6 +23,8 @@ from uuid import UUID, uuid4
 
 from attrs import define, field, frozen
 from numpy.random import default_rng
+from pathos import pools
+from pathos.abstract_launcher import AbstractWorkerPool
 from typing_extensions import TypeAlias
 
 from .cost_func import CostFunc, Result, Sample, SampleLike
@@ -109,7 +110,7 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
     :param executor: The executor to use for parallelization
     """
 
-    _executor: Executor = field()
+    _pool: AbstractWorkerPool = field()
 
     def eval_samples(self, samples: Iterable[SampleLike]) -> list[C]:
         def eval_sample(sample: Sample) -> Evaluation[C, E]:
@@ -120,8 +121,7 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
 
             return Evaluation(sample, result.value, result.extra)
 
-        futures = self._executor.map(eval_sample, [Sample(s, self._options) for s in samples])
-
+        futures = self._pool.map(eval_sample, [Sample(s, self._options) for s in samples])
         evaluations = list(futures)
         self._evaluations.extend(evaluations)
 
@@ -152,14 +152,14 @@ class _Parallelization:
     count: Literal["cores"] | int
     kind: _Parallelization.Kind
 
-    def executor(self) -> Executor:
+    def pool(self) -> AbstractWorkerPool:
         count = cpu_count() if self.count == "cores" else self.count
 
         if self.kind is _Parallelization.Kind.THREAD:
-            return ThreadPoolExecutor(max_workers=count)
+            return pools.ThreadPool(nodes=count)
 
         if self.kind is _Parallelization.Kind.PROCESS:
-            return ProcessPoolExecutor(max_workers=count)
+            return pools.ProcessPool(nodes=count)
 
         raise ValueError("Unknown kind")
 
@@ -178,7 +178,7 @@ class _TestContext(Generic[R, C, E]):
         if not self.parallelization:
             return CostFuncWrapper(self.func, self.options)
 
-        return ParallelCostFuncWrapper(self.func, self.options, self.parallelization.executor())
+        return ParallelCostFuncWrapper(self.func, self.options, self.parallelization.pool())
 
     @property
     def params(self) -> Optimizer.Params:
@@ -286,8 +286,8 @@ class Test(Generic[R, C, E]):
         else:
             _test_logger.debug("Sample parallelization: None")
 
-        executor = ProcessPoolExecutor(max_workers=nprocs)
-        runs = executor.map(_run_context, self._contexts(parallelization))
+        pool = pools.ProcessPool(nodes=nprocs)
+        runs = pool.map(_run_context, self._contexts(parallelization))
 
         return list(runs)
 

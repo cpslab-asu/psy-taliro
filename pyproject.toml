@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
     "attrs ~= 23.2",
     "numpy ~= 1.26",
+    "pathos ~= 0.3",
     "scipy ~= 1.11",
     "sortedcontainers ~= 2.4",
     "typing-extensions ~= 4.9",
