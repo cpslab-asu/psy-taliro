@@ -31,12 +31,14 @@ Temporal Logic Specifications
 Specification implementations are provided that can evaluate the output trace of a system using
 *Signal Temporal Logic* (STL). STL allows users to express behavioral requirements for the system
 using unambiguous formulas which can be used to directly evaluate the trace to test for
-conformance. Two STL specifications are provided: `RTAMTDiscrete` and `RTAMTDense`. Both
-specifications can be constructed by providing a STL formula as a string, and an optional dictionary
-mapping the formula variables to column indexes. If the column dictionary is provided, the
-specification will expect states to be `Sequence[float]`, and if the dictionary is omitted then the
-states are expected to be `dict[str, float]`.
+conformance. Two STL specifications are provided, dense and discrete, implemented uing the RTAMT
+library. Both specifications can be constructed by providing a STL formula as a string, and an
+optional dictionary mapping the formula variables to column indexes. If the column dictionary is
+provided, the specification will expect states to be `Sequence[float]`, and if the dictionary is
+omitted then the states are expected to be `dict[str, float]`.
+
 ::
+
     from staliro.specifications import Specification, rtamt
 
     s1: Specification[dict[str, float], float, None] = rtamt.parse_dense("always (alt >= 0)")
