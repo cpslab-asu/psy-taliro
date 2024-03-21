@@ -155,6 +155,9 @@ class _Parallelization:
     def pool(self) -> AbstractWorkerPool:
         count = cpu_count() if self.count == "cores" else self.count
 
+        if not count:
+            raise RuntimeError("Could not determine the number of CPU cores")
+
         if self.kind is _Parallelization.Kind.THREAD:
             return pools.ThreadPool(nodes=count)
 
@@ -303,20 +306,20 @@ class Test(Generic[R, C, E]):
         :returns: A list of `Run` values containing the data for each optimization attempt
         """
 
-        _test_logger.debug("Beginning test")
-        _test_logger.debug(f"Initial seed: {self.options.seed}")
-        _test_logger.debug(f"Run parallelization: {processes}")
-
         # This check is done here because cpu_count can return None and we want to default to
         # sequential evaluation if we can't determine the number of cpu cores
         if processes == "cores":
             processes = cpu_count()
 
-        if processes is None:
-            return self._run_sequential()
-
         if processes == "all":
             processes = self.options.runs
+
+        _test_logger.debug("Beginning test")
+        _test_logger.debug(f"Initial seed: {self.options.seed}")
+        _test_logger.debug(f"Run parallelization: {processes}")
+
+        if processes is None:
+            return self._run_sequential()
 
         return self._run_parallel(processes)
 
