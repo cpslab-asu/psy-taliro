@@ -78,7 +78,10 @@ dependencies = [
 ]
 
 [tool.hatch.envs.style.scripts]
-check = "ruff check {args:.}"
+check = [
+    "ruff check {args:.}",
+    "ruff format --check {args:.}",
+]
 fix = [
     "ruff check --select I --fix {args:.}",
     "ruff format {args:.}",
