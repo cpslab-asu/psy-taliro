@@ -13,3 +13,7 @@
 /build/
 /dist/
 /public/
+
+# Example outputs
+f16.jpeg
+nonlinear.jpeg

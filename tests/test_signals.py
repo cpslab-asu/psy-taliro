@@ -4,10 +4,8 @@ from pathlib import Path
 from unittest import TestCase
 
 import numpy as np
-import numpy.testing
 import pandas as pd
 
-from staliro.core.interval import Interval
 from staliro.signals import pchip, piecewise_constant
 
 
@@ -24,9 +22,9 @@ class SignalTestCase(TestCase):
 
 class ConstantSignalTestCase(SignalTestCase):
     def test_constant_interpolator(self) -> None:
-        interval = Interval(0, 100)
+        interval = (0, 100)
         y_axis = [0, 1, 0, 1, 0, 0]
-        x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
+        x_axis = np.linspace(interval[0], interval[1], num=len(y_axis)).tolist()
 
         signal = piecewise_constant(x_axis, y_axis)
         csv_path = self.TEST_DIR / "data" / "constant_trace.csv"
@@ -39,10 +37,10 @@ class ConstantSignalTestCase(SignalTestCase):
         np.testing.assert_equal(csv_data[signal_col].to_numpy(), sampled_values)
 
     def test_single_vs_vectorized(self) -> None:
-        interval = Interval(0, 100)
+        interval = (0, 100)
         y_axis = [0, 1, 0, 1, 0, 0]
-        x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
-        times = _random(interval.lower, interval.upper, len(y_axis))
+        x_axis = np.linspace(interval[0], interval[1], num=len(y_axis)).tolist()
+        times = _random(interval[0], interval[1], len(y_axis))
 
         signal = piecewise_constant(x_axis, y_axis)
         single_sampled_points = [signal.at_time(t) for t in times]
@@ -53,7 +51,7 @@ class ConstantSignalTestCase(SignalTestCase):
 
 class PchipSignalTestCase(SignalTestCase):
     def test_pchip_interpolator(self) -> None:
-        interval = Interval(0, 4)
+        interval = (0, 4)
         y_axis = [
             36045.4877642653,
             41417.4995645605,
@@ -66,7 +64,7 @@ class PchipSignalTestCase(SignalTestCase):
             34868.9383775613,
             36167.2912845567,
         ]
-        x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
+        x_axis = np.linspace(interval[0], interval[1], num=len(y_axis)).tolist()
 
         signal = pchip(x_axis, y_axis)
         csv_path = self.TEST_DIR / "data" / "pchip_trace.csv"
@@ -79,10 +77,10 @@ class PchipSignalTestCase(SignalTestCase):
         np.testing.assert_almost_equal(csv_data[signal_col].to_numpy(), sampled_values)
 
     def test_single_vs_vectorized(self) -> None:
-        interval = Interval(0, 100)
+        interval = (0, 100)
         y_axis = [0, 1, 0, 1, 0, 0]
-        x_axis = np.linspace(interval.lower, interval.upper, num=len(y_axis)).tolist()
-        times = _random(interval.lower, interval.upper, len(y_axis))
+        x_axis = np.linspace(interval[0], interval[1], num=len(y_axis)).tolist()
+        times = _random(interval[0], interval[1], len(y_axis))
 
         signal = pchip(x_axis, y_axis)
         single_sampled_points = [signal.at_time(t) for t in times]

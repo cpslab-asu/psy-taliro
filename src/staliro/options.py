@@ -1,145 +1,131 @@
+"""
+Definitions for the options that can be used to customize the testing behavior.
+
+Behavior customization is accomplished through the `TestObject` class, which must
+be provided as an argument to either the `staliro` or `setup` functions.
+
+Examples
+--------
+
+.. code-block:: python
+
+    import staliro
+
+    options = staliro.TestOptions(
+        runs = 10,
+        iterations = 450,
+        static_inputs={
+            "speed": (0, 100),
+            "fuel": [0, 255],
+        },
+    )
+"""
+
 from __future__ import annotations
 
-import os
 import random
-from collections.abc import Sequence
-from typing import Any, Literal, Union, cast
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
-from attr import Attribute, converters, field, frozen, validators
-from numpy.typing import NDArray
+from attrs import Attribute, converters, define, field, validators
 from typing_extensions import TypeAlias
 
-from .core.interval import Interval
-from .core.signal import SignalFactory
-from .signals import pchip
+from .signals import Interval, IntervalLike, SignalInput, _to_interval
 
-
-class OptionsError(Exception):
-    pass
-
-
-IntervalLike: TypeAlias = Union[Interval, Sequence[float], NDArray[Any]]
-
-
-def _to_interval(interval: IntervalLike) -> Interval:
-    """Convert a value to an interval.
-
-    This function only supports ordered collections because the order of values in the iterable
-    matters when trying to construct an interval. Iterables like Set do not guarantee the order of
-    iteration, which can lead to non-deterministic failures.
-
-    Arguments:
-        value: The value to convert to an interval. Must be an Interval instance, list or tuple
-
-    Returns:
-        An instance of Interval using the values provided in the ordered collection
-    """
-
-    if isinstance(interval, Interval):
-        return interval
-
-    if isinstance(interval, np.ndarray):
-        interval = interval.astype(float)
-
-    return Interval(interval[0], interval[1])
-
-
-_Intervals: TypeAlias = Sequence[IntervalLike]
-
-
-def _to_intervals(intervals: _Intervals) -> tuple[Interval, ...]:
-    """Convert a sequence of values into a sequence on intervals."""
-
-    return tuple(_to_interval(interval) for interval in intervals)
-
-
-def _to_signal_times(times: Sequence[float] | NDArray[np.float_]) -> list[float]:
-    if isinstance(times, np.ndarray):
-        return cast(list[float], np.array(times, dtype=float).tolist())
-
-    return list(times)
-
-
-@frozen()
-class SignalOptions:
-    """Options for signal generation.
-
-    Attributes:
-        interval: The interval the signal should be generated for
-        factory: Factory to produce interpolators for the signal
-        control_points: The number of points the optimizer should generate for the signal
-        signal_times: Time values for the generated control points
-        time_varying: Flag that indicates that the signal times should be considered a search
-                      variable (EXPERIMENTAL)
-    """
-
-    control_points: tuple[Interval, ...] = field(converter=_to_intervals)
-    factory: SignalFactory = field(default=pchip, validator=validators.is_callable())
-    signal_times: list[float] | None = field(
-        default=None,
-        converter=converters.optional(_to_signal_times),
-        validator=validators.optional(
-            validators.deep_iterable(validators.instance_of(float), validators.instance_of(list))
-        ),
-    )
-    time_varying: bool = field(default=False)
+if TYPE_CHECKING:
+    AnyAttr: TypeAlias = Attribute[Any]
 
 
 def _seed_factory() -> int:
     return random.randint(0, 2**32 - 1)
 
 
-_Parallelization: TypeAlias = Union[Literal["all", "cores"], int, None]
+def _to_static_inputs(inputs: Mapping[str, IntervalLike]) -> dict[str, Interval]:
+    return {name: _to_interval(interval) for name, interval in inputs.items()}
 
 
-def _parallelization_validator(_: Any, attr: Attribute[Any], value: _Parallelization) -> None:
-    is_none = value is None
-    is_valid_str = value in {"all", "cores"}
-    is_int = isinstance(value, int)
-
-    if not is_none and not is_valid_str and not is_int:
-        raise OptionsError(
-            "invalid parallelization value. Allowed types are: [None, 'all', 'cores', int]"
-        )
+def _to_signals(signals: Mapping[str, SignalInput]) -> dict[str, SignalInput]:
+    return dict(signals)
 
 
-@frozen()
-class Options:
+def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -> None:
+    if value is None:
+        return
+
+    if isinstance(value, int) and value < 1:
+        raise ValueError(f"{a.name} must be greater than 0")
+
+    if isinstance(value, str) and value != "cores":
+        raise ValueError(f"{a.name} only supports literal option 'cores'")
+
+
+@define(kw_only=True)
+class TestOptions:
     """General options for controlling falsification behavior.
 
-    Attributes:
-        static_parameters: Parameters that will be provided to the system at the beginning and are
-            time invariant (initial conditions)
-        signals: System inputs that will vary over time
-        seed: The initial seed of the random number generator
-        iterations: The number of search iterations to perform in a run
-        runs: The number times to run the optimizer
-        interval: The time interval of the system simulation
-        parallelization: Number of processes to use to parallelize runs of the optimizer. Acceptable
-            values are: "cores" (all available cores), "all" (all runs), int (number of processes),
-            None (no parallelization).
+    :param tspan: The time interval for testing
+    :param static_inputs: Parameters that will be provided to the system at the beginning and are time invariant (initial conditions).
+    :param signals: System inputs that will vary over time
+    :param seed: The initial seed of the random number generator
+    :param iterations: The number of search iterations to perform in a run
+    :param runs: The number times to run the optimizer
+    :param processes: Number of processes to use to parallelize sample evaluation
+    :param threads: Number of threads to use to parallelize sample evaluation
     """
 
-    static_parameters: tuple[Interval, ...] = field(factory=tuple, converter=_to_intervals)
-    signals: Sequence[SignalOptions] = field(
-        factory=list, validator=validators.deep_iterable(validators.instance_of(SignalOptions))
+    tspan: Interval | None = field(
+        default=None,
+        converter=converters.optional(_to_interval),
     )
+
+    static_inputs: dict[str, Interval] = field(
+        factory=dict,
+        converter=_to_static_inputs,
+    )
+
+    signals: dict[str, SignalInput] = field(
+        factory=dict,
+        converter=_to_signals,
+    )
+
+    runs: int = field(
+        default=1,
+        validator=[validators.instance_of(int), validators.gt(0)],
+    )
+
+    iterations: int = field(
+        default=400,
+        validator=[validators.instance_of(int), validators.gt(0)],
+    )
+
     seed: int = field(
-        factory=_seed_factory, validator=[validators.instance_of(int), validators.gt(0)]
+        factory=_seed_factory,
+        validator=[validators.instance_of(int), validators.gt(0)],
     )
-    iterations: int = field(default=400, validator=[validators.instance_of(int), validators.gt(0)])
-    runs: int = field(default=1, validator=[validators.instance_of(int), validators.gt(0)])
-    interval: Interval = field(default=Interval(0.0, 10.0), converter=_to_interval)
-    parallelization: _Parallelization = field(default=None, validator=_parallelization_validator)
 
-    @property
-    def process_count(self) -> int | None:
-        """Number of processes to use based on the value of the parallelization attribute."""
+    processes: Literal["cores"] | int | None = field(
+        default=None,
+        validator=_parallelization,
+    )
 
-        if self.parallelization == "all":
-            return self.runs
-        elif self.parallelization == "cores":
-            return os.cpu_count()
-        else:
-            return self.parallelization
+    threads: Literal["cores"] | int | None = field(
+        default=None,
+        validator=_parallelization,
+    )
+
+    @tspan.validator
+    def _tspan(self, _: AnyAttr, tspan: Interval) -> None:
+        if tspan and tspan[0] >= tspan[1]:
+            raise ValueError("Interval lower bound must be less than upper bound")
+
+    @static_inputs.validator
+    def _static_inputs(self, _: AnyAttr, inputs: dict[str, Interval]) -> None:
+        for interval in inputs.values():
+            if interval[0] >= interval[1]:
+                raise ValueError("Interval lower bound must be less than upper bound")
+
+    @signals.validator
+    def _signals(self, _: AnyAttr, signals: dict[str, SignalInput]) -> None:
+        for signal in signals.values():
+            if not isinstance(signal, SignalInput):
+                raise TypeError("Signal inputs must be values of type SignalInput")

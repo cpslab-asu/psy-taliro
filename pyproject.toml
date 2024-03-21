@@ -24,7 +24,9 @@ classifiers = [
 dependencies = [
     "attrs ~= 23.2",
     "numpy ~= 1.26",
+    "pathos ~= 0.3",
     "scipy ~= 1.11",
+    "sortedcontainers ~= 2.4",
     "typing-extensions ~= 4.9",
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
@@ -55,7 +57,8 @@ packages = ["src/staliro"]
 [tool.hatch.envs.default]
 dependencies = [
     "mypy >= 1.0.0",
-    "ruff >= 0.1.2",
+    "ruff >= 0.2.0",
+    "pyarrow",
     "pytest",
     "pandas ~= 2.0",
     "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
@@ -67,15 +70,19 @@ dependencies = [
 tests = "pytest {args:tests}"
 f16 = "python3 examples/f16.py"
 nonlinear = "python3 examples/nonlinear.py"
+bilevel = "python3 examples/bilevel.py"
 
 [tool.hatch.envs.style]
 detached = true
 dependencies = [
-    "ruff >= 0.1.2",
+    "ruff >= 0.2.0",
 ]
 
 [tool.hatch.envs.style.scripts]
-check = "ruff check {args:.}"
+check = [
+    "ruff check {args:.}",
+    "ruff format --check {args:.}",
+]
 fix = [
     "ruff check --select I --fix {args:.}",
     "ruff format {args:.}",
@@ -84,12 +91,12 @@ fix = [
 [tool.hatch.envs.types]
 
 [tool.hatch.envs.types.scripts]
-check = "mypy --pretty"
+check = "mypy --pretty {args:}"
 
 [tool.hatch.envs.docs]
-detached = true
+template = "docs"
 dependencies = [
-    "sphinx ~= 4.1",
+    "sphinx ~= 7.2",
     "sphinx-autodocgen ~= 1.2",
     "sphinx-autobuild >= 2021.3.14",
     "furo >= 2022.4.7",
@@ -97,8 +104,9 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs.scripts]
-build = "sphinx-build -b html docs public"
-lint = "rstcheck"
+build = "sphinx-build -b html docs docs/_build/html"
+check = "rstcheck {args:--recursive docs}"
+serve = "sphinx-autobuild --watch src/staliro/ docs docs/_build/html"
 
 [tool.hatch.envs.all]
 [tool.hatch.envs.all.scripts]
@@ -174,7 +182,7 @@ extend-exclude = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint]
@@ -216,3 +224,6 @@ split-on-trailing-comma = false
 "__init__.py" = [
     "F401",  # Allow imported but unused
 ]
+
+[tool.pytest.ini_options]
+python_classes = ""

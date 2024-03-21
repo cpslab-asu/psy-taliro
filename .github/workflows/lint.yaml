@@ -3,7 +3,6 @@ name: Lint
 on:
   workflow_call:
   push:
-    branches-ignore: ["main"]
 
 jobs:
   ruff:

@@ -1,0 +1,79 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "words": [
+        "blackbox",
+        "combinators",
+        "Radau",
+    ],
+    "ignoreWords": [
+        "taliro",
+        "staliro",
+        "rtamt",
+        "pchip",
+        "tspan",
+    ],
+    "files": [
+        "docs/**/*.rst",
+        "src/**/*.py",
+    ],
+    "overrides": [
+        {
+            "filename": "docs/**/*.rst",
+            "words": [
+                "quickstart",
+                "moller",
+                "hofner",
+                "simulink",
+                "dejan",
+                "nickovic",
+                "tomoya",
+                "yamaguchi",
+                "biconditional",
+            ],
+            "ignoreWords": [
+                "virtualenv",
+                "venv",
+                "pipenv",
+                "pipfile",
+                "pipx",
+                "numpy",
+                "ndarray",
+                "gcas",
+                "radau",
+            ],
+            "dictionaries": ["latex"],
+            "ignoreRegExpList": [
+                "/``.*``/g",
+                "/:py:.*:`.*`/g",
+                "/\\.\\. [\\w-]+::.*(\\n\\s+:.*)*\\n(\\n\\s+.*)*/g"
+            ]
+        },
+        {
+            "filename": "src/**/*.py",
+            "allowCompoundWords": true,
+            "words": [
+                "Runge",
+                "Kutta",
+            ],
+            "ignoreWords": [
+                "costfunc",
+                "ndarray",
+                "tstart",
+                "dtype",
+                "sortedcontainers",
+                "astype",
+                "LSODA",
+                "evals",
+                "njev",
+                "nhev",
+                "interp",
+                "nprocs",
+            ],
+            "includeRegExpList": [
+                "/\\\"\\\"\\\"[\\w\\W\\s]*\\\"\\\"\\\"/g",
+                "/#.*/g",
+            ],
+        }
+    ]
+}
