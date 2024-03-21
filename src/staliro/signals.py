@@ -1,7 +1,7 @@
 """
 Definition of the interface for the continuous, time-varying functions called signals.
 
-A signal is contunious, time-varying input to a system that can represent anything from control
+A signal is continuous, time-varying input to a system that can represent anything from control
 inputs from a user to environmental effects. The `Signal` class captures this behavior, and is
 constructed from a set of times and a set of values called *control points*. Each control point
 is associated with a time and represents the value of the signal at that particular time.

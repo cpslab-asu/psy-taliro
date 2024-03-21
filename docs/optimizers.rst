@@ -161,7 +161,7 @@ Simulated Annealing
 
 The :py:class:`~staliro.optimizers.DualAnnealing` optimizer provides an implementation of
 `general simulated annealing`_ using the implementation of `dual annealing`_ provided by the SciPy
-libary. This optimizer expects ``float`` cost values since under the hood the value vectors are
+library. This optimizer expects ``float`` cost values since under the hood the value vectors are
 represented using `Numpy`_ ``ndarray`` values. You can optionally provide a ``min_cost`` when
 during construction like the :ref:`UniformRandom <uniform-random>` optimizer, which will terminate
 the optimization attempt if a cost value is found that is :math:`\leq min\_cost`.

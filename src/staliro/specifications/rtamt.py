@@ -130,7 +130,7 @@ def parse_discrete(formula: str, columns: Mapping[str, int] | None = None) -> Di
     If a variable-column mapping is provided, the created specification will expect states in the
     system trace to be a `Sequence[float]`. If the mapping is omitted then the specification will
     expect the states to be `dict[str, float]`. The discrete-time specification also imposes the
-    following contraints on any `Trace` it evaluates:
+    following constraints on any `Trace` it evaluates:
 
     - The amount of time between each state must be equal
     - There must be at least two states in the trace

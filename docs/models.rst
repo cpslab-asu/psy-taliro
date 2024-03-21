@@ -18,7 +18,7 @@ directly executing or simulating a system. In this respect, you can imagine a tr
 mapping between times and system states. You can create a ``Trace`` either by providing the mapping
 directly or by providing a set of times and a set of states of equal length.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro.models import Trace
 
@@ -41,7 +41,7 @@ Results
 Models are expected to return an instance of :py:class:`staliro.Result` containing a ``Trace``
 value, which can result in longer type annotations and more function calls.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import Result
     from staliro.models import Trace
@@ -54,7 +54,7 @@ To simplify both type annotation and call-sites, you can construct a
 :py:class:`models.Result <staliro.models.Result>`, which handles the construction of the inner
 ``Trace`` while still allowing for annotation data to be provided.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro.models import Result
 
@@ -72,7 +72,7 @@ only required method is the :py:meth:`~staliro.models.Model.simulate` method whi
 parameterized by the type variables ``S`` and ``E`` which represent the type of the state values
 produced by the model and the type of the annotation data.
 
-.. code-block:: Python
+.. code-block:: python
 
     from dataclasses import dataclass
     from random import Random
@@ -103,7 +103,7 @@ For systems that only depend on their input, you can also implement a ``Model`` 
 function with :py:func:`~staliro.models.model`. As with extending the ``Model`` class, decorated
 functions must accept a ``Sample`` as a parameter and return a ``staliro.Result`` value.
     
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import Sample, models
 
@@ -119,8 +119,8 @@ functions must accept a ``Sample`` as a parameter and return a ``staliro.Result`
 Blackbox
 --------
 
-A ``Blackbox`` model is similar to the base ``Model`` but instead of recieving the input signals
-as a set of continuous functions, it recieves each signal evaluated at a uniformly spaced set of
+A ``Blackbox`` model is similar to the base ``Model`` but instead of receiving the input signals
+as a set of continuous functions, it receives each signal evaluated at a uniformly spaced set of
 times. This is most similar to how systems are simulated using `Simulink`_.
 
 .. _Simulink: https://www.mathworks.com/products/simulink.html
@@ -130,7 +130,7 @@ times. This is most similar to how systems are simulated using `Simulink`_.
 Inputs
 ^^^^^^
 
-As inputs, a ``Blackbox`` model recieves a
+As inputs, a ``Blackbox`` model receives a
 :py:class:`Blackbox.Inputs <staliro.models.Blackbox.Inputs>` value, which contains 2 attributes:
 :py:attr:`~staliro.models.Blackbox.Inputs.static` and
 :py:attr:`~staliro.models.Blackbox.Inputs.times`. The ``static`` attribute returns the mapping of
@@ -140,7 +140,7 @@ mapping containing the signal evaluations for the time. The times for the evalua
 spaced between the start and end of the ``tspan`` of the options object. If no signals are provided,
 then the ``times`` attribute will be empty.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import SignalInput, TestOptions, models
 
@@ -178,7 +178,7 @@ You can construct a ``Blackbox`` model by annotating a Python function with the
 ``step_size`` parameter which specifies the duration between each evaluation time (and by
 consequence the number of evaluation times).
 
-.. code-block:: Python
+.. code-block:: python
     
     import staliro.models as models
 
@@ -218,7 +218,7 @@ inputs in the :ref:`options <options>`. Finally, ``signals`` is a name-value map
 the value of each signal for the current time. The names in the ``signals`` map are the same as the
 names of the signals in the options.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import SignalInput, TestOptions, models
 
@@ -251,7 +251,7 @@ You can construct an ``Ode`` model by annotating a Python function with the
 :py:func:`~staliro.models.ode` decorator. The ``ode()`` decorator accepts an optional
 ``method`` parameter which specifies the integration method to use for simulation.
 
-.. code-block:: Python
+.. code-block:: python
     
     import staliro.models as models
 

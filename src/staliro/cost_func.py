@@ -156,7 +156,7 @@ class Sample:
 
     @property
     def values(self) -> list[float]:
-        """The raw numeric values recieved from the `Optimizer`."""
+        """The raw numeric values received from the `Optimizer`."""
 
         return list(self._values)
 

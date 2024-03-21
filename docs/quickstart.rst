@@ -50,7 +50,7 @@ optimizer to a cost value that can be minimized. A cost function can be created 
 :py:func:`~staliro.cost_func.costfunc` decorator to a function that accepts a sample and returns a
 cost value.
 
-.. code-block:: Python
+.. code-block:: python
 
     import staliro
 
@@ -61,7 +61,7 @@ cost value.
 You can also optionally provide additional metadata from the cost function by returning a
 |result| value containing both the cost and extra values.
 
-.. code-block:: Python
+.. code-block:: python
 
     import staliro
 
@@ -86,7 +86,7 @@ or a |result| containing a ``Trace``. For convenience, you can construct an inst
 :py:class:`models.Result <staliro.models.Result>`, which combines the construction a ``Trace`` and a
 ``Result`` object.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import models
 
@@ -107,7 +107,7 @@ accepts a :py:class:`Blackbox.Inputs <staliro.models.Blackbox.Inputs>` value and
 |trace| or |result|. The ``blackbox`` decorator optionally accepts a ``step_size`` parameter
 indicating the length of time between each signal value (default: 0.1).
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import models
 
@@ -126,7 +126,7 @@ the :py:class:`~staliro.models.Ode` model. To create this type of model, users c
 the derivative of the state at the given time. The ``ode`` decorator optionally accepts a method
 argument specifying the integration method to use during simulation.
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import models
 
@@ -144,7 +144,7 @@ requirement. Users can create their own specifications using the
 :py:func:`~staliro.specifications.specification` decorator on a function that returns either a
 cost value or a |result| value containing extra metadata as well as the cost value.
 
-.. code-block:: Python
+.. code-block:: python
 
     import staliro
 
@@ -197,7 +197,7 @@ function can *optionally* return a result value at the end of an optimization at
 returned to the user.
 
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import optimizers
 
@@ -241,7 +241,7 @@ from outside the data structure. To facilitate this representation, |psy-taliro|
 called :py:class:`Sampler`, which is created using the :py:func:`sampler` decorator on a generator
 function. An example of a :py:class:`Sampler` implementation would look like the following:
 
-.. code-block:: Python
+.. code-block:: python
 
     from staliro import optimizers
 
@@ -322,7 +322,7 @@ the ``staliro`` function returns a list of :py:class:`~staliro.tests.Run` object
 result data from each run of the optimizer, as well as an evaluation history from the cost function.
 You can also use the :py:func:`staliro.test` function if you choose.
 
-.. code-block:: Python
+.. code-block:: python
     :caption: Test using a *Cost Function*
 
     import staliro
@@ -337,7 +337,7 @@ You can also use the :py:func:`staliro.test` function if you choose.
     opts = staliro.TestOptions(static_inputs={"y": (10, 20)})
     runs = staliro.test(costfunc, optimizer, options)
 
-.. code-block:: Python
+.. code-block:: python
     :caption: Test using a ``Model`` and ``Specification``
 
     from staliro import TestOptions, models, optimizers, specifications, staliro

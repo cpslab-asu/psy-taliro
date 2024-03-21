@@ -405,7 +405,7 @@ class Ode(Model[list[float], None]):
 
         :attribute time: The current time of the integration
         :attribute state: Name-value map containing the state variables for the current time
-        :attribute signals: Name-value map containing the signal values for the curren time
+        :attribute signals: Name-value map containing the signal values for the current time
         """
 
         time: float
@@ -473,7 +473,7 @@ def ode(
     """Create an `Ode` model from a function.
 
     The function provided to this model must accept a `Ode.Inputs` value and return a dictionary
-    where each key is the name of a state variable the value is the deriviate of that variable for
+    where each key is the name of a state variable the value is the derivative of that variable for
     the given time. If no function is provided a decorator is returned, which can be called with
     the function instead.
 

@@ -337,7 +337,7 @@ class ModelSpecExtra(Generic[S, E1, E2]):
 class ModelSpec(Generic[S, C, E1, E2], CostFunc[C, ModelSpecExtra[S, E1, E2]]):
     """Cost function created by composing a `Model and a `Specification`.
 
-    The annototation data returned when evaluating a `Sample` is a composition of the annotations
+    The annotation data returned when evaluating a `Sample` is a composition of the annotations
     for both the model and specification called `ModelSpecExtra`, which contains the annotation data
     from each component along with the trace produced by the model. Even if both the model and spec
     have no annotation data, a `ModelSpecExtra` value will still be constructed to contain the trace.

@@ -2,7 +2,7 @@
 Generate samples for the cost function to evaluate.
 
 An optimizer is responsible for generating the samples that are evaluated by the cost function.
-From the evaluation of each sample the ``Optimizer`` recieves a cost value, which represents some
+From the evaluation of each sample the ``Optimizer`` receives a cost value, which represents some
 quality of the sample that should either be minimized or maximized. Samples should be generated
 until some stopping condition is reached, either from the budget being exhausted or the cost of a
 sample meets some criterion. You can create an optimizer by inheriting from the `Optimizer` class,
@@ -111,7 +111,7 @@ class Optimizer(Generic[C, R], ABC):
     """An optimizer selects samples to be evaluated by the cost function.
 
     This class is parameterized by two type variables, ``C`` and ``R``. ``C`` is the type of the
-    cost value that the optimizer expects to recieve from the cost function, and ``R`` represents
+    cost value that the optimizer expects to receive from the cost function, and ``R`` represents
     the type that the optimizer will return at the end of an optimization attempt.
     """
 
@@ -134,7 +134,7 @@ class Optimizer(Generic[C, R], ABC):
 
         The optimize method is responsible for generating samples that will be evaluated by the cost
         function into cost values that can be used to inform the selection of subsequent samples. In
-        order to recieve cost values, implementations must call either the ``eval_sample`` or
+        order to receive cost values, implementations must call either the ``eval_sample`` or
         ``eval_samples`` methods on the ``func`` value.
 
         :param func: The cost function to use for evaluating samples

@@ -36,7 +36,7 @@ return value. The only required method to implement is the
 :py:meth:`~staliro.cost_func.CostFunc.evaluate` method, which should take as a parameter a
 :py:class:`~staliro.Sample` and return a :py:class:`~staliro.Result` value. 
 
-.. code-block:: Python
+.. code-block:: python
     :linenos:
 
     from staliro import CostFunc, Sample, Result 
@@ -63,7 +63,7 @@ Decorator
 A cost function can also be created by applying the :py:func:`~staliro.cost_func.costfunc` decorator
 to a function that accepts a sample and returns a :py:class:`~staliro.Result` value.
 
-.. code-block:: Python
+.. code-block:: python
 
     import staliro
 
@@ -77,7 +77,7 @@ The function can also return a value other than a ``Result``, in which case a ne
 value is created with the ``value`` attribute set to the functions return value and the ``extra``
 attribute set to ``None``.
 
-.. code-block:: Python
+.. code-block:: python
 
     import staliro
 
