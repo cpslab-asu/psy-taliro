@@ -7,6 +7,13 @@ Specifications
 
 .. autofunction:: staliro.specifications.specification
 
-.. autoclass:: staliro.specifications.RTAMTDiscrete
+RTAMT
+-----
 
-.. autoclass:: staliro.specifications.RTAMTDense
+.. _rtamt-discrete:
+
+.. autofunction:: staliro.specifications.rtamt.parse_discrete
+
+.. _rtamt-dense:
+
+.. autofunction:: staliro.specifications.rtamt.parse_dense

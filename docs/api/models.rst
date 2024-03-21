@@ -12,7 +12,6 @@ Models
 
 .. autofunction:: staliro.models.model
 
-
 Blackbox
 --------
 

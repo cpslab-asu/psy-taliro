@@ -11,6 +11,9 @@ Optimizers
 .. autoclass:: staliro.optimizers.Optimizer
     :members: optimize
 
+Implementations
+---------------
+
 .. autoclass:: staliro.optimizers.UniformRandom
 
 .. autoclass:: staliro.optimizers.DualAnnealing

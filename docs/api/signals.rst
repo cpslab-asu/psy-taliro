@@ -1,3 +1,4 @@
+=======
 Signals
 =======
 
@@ -7,6 +8,9 @@ Signals
 .. autoclass:: staliro.signals.SignalFactory
     :members: __call__
 
+Implementations
+---------------
+
 .. autofunction:: staliro.signals.pchip
 
 .. autofunction:: staliro.signals.piecewise_linear
@@ -14,6 +18,9 @@ Signals
 .. autofunction:: staliro.signals.piecewise_constant
 
 .. autofunction:: staliro.signals.harmonic
+
+Combinators
+-----------
 
 .. autofunction:: staliro.signals.delayed
 
