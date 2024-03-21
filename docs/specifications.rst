@@ -145,21 +145,20 @@ RTAMT
 
 In order to evaluate a STL formula, a program called a *monitor* is required. One such monitor is
 `RTAMT`_, developed by Dejan Nickovic and Tomoya Yamaguchi. Two specification
-implementations are provided using this library: :py:class:`~staliro.specifications.RTAMTDiscrete`
-and :py:class:`~staliro.specifications.RTAMTDense`. Both specifications accept the same constructor
-parameters, which allow users to select the type of state values expected by the optimizer. To
-create an instance of either class you must provide a formula written in STL and a dictionary
-mapping the variable names in the formula to columns in the state value, which is expected to be a
-``list``.
+implementations are provided using this library: :ref:`Discrete <rtamt-discrete>` and
+:ref:`Dense <rtamt-dense>`. Both specifications accept the same constructor parameters, which allow users
+to select the type of state values expected by the optimizer. To create an instance of either class
+you must provide a formula written in STL and a dictionary mapping the variable names in the formula
+to columns in the state value, which is expected to be a ``list``.
 
 .. _`RTAMT`: https://arxiv.org/abs/2005.11827
 
 .. code-block:: python
 
     from staliro.models import Trace
-    from staliro.optimizers import RTAMTDiscrete
+    from staliro.optimizers import rtamt
 
-    specification = RTAMTDiscrete("always (alt >= 0)", {"alt": 0})
+    specification = rtamt.parse_dense("always (alt >= 0)", {"alt": 0})
     states = {
         0.0: [2250.0],
         1.0: [2248.7],
@@ -174,9 +173,9 @@ the specification to expect dictionaries containing each variable in the formula
 .. code-block:: python
 
     from staliro.models import Trace
-    from staliro.optimizers import RTAMTDense
+    from staliro.optimizers import rtamt
 
-    specification = RTAMTDense("always (alt >= 0)")
+    specification = rtamt.parse_discrete("always (alt >= 0)")
     states = {
         0.0: {"alt": 2250.0},
         1.0: {"alt": 2248.7},
