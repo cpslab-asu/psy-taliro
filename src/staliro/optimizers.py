@@ -164,9 +164,14 @@ def _minimize(samples: Samples, func: ObjFunc[object]) -> None:
     func.eval_samples(samples)
 
 
-def _falsify(samples: Samples, func: ObjFunc[CT], min_cost: CT) -> None:
+def _falsify(samples: Samples, func: ObjFunc[CT], min_cost: CT | None, max_cost: CT | None) -> None:
     for sample in samples:
-        if func.eval_sample(sample) < min_cost:
+        cost = func.eval_sample(sample)
+
+        if min_cost and cost < min_cost:
+            break
+
+        if max_cost and cost > max_cost:
             break
 
 
@@ -180,15 +185,16 @@ class UniformRandom(Optimizer[CT, None]):
     :param min_cost: The minimum cost that will cause the optimize to terminate
     """
 
-    def __init__(self, min_cost: CT | None = None):
+    def __init__(self, min_cost: CT | None = None, max_cost: CT | None = None):
         self.min_cost = min_cost
+        self.max_cost = max_cost
 
     def optimize(self, func: ObjFunc[CT], params: Optimizer.Params) -> None:
         rng = default_rng(params.seed)
         samples = [_sample_uniform(params.input_bounds, rng) for _ in range(params.budget)]
 
-        if self.min_cost:
-            return _falsify(samples, func, self.min_cost)
+        if self.min_cost or self.max_cost:
+            return _falsify(samples, func, self.min_cost, self.max_cost)
 
         return _minimize(samples, func)
 
