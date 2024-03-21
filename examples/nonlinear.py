@@ -10,19 +10,19 @@ import staliro.specifications as specifications
 
 
 @models.ode()
-def nonlinear_model(inputs: models.Ode.Inputs) -> list[float]:
+def nonlinear_model(inputs: models.Ode.Inputs) -> dict[str, float]:
     x1 = inputs.state["x1"]
     x2 = inputs.state["x2"]
 
-    return [
-        x1 - x2 + 0.1 * inputs.time,  # x1_dot
-        x2 * math.cos(2 * math.pi * x1) + 0.1 * inputs.time,  # x2_dot
-    ]
+    return {
+        "x1": x1 - x2 + 0.1 * inputs.time,  # x1_dot
+        "x2": x2 * math.cos(2 * math.pi * x1) + 0.1 * inputs.time,  # x2_dot
+    }
 
 
 phi = r"always !(a >= -1.6 and a <= -1.4  and b >= -1.1 and b <= -0.9)"
-specification = specifications.RTAMTDense(phi, {"a": 0, "b": 1})
-optimizer = optimizers.UniformRandom()
+specification = specifications.rtamt.parse_dense(phi, {"a": 0, "b": 1})
+optimizer = optimizers.UniformRandom[float]()
 options = staliro.TestOptions(
     runs=1,
     iterations=100,
