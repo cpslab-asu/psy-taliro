@@ -256,8 +256,8 @@ class SequencedFactory(SignalFactory):
 def sequenced(first: SignalFactory, second: SignalFactory, *, t_switch: float) -> SignalFactory:
     """Create a signal that will switch behavior at a given time.
 
-    :param factory1: Factory for the signal to use before the switch time
-    :param factory2: Factory for the signal to use after the switch time
+    :param first: Factory for the signal to use before the switch time
+    :param second: Factory for the signal to use after the switch time
     :param t_switch: The time to switch from first to second
     :returns: A `SignalFactory` for the sequenced signal
     """
