@@ -90,5 +90,5 @@ def test_blackbox(sample: Sample) -> None:
 
 def test_ode(sample: Sample) -> None:
     @ode(method="RK45")
-    def f(_: Ode.Inputs) -> list[float]:
+    def f(_: Ode.Inputs) -> dict[str, float]:
         raise NotImplementedError()
