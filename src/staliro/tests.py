@@ -124,16 +124,14 @@ def _create_wrapper(ctx: _TestContext[R, C, E]) -> CostFuncWrapper[C, E]:
             options=ctx.options,
             executor=ProcessPoolExecutor(
                 max_workers=cpu_count() if processes == "cores" else processes
-            )
+            ),
         )
 
     if threads:
         return ParallelCostFuncWrapper(
             func=ctx.func,
             options=ctx.options,
-            executor=ThreadPoolExecutor(
-                max_workers=cpu_count() if threads == "cores" else threads
-            )
+            executor=ThreadPoolExecutor(max_workers=cpu_count() if threads == "cores" else threads),
         )
 
     return CostFuncWrapper(ctx.func, ctx.options)
@@ -321,7 +319,8 @@ def setup(
     specification: Specification[S, C, E2],
     optimizer: Optimizer[C, R],
     options: TestOptions,
-) -> Test[R, C, ModelSpecExtra[S, E1, E2]]: ...
+) -> Test[R, C, ModelSpecExtra[S, E1, E2]]:
+    ...
 
 
 @overload
@@ -330,7 +329,8 @@ def setup(
     optimizer: Optimizer[C, R],
     options: TestOptions,
     /,
-) -> Test[R, C, E]: ...
+) -> Test[R, C, E]:
+    ...
 
 
 def setup(
@@ -371,7 +371,8 @@ def staliro(
     options: TestOptions,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]: ...
+) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]:
+    ...
 
 
 @overload
@@ -382,7 +383,8 @@ def staliro(
     /,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, E]]: ...
+) -> list[Run[R, C, E]]:
+    ...
 
 
 def staliro(
@@ -408,7 +410,7 @@ def staliro(
             cast(Model[S, E1], model),
             cast(Specification[S, C, E2], specification),
             cast(Optimizer[C, R], optimizer),
-            options
+            options,
         )
 
         return ms_test.run(processes=processes)
@@ -416,7 +418,7 @@ def staliro(
     cf_test = setup(
         cast(CostFunc[C, E], model),
         cast(Optimizer[C, R], specification),
-        cast(TestOptions, optimizer)
+        cast(TestOptions, optimizer),
     )
 
     return cf_test.run(processes=processes)

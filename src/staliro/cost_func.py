@@ -186,10 +186,12 @@ class FuncWrapper(Generic[P, R]):
         self: FuncWrapper[P, Result[C, E]],
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> Result[C, E]: ...
+    ) -> Result[C, E]:
+        ...
 
     @overload
-    def __call__(self: FuncWrapper[P, R], *args: P.args, **kwargs: P.kwargs) -> Result[R, None]: ...
+    def __call__(self: FuncWrapper[P, R], *args: P.args, **kwargs: P.kwargs) -> Result[R, None]:
+        ...
 
     def __call__(
         self: FuncWrapper[P, Result[C, E] | R],
@@ -205,11 +207,13 @@ class FuncWrapper(Generic[P, R]):
 
 
 @overload
-def wrap_func(func: Callable[P, Result[C, E]]) -> Callable[P, Result[C, E]]: ...
+def wrap_func(func: Callable[P, Result[C, E]]) -> Callable[P, Result[C, E]]:
+    ...
 
 
 @overload
-def wrap_func(func: Callable[P, R]) -> Callable[P, Result[R, None]]: ...
+def wrap_func(func: Callable[P, R]) -> Callable[P, Result[R, None]]:
+    ...
 
 
 def wrap_func(func: Callable[P, Result[C, E] | R]) -> Callable[P, Result[C, E] | Result[R, None]]:
@@ -256,10 +260,12 @@ class Decorator:
     """Function decorator to create a function :py:class:`Wrapper`."""
 
     @overload
-    def __call__(self, func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]: ...
+    def __call__(self, func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]:
+        ...
 
     @overload
-    def __call__(self, func: Callable[[Sample], R]) -> Wrapper[R, None]: ...
+    def __call__(self, func: Callable[[Sample], R]) -> Wrapper[R, None]:
+        ...
 
     def __call__(
         self, func: Callable[[Sample], Result[C, E] | R]
@@ -277,15 +283,18 @@ class Decorator:
 
 
 @overload
-def costfunc(func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]: ...
+def costfunc(func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]:
+    ...
 
 
 @overload
-def costfunc(func: Callable[[Sample], C]) -> Wrapper[C, None]: ...
+def costfunc(func: Callable[[Sample], C]) -> Wrapper[C, None]:
+    ...
 
 
 @overload
-def costfunc(func: None = ...) -> Decorator: ...
+def costfunc(func: None = ...) -> Decorator:
+    ...
 
 
 def costfunc(

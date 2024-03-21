@@ -46,10 +46,12 @@ class UserSpecification(Specification[S, C, E]):
 
 class Decorator:
     @overload
-    def __call__(self, func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]: ...
+    def __call__(self, func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
+        ...
 
     @overload
-    def __call__(self, func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]: ...
+    def __call__(self, func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
+        ...
 
     def __call__(
         self, func: Callable[[Trace[S]], Result[C, E]] | Callable[[Trace[S]], R]
@@ -58,15 +60,18 @@ class Decorator:
 
 
 @overload
-def specification(func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]: ...
+def specification(func: Callable[[Trace[S]], Result[C, E]]) -> UserSpecification[S, C, E]:
+    ...
 
 
 @overload
-def specification(func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]: ...
+def specification(func: Callable[[Trace[S]], R]) -> UserSpecification[S, R, None]:
+    ...
 
 
 @overload
-def specification(func: None = ...) -> Decorator: ...
+def specification(func: None = ...) -> Decorator:
+    ...
 
 
 def specification(

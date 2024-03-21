@@ -302,7 +302,10 @@ def harmonic(_: Iterable[float], control_points: Iterable[float]) -> Harmonic:
         raise RuntimeError("Insufficient number of values to generate a harmonic signal")
 
     bias = control_points[0]
-    component_params = [(control_points[i], control_points[i + 1], control_points[i + 2]) for i in range(1, len(control_points), 3)]
+    component_params = [
+        (control_points[i], control_points[i + 1], control_points[i + 2])
+        for i in range(1, len(control_points), 3)
+    ]
     components = [Harmonic.Component(amp, freq, phase) for amp, freq, phase in component_params]
 
     return Harmonic(bias, components)
@@ -334,7 +337,9 @@ class ClampedFactory(SignalFactory):
         return Clamped(signal, lo, hi)
 
 
-def clamped(inner: SignalFactory, *, lo: float | None = None, hi: float | None = None) -> SignalFactory:
+def clamped(
+    inner: SignalFactory, *, lo: float | None = None, hi: float | None = None
+) -> SignalFactory:
     """Create a signal that will not exceed the given range.
 
     :param inner: Factory for the signal to clamp

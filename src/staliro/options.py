@@ -105,12 +105,12 @@ class TestOptions:
 
     processes: Literal["cores"] | int | None = field(
         default=None,
-        validator=_parallelization
+        validator=_parallelization,
     )
 
     threads: Literal["cores"] | int | None = field(
         default=None,
-        validator=_parallelization
+        validator=_parallelization,
     )
 
     @tspan.validator
