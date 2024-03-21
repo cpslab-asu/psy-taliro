@@ -47,6 +47,8 @@ templates_path = []
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+default_role = "py:obj"
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -60,8 +62,13 @@ html_theme = "furo"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
+
 # -- Intersphinx configuration -----------------------------------------------
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
+
+
+# -- Autodoc configuration
+autodoc_typehints = "description"
