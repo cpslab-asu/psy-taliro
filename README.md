@@ -118,7 +118,7 @@ result = staliro(aircraft_model, specification, optimizer, options)
 ## Documentation
 
 For additional details about the toolbox components, or example scripts, refer
-to the [documentation site](https://sbtg.gitlab.io/psy-taliro).
+to the [documentation site](https://psy-taliro.readthedocs.io/).
 
 ## Citing this project
 
