@@ -49,6 +49,7 @@ omitted then the states are expected to be `dict[str, float]`.
 """
 
 from . import rtamt
+from .banquo import Banquo
 from .specification import Specification, specification
 
-__all__ = ["Specification", "specification", "rtamt"]
+__all__ = ["Banquo", "Specification", "specification", "rtamt"]
