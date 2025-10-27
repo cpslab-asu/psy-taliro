@@ -32,6 +32,9 @@ dependencies = [
     "rtamt ~= 0.3",
 ]
 
+[project.optional-dependencies]
+banquo = ["pybanquo ~= 0.1"]
+
 [project.license-files]
 paths = ["LICENSE"]
 
@@ -59,6 +62,7 @@ dependencies = [
     "mypy >= 1.0.0",
     "ruff >= 0.2.0",
     "pyarrow",
+    "psy-taliro[banquo]",
     "pytest",
     "pandas ~= 2.0",
     "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
@@ -134,7 +138,7 @@ files = [
 strict_equality = true
 strict_optional = true
 warn_no_return = true
-warn_return_any = true 
+warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
