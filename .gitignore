@@ -3,6 +3,7 @@
 .idea/
 .mypy_cache/
 .python-version
+.DS_Store
 
 # Generated python files
 **/*.egg-info/
