@@ -167,10 +167,10 @@ def _falsify(samples: Samples, func: ObjFunc[CT], min_cost: CT | None, max_cost:
     for sample in samples:
         cost = func.eval_sample(sample)
 
-        if min_cost and cost < min_cost:
+        if min_cost is not None and cost < min_cost:
             break
 
-        if max_cost and cost > max_cost:
+        if max_cost is not None and cost > max_cost:
             break
 
 
@@ -192,7 +192,7 @@ class UniformRandom(Optimizer[CT, None]):
         rng = default_rng(params.seed)
         samples = [_sample_uniform(params.input_bounds, rng) for _ in range(params.budget)]
 
-        if self.min_cost or self.max_cost:
+        if self.min_cost is not None or self.max_cost is not None:
             return _falsify(samples, func, self.min_cost, self.max_cost)
 
         return _minimize(samples, func)
@@ -230,7 +230,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
         def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if self.min_cost and cost < self.min_cost:
+            if self.min_cost is not None and cost < self.min_cost:
                 return True
 
             return False
