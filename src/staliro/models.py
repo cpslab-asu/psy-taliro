@@ -77,7 +77,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeVar, Union, cast, overload
+from typing import Generic, Literal, SupportsFloat, TypeVar, cast, overload
 
 from attrs import frozen
 from numpy import array, float_, linspace
