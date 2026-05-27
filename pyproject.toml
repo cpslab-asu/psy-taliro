@@ -7,7 +7,7 @@ name = "psy-taliro"
 dynamic = ["version"]
 description = "Search-based test generation framework"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = []
 authors = [
     { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
@@ -15,10 +15,11 @@ authors = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
@@ -134,7 +135,7 @@ files = [
 strict_equality = true
 strict_optional = true
 warn_no_return = true
-warn_return_any = true 
+warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
