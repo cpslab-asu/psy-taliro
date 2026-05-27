@@ -7,15 +7,15 @@ import plotly.graph_objects as go
 from aerobench.examples.gcas.gcas_autopilot import GcasAutopilot
 from aerobench.run_f16_sim import run_f16_sim
 
-from staliro import TestOptions, Trace, staliro
-from staliro.models import Blackbox, blackbox
+from staliro import TestOptions, Trace, blackbox, staliro
+from staliro.models import Blackbox
 from staliro.optimizers import DualAnnealing
 from staliro.specifications import rtamt
 
 TSPAN: Final[tuple[float, float]] = (0, 15)
 
 
-@blackbox()
+@blackbox(step_size=0.1)
 def f16_model(inputs: Blackbox.Inputs) -> Trace[list[float]]:
     power = 9
     alpha = np.deg2rad(2.1215)
