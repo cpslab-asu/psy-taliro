@@ -30,12 +30,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator
-from typing import Any, Generic, TypeVar, Union
+from typing import Any, Generic, TypeAlias, TypeVar
 
 from attrs import frozen
 from numpy import linspace, ndarray
 from numpy.typing import NDArray
-from typing_extensions import TypeAlias
 
 from .options import TestOptions
 from .signals import Signal
@@ -127,7 +126,7 @@ class Signals:
         return self._tspan
 
 
-SampleLike: TypeAlias = Union[Iterable[float], NDArray[Any]]
+SampleLike: TypeAlias = Iterable[float] | NDArray[Any]
 
 
 class Sample:

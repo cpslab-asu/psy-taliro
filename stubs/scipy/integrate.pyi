@@ -1,9 +1,8 @@
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 
 from numpy import float_
 from numpy.typing import ArrayLike, NDArray
-from typing_extensions import TypeAlias
 
 _ObjectiveFun: TypeAlias = Callable[[float, NDArray[float_]], ArrayLike]
 _Method: TypeAlias = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]

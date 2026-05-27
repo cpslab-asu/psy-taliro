@@ -62,14 +62,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import Generic, Literal, Protocol, TypeVar, overload
+from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, overload
 
 from attrs import frozen
 from numpy import float_
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
-from typing_extensions import TypeAlias
 
 from .cost_func import SampleLike
 from .options import Interval

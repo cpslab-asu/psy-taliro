@@ -1,8 +1,7 @@
 from collections.abc import Callable, Iterable, Iterator
-from typing import Any, Literal, overload
+from typing import Any, Literal, TypeAlias, overload
 
 from numpy.typing import ArrayLike, DTypeLike, NDArray
-from typing_extensions import TypeAlias
 
 class Index: ...
 

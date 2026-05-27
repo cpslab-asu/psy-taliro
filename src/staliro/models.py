@@ -77,14 +77,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeVar, cast, overload
+from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, cast, overload
 
 from attrs import frozen
 from numpy import array, float_, linspace
 from numpy.typing import NDArray
 from scipy import integrate
 from sortedcontainers import SortedDict
-from typing_extensions import TypeAlias
 
 from .cost_func import Result as _Result
 from .cost_func import Sample
@@ -127,7 +126,9 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
             if states is None:
                 raise ValueError("must provide states with times")
 
-            self.elements = SortedDict({float(time): state for time, state in zip(times, states)})
+            self.elements = SortedDict(
+                {float(time): state for time, state in zip(times, states, strict=True)}
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trace):

@@ -1,9 +1,8 @@
 from collections.abc import Sequence
-from typing import Literal, overload
+from typing import Literal, TypeAlias, overload
 
 from numpy import float_, int_
 from numpy.typing import ArrayLike, NDArray
-from typing_extensions import TypeAlias
 
 _Extrapolate: TypeAlias = bool | Literal["periodic"] | None
 _IntegralArray: TypeAlias = NDArray[float_ | int_]

@@ -18,14 +18,13 @@ from collections.abc import Iterable, Iterator
 from enum import IntEnum
 from logging import Logger, NullHandler, getLogger
 from os import cpu_count
-from typing import Generic, Literal, TypeVar, cast, overload
+from typing import Generic, Literal, TypeAlias, TypeVar, cast, overload
 from uuid import UUID, uuid4
 
 from attrs import define, field, frozen
 from numpy.random import default_rng
 from pathos import pools
 from pathos.abstract_launcher import AbstractWorkerPool
-from typing_extensions import TypeAlias
 
 from .cost_func import CostFunc, Result, Sample, SampleLike
 from .models import Model, Trace

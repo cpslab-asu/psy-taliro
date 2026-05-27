@@ -25,10 +25,9 @@ from __future__ import annotations
 
 import random
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 from attrs import Attribute, converters, define, field, validators
-from typing_extensions import TypeAlias
 
 from .signals import Interval, IntervalLike, SignalInput, _to_interval
 

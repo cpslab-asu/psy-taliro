@@ -81,13 +81,12 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping, Sequence
 from math import cos
-from typing import Protocol, SupportsFloat, Union, cast
+from typing import Protocol, SupportsFloat, TypeAlias, cast
 
 import numpy as np
 from attrs import Attribute, define, field, frozen, validators
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
-from typing_extensions import TypeAlias
 
 
 class Signal(ABC):
@@ -243,7 +242,7 @@ class SequencedFactory(SignalFactory):
     t_switch: float
 
     def __call__(self, times: Iterable[float], control_points: Iterable[float]) -> Signal:
-        times_pts = zip(times, control_points)
+        times_pts = zip(times, control_points, strict=True)
         s1_data = [(time, value) for time, value in times_pts if time < self.t_switch]
         s1 = self.first((time for time, _ in s1_data), (value for _, value in s1_data))
 
@@ -351,7 +350,7 @@ def clamped(
     return ClampedFactory(inner, lo, hi)
 
 
-IntervalLike: TypeAlias = Union[Sequence[SupportsFloat], NDArray[np.float_]]
+IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float_]
 Interval: TypeAlias = tuple[float, float]
 
 
@@ -378,8 +377,8 @@ def _to_interval(interval: IntervalLike) -> Interval:
     return float(interval[0]), float(interval[1])
 
 
-ControlPointsLike: TypeAlias = Union[Mapping[SupportsFloat, IntervalLike], Sequence[IntervalLike]]
-ControlPoints: TypeAlias = Union[list[Interval], dict[float, Interval]]
+ControlPointsLike: TypeAlias = Mapping[SupportsFloat, IntervalLike] | Sequence[IntervalLike]
+ControlPoints: TypeAlias = list[Interval] | dict[float, Interval]
 
 
 def _to_control_points(pts: ControlPointsLike) -> ControlPoints:
