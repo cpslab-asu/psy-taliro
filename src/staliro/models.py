@@ -96,7 +96,7 @@ R = TypeVar("R", covariant=True)
 T = TypeVar("T", bound=SupportsFloat)
 
 
-class Trace(Generic[S], Iterable[tuple[float, S]]):
+class Trace(Iterable[tuple[float, S]], Generic[S]):
     """A time-annotated set of system states.
 
     This class can be iterated over to access each time, state pair in time-ascending order. This
@@ -157,7 +157,7 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
         return self.elements.values()
 
 
-class Result(Generic[S, E], _Result[Trace[S], E]):
+class Result(_Result[Trace[S], E], Generic[S, E]):
     """Specialized version of `staliro.Result` that constructs a `Trace` as the value.
 
     :param states: The states of the system, either as a list or a dictionary where the keys are the associated times
@@ -188,7 +188,7 @@ class Result(Generic[S, E], _Result[Trace[S], E]):
         super().__init__(trace, extra)
 
 
-class Model(Generic[S, E], ABC):
+class Model(ABC, Generic[S, E]):
     """Representation of the simulation logic for the system under test (SUT)."""
 
     @abstractmethod

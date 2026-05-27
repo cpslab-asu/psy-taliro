@@ -107,7 +107,7 @@ class ObjFunc(Protocol[R]):
 C = TypeVar("C", contravariant=True)
 
 
-class Optimizer(Generic[C, R], ABC):
+class Optimizer(ABC, Generic[C, R]):
     """An optimizer selects samples to be evaluated by the cost function.
 
     This class is parameterized by two type variables, ``C`` and ``R``. ``C`` is the type of the

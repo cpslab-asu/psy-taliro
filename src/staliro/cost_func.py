@@ -173,7 +173,7 @@ class Sample:
         return self._signals
 
 
-class CostFunc(Generic[C, E], ABC):
+class CostFunc(ABC, Generic[C, E]):
     """The transformation from a `Sample` to a cost value.
 
     This class is parameterized by two type variables, ``C`` and ``E``. ``C`` is the type of the
