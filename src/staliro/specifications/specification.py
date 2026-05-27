@@ -20,7 +20,7 @@ class Specification(ABC, Generic[S, C, E]):
     """
 
     @abstractmethod
-    def evaluate(self, __trace: Trace[S]) -> Result[C, E]:
+    def evaluate(self, trace: Trace[S], /) -> Result[C, E]:
         """Evaluate trajectories and timestamps with respect to some requirement.
 
         Args:
