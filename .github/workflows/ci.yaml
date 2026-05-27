@@ -12,17 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install Hatch
         run: pip install hatch
       - name: Run Tests
@@ -40,42 +36,20 @@ jobs:
       - name: Run Tests
         run: hatch run docs:build
 
-  f16:
+  examples:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install Hatch
         run: pip install hatch
-      - name: Run Tests
+      - name: Run F16
         run: hatch run f16
-
-  nonlinear:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install Hatch
-        run: pip install hatch
-      - name: Run Tests
+      - name: Run Nonlinear
         run: hatch run nonlinear
