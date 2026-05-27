@@ -6,10 +6,10 @@ import plotly.graph_objects as go
 import staliro
 import staliro.models as models
 import staliro.optimizers as optimizers
-import staliro.specifications as specifications
+import staliro.specifications.rtamt as rtamt
 
 
-@models.ode()
+@staliro.ode(method="RK45")
 def nonlinear_model(inputs: models.Ode.Inputs) -> dict[str, float]:
     x1 = inputs.state["x1"]
     x2 = inputs.state["x2"]
@@ -21,7 +21,7 @@ def nonlinear_model(inputs: models.Ode.Inputs) -> dict[str, float]:
 
 
 phi = r"always !(a >= -1.6 and a <= -1.4  and b >= -1.1 and b <= -0.9)"
-specification = specifications.rtamt.parse_dense(phi, {"a": 0, "b": 1})
+specification = rtamt.parse_dense(phi, {"a": 0, "b": 1})
 optimizer = optimizers.UniformRandom[float]()
 options = staliro.TestOptions(
     runs=1,

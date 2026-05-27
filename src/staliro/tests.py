@@ -73,7 +73,7 @@ def _cost_func_logger() -> Logger:
 
 
 @define(slots=True)
-class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
+class CostFuncWrapper(ObjFunc[C], Generic[C, E]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
 
     :param func: The cost function to use for sample evaluation
@@ -218,7 +218,7 @@ def _make_bounds(options: TestOptions) -> list[Interval]:
 
 
 @define(slots=True)
-class _TestContexts(Generic[R, C, E], Iterable[_TestContext[R, C, E]]):
+class _TestContexts(Iterable[_TestContext[R, C, E]], Generic[R, C, E]):
     func: CostFunc[C, E]
     optimizer: Optimizer[C, R]
     options: TestOptions
@@ -339,7 +339,7 @@ class ModelSpecExtra(Generic[S, E1, E2]):
 
 
 @define(slots=True)
-class ModelSpec(Generic[S, C, E1, E2], CostFunc[C, ModelSpecExtra[S, E1, E2]]):
+class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2]], Generic[S, C, E1, E2]):
     """Cost function created by composing a `Model and a `Specification`.
 
     The annotation data returned when evaluating a `Sample` is a composition of the annotations

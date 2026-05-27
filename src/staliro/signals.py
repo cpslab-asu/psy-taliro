@@ -108,7 +108,7 @@ class Signal(ABC):
 class SignalFactory(Protocol):
     """Factory interface for creating signals from a set of times and control points."""
 
-    def __call__(self, __times: Iterable[float], __control_points: Iterable[float]) -> Signal:
+    def __call__(self, times: Iterable[float], control_points: Iterable[float], /) -> Signal:
         """Create a `Signal` from a set of times and control points.
 
         The number of times and control points can be assumed to be equal.

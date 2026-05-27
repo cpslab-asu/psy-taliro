@@ -107,7 +107,7 @@ class ObjFunc(Protocol[R]):
 C = TypeVar("C", contravariant=True)
 
 
-class Optimizer(Generic[C, R], ABC):
+class Optimizer(ABC, Generic[C, R]):
     """An optimizer selects samples to be evaluated by the cost function.
 
     This class is parameterized by two type variables, ``C`` and ``R``. ``C`` is the type of the
@@ -149,7 +149,7 @@ Samples: TypeAlias = Iterable[SampleLike]
 
 class Comparable(Protocol):
     @abstractmethod
-    def __lt__(self: CT, other: CT) -> bool: ...
+    def __lt__(self: CT, other: CT, /) -> bool: ...
 
 
 CT = TypeVar("CT", bound=Comparable)
@@ -230,10 +230,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
         def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if self.min_cost is not None and cost < self.min_cost:
-                return True
-
-            return False
+            return self.min_cost is not None and cost < self.min_cost
 
         result = optimize.dual_annealing(
             func=lambda x: func.eval_sample(x),
@@ -262,7 +259,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
 
 class UserFunc(Protocol[C, R]):
-    def __call__(self, __func: ObjFunc[C], __params: Optimizer.Params) -> R: ...
+    def __call__(self, func: ObjFunc[C], params: Optimizer.Params, /) -> R: ...
 
 
 class UserOptimizer(Optimizer[C, R]):
@@ -274,7 +271,7 @@ class UserOptimizer(Optimizer[C, R]):
 
 
 class Decorator(Protocol):
-    def __call__(self, __f: UserFunc[C, R]) -> UserOptimizer[C, R]: ...
+    def __call__(self, f: UserFunc[C, R], /) -> UserOptimizer[C, R]: ...
 
 
 T = TypeVar("T", covariant=True)
