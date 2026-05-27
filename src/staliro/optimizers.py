@@ -230,10 +230,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
         def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if self.min_cost is not None and cost < self.min_cost:
-                return True
-
-            return False
+            return self.min_cost is not None and cost < self.min_cost
 
         result = optimize.dual_annealing(
             func=lambda x: func.eval_sample(x),
