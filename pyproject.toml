@@ -117,14 +117,14 @@ examples = [
 ]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
 [tool.pyright]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 stubPath = "stubs"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 mypy_path = "stubs"
 files = [
     "src/**/*.py",
