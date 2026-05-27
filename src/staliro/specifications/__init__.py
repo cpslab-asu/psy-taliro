@@ -48,7 +48,6 @@ omitted then the states are expected to be `dict[str, float]`.
     s2: Specification[Sequence[float], float, None] = rtamt.parse_discrete("always (alt >= 0)", {"alt": 0})
 """
 
-from . import rtamt
-from .specification import Specification, specification
+from .specification import Specification
 
-__all__ = ["Specification", "specification", "rtamt"]
+__all__ = ["Specification"]
