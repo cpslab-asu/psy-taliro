@@ -82,4 +82,4 @@ if __name__ == "__main__":
     figure.add_trace(go.Scatter(x=times, y=speed), row=2, col=1)
     figure.update_yaxes(title_text="RPM", row=1, col=1)
     figure.update_yaxes(title_text="Speed", row=2, col=1)
-    figure.write_image("autotrans.jpeg")
+    figure.write_image(pathlib.Path("autotrans.jpeg"))

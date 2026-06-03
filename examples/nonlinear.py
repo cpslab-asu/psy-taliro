@@ -1,5 +1,6 @@
 import logging
 import math
+import pathlib
 
 import plotly.graph_objects as go
 
@@ -85,4 +86,4 @@ if __name__ == "__main__":
         )
     )
 
-    figure.write_image("nonlinear.jpeg")
+    figure.write_image(pathlib.Path("nonlinear.jpeg"))

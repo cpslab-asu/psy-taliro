@@ -1,5 +1,6 @@
 import logging
 import math
+import pathlib
 from typing import Final
 
 import numpy as np
@@ -77,4 +78,4 @@ if __name__ == "__main__":
         )
     )
 
-    figure.write_image("f16.jpeg")
+    figure.write_image(pathlib.Path("f16.jpeg"))
