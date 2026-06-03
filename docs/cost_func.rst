@@ -60,7 +60,7 @@ return value. The only required method to implement is the
 Decorator
 ---------
 
-A cost function can also be created by applying the :py:func:`~staliro.cost_func.costfunc` decorator
+A cost function can also be created by applying the :py:func:`~staliro.costfunc` decorator
 to a function that accepts a sample and returns a :py:class:`~staliro.Result` value.
 
 .. code-block:: python

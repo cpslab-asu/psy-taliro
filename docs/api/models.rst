@@ -10,7 +10,7 @@ Models
 .. autoclass:: staliro.models.Model
     :members: simulate
 
-.. autofunction:: staliro.models.model
+.. autodecorator:: staliro.model
 
 Blackbox
 --------
@@ -19,7 +19,7 @@ Blackbox
 
 .. autoclass:: staliro.models.Blackbox
 
-.. autofunction:: staliro.models.blackbox
+.. autodecorator:: staliro.blackbox
 
 ODE
 ---
@@ -29,4 +29,4 @@ ODE
 
 .. autoclass:: staliro.models.Ode
 
-.. autofunction:: staliro.models.ode
+.. autodecorator:: staliro.ode
