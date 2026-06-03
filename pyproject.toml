@@ -104,25 +104,7 @@ disallow_untyped_calls = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "staliro.parser.parser"
-disallow_untyped_calls = false
-
-[[tool.mypy.overrides]]
 module = [
-    "staliro.parser.stlLexer",
-    "staliro.parser.stlParser",
-    "staliro.parser.stlParserListener",
-    "staliro.parser.stlParserVisitor",
-    "staliro.parser.stlTptlParserVisitorTranslator",
-    "tests.parser.*",
-]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-    "antlr4.CommonTokenStream",
-    "antlr4.InputStream",
-    "plotly.*",
     "aerobench.*",
     "matlab.*"
 ]
