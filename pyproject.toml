@@ -53,8 +53,6 @@ types = [
     "pandas-stubs>=2.3.3.260113",
     "plotly-stubs>=0.0.6",
     "scipy-stubs>=1.15.3.0",
-    { include-group = "tests" },
-    { include-group = "examples" },
 ]
 tests = [
     "pytest >= 8.0",
