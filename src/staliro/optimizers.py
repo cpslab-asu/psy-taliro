@@ -237,7 +237,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         result = optimize.dual_annealing(
             func=wrapper,
             bounds=list(params.input_bounds),
-            seed=params.seed,
+            rng=params.seed,
             maxfun=params.budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
             callback=listener,
