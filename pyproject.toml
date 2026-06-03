@@ -58,10 +58,9 @@ types = [
 ]
 tests = [
     "pytest >= 8.0",
+    "pandas >= 2.0",
 ]
 examples = [
-    "pyarrow",
-    "pandas >= 2.0",
     "aerobench",
     "kaleido >= 1.0",
     "plotly >= 6.7",
