@@ -1276,6 +1276,7 @@ types = [
     { name = "mypy" },
     { name = "pandas-stubs", version = "2.3.3.260113", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas-stubs", version = "3.0.3.260530", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pytest" },
     { name = "scipy-stubs", version = "1.15.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy-stubs", version = "1.17.1.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
@@ -1327,6 +1328,7 @@ tests = [{ name = "pytest", specifier = ">=8.0" }]
 types = [
     { name = "mypy", specifier = ">=1.0.0" },
     { name = "pandas-stubs", specifier = ">=2.3.3.260113" },
+    { name = "pytest", specifier = ">=8.0" },
     { name = "scipy-stubs", specifier = ">=1.15.3.0" },
 ]
 
