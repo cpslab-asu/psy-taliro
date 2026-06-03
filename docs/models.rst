@@ -26,12 +26,12 @@ directly or by providing a set of times and a set of states of equal length.
     t2 = Trace({1: "red", 2: "green", 3: "blue"})
 
 .. note::
-    
+
     It is recommended to use keyword arguments when constructing a Trace from times and states for
     readability. If you are using a type-checker, keyword arguments will be enforced.
 
 .. warning::
-    
+
     If you are uncertain about the shape of your data, you should use the :py:func:`len` function
     to ensure that the length of the trace is what you expect.
 
@@ -82,7 +82,7 @@ produced by the model and the type of the annotation data.
     @dataclass()
     class State:
         """The state of the system under test."""
-    
+
     class Foo(models.Model[State, int]):
         def __init__(self):
             self.rng = Random()
@@ -95,14 +95,14 @@ produced by the model and the type of the annotation data.
             )
 
 .. _model-decorator:
- 
+
 Decorator
 ---------
 
 For systems that only depend on their input, you can also implement a ``Model`` by decorating a
 function with :py:func:`~staliro.models.model`. As with extending the ``Model`` class, decorated
 functions must accept a ``Sample`` as a parameter and return a ``staliro.Result`` value.
-    
+
 .. code-block:: python
 
     from staliro import Sample, models
@@ -179,7 +179,7 @@ You can construct a ``Blackbox`` model by annotating a Python function with the
 consequence the number of evaluation times).
 
 .. code-block:: python
-    
+
     import staliro.models as models
 
     @models.blackbox()
@@ -252,7 +252,7 @@ You can construct an ``Ode`` model by annotating a Python function with the
 ``method`` parameter which specifies the integration method to use for simulation.
 
 .. code-block:: python
-    
+
     import staliro.models as models
 
     @models.ode()

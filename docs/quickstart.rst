@@ -257,7 +257,7 @@ Options
 -------
 
 .. note::
-    
+
     All parameters when constructing a ``TestOptions`` or ``SignalInput`` value
     must be provided as keywords.
 
@@ -309,6 +309,7 @@ value with both static and signal inputs.
                 factory=signals.pchip,
             )
         }
+    )
 
 Writing tests
 -------------
@@ -350,8 +351,8 @@ You can also use the :py:func:`staliro.test` function if you choose.
     spec = specifications.RTAMTDense("always (x >= 3.0)", {"x": 0})
     opts = TestOptions(static_inputs={"y": (10, 20)})
     runs = staliro(model, spec, optimizer, options)
- 
-Executable scripts 
+
+Executable scripts
 ^^^^^^^^^^^^^^^^^^
 
 Keeping tests in executable scripts can be convenient if you plan on executing a test many times.
