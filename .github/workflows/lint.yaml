@@ -9,24 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
-          cache: 'pip'
-      - name: Install ruff
-        run: pip install ruff
+          python-version: "3.12"
       - name: Lint
-        run: ruff check
+        run: uv run --no-dev --group lint ruff check .
       - name: Format
-        run: ruff format --check
+        run: uv run --no-dev --group lint ruff format --check .
 
   mypy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
-          cache: 'pip'
-      - name: Install hatch
-        run: pip install hatch
+          python-version: "3.10"
       - name: Check types
-        run: hatch env run --env types check
+        run: uv run --no-dev --group types mypy

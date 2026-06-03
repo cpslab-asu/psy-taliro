@@ -15,26 +15,21 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name: Install Hatch
-        run: pip install hatch
       - name: Run Tests
-        run: hatch run tests
+        run: uv run --no-dev --group tests pytest
 
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
-          cache: "pip"
-      - name: Install Hatch
-        run: pip install hatch
+          python-version: "3.12"
       - name: Run Tests
-        run: hatch run docs:build
+        run: uv run --no-dev --group docs sphinx-build -b html docs docs/_build/html
 
   examples:
     runs-on: ubuntu-latest
@@ -43,13 +38,12 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name: Install Hatch
-        run: pip install hatch
+      - name: Setup environment
+        run: uv sync --no-dev --group examples
       - name: Run F16
-        run: hatch run f16
+        run: uv run examples/f16.py
       - name: Run Nonlinear
-        run: hatch run nonlinear
+        run: uv run examples/nonlinear.py
