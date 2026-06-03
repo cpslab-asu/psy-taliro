@@ -8,6 +8,7 @@ version = "2.0.0"
 description = "Search-based test generation framework"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
+license-files = ["LICENSE"]
 keywords = []
 authors = [
     { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
@@ -30,9 +31,6 @@ dependencies = [
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
 ]
-
-[project.license-files]
-paths = ["LICENSE"]
 
 [project.urls]
 Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
