@@ -13,7 +13,7 @@ samples. In principle, sample selection can be entirely independent of the sampl
 but in practice it is valuable to try and minimize/maximize the cost value, which generally
 represents some kind of *quality* property of the sample.
 
-.. _obj_func:
+.. _objective-function:
 
 Objective Function
 ------------------
