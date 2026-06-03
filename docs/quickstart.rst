@@ -175,7 +175,7 @@ written as a string and a ``Mapping`` of variable names in the formula to column
 Generating Samples
 ------------------
 
-.. _optimizer:
+.. _optimizers:
 
 Optimizers
 ^^^^^^^^^^
@@ -315,7 +315,7 @@ Writing tests
 
 A typical PSY-TaLiRo script is composed of component definitions and then a call to the
 :py:func:`~staliro.staliro` function. ``staliro`` takes as input either 3 parameters (a
-:ref:`Cost Function <cost-function>`, an :ref:`Optimizer <optimizer>`, and a
+:ref:`Cost Function <cost-function>`, an :ref:`Optimizer <optimizers>`, and a
 :ref:`TestOptions <options>` value) or 4 parameters (a :ref:`Model <model>`, a
 :ref:`Specification <specification>`, an ``Optimizer``, and a ``TestOptions`` value). As output,
 the ``staliro`` function returns a list of :py:class:`~staliro.tests.Run` objects which contains the
