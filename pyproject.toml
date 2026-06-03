@@ -37,80 +37,42 @@ Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
 Issues = "https://github.com/cpslab-asu/psy-taliro/issues"
 Source = "https://github.com/cpslab-asu/psy-taliro"
 
-[tool.hatch.build.targets.sdist]
-exclude = [
-    "/docs",
-    "/tests",
-    "/stubs",
-    "/examples"
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "types" },
+    { include-group = "tests" },
+    { include-group = "examples" }
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/staliro"]
-
-[tool.hatch.envs.default]
-dependencies = [
+lint = [
+    "ruff >= 0.15",
+    "rstcheck >= 6.2",
+]
+types = [
     "mypy >= 1.0.0",
-    "ruff >= 0.2.0",
-    "pyarrow",
-    "pytest",
-    "pandas ~= 2.0",
-    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
-    "kaleido ~= 1.0",
-    "plotly ~= 6.7",
 ]
-
-[tool.hatch.envs.default.scripts]
-tests = "pytest {args:tests}"
-f16 = "python3 examples/f16.py"
-nonlinear = "python3 examples/nonlinear.py"
-bilevel = "python3 examples/bilevel.py"
-
-[tool.hatch.envs.style]
-detached = true
-dependencies = [
-    "ruff >= 0.2.0",
+tests = [
+    "pytest >= 8.0",
 ]
-
-[tool.hatch.envs.style.scripts]
-check = [
-    "ruff check {args:.}",
-    "ruff format --check {args:.}",
-]
-fix = [
-    "ruff check --select I --fix {args:.}",
-    "ruff format {args:.}",
-]
-
-[tool.hatch.envs.types]
-
-[tool.hatch.envs.types.scripts]
-check = "mypy --pretty {args:}"
-
-[tool.hatch.envs.docs]
-template = "docs"
-dependencies = [
-    "sphinx ~= 7.2",
-    "sphinx-autodocgen ~= 1.2",
-    "sphinx-autobuild >= 2021.3.14",
-    "furo >= 2022.4.7",
-    "rstcheck >= 5.0.0",
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "sphinx-build -b html docs docs/_build/html"
-check = "rstcheck {args:--recursive docs}"
-serve = "sphinx-autobuild --watch src/staliro/ docs docs/_build/html"
-
-[tool.hatch.envs.all]
-[tool.hatch.envs.all.scripts]
 examples = [
-    "f16",
-    "nonlinear",
+    "pyarrow",
+    "pandas >= 2.0",
+    "aerobench",
+    "kaleido >= 1.0",
+    "plotly >= 6.7",
+]
+docs = [
+    "sphinx >= 8.0",
+    "sphinx-autodocgen >= 1.2",
+    "sphinx-autobuild >= 2024.10",
+    "furo >= 2025.12",
 ]
 
-[[tool.hatch.envs.all.matrix]]
-python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+[tool.uv.sources]
+aerobench = {  git = "https://github.com/cpslab-asu/aerobenchvvpython" }
+
+[tool.uv.build-backend]
+module-name = "staliro"
 
 [tool.pyright]
 pythonVersion = "3.10"
