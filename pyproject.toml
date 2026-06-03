@@ -46,7 +46,6 @@ dev = [
 ]
 lint = [
     "ruff >= 0.15",
-    "rstcheck >= 6.2",
 ]
 types = [
     "mypy >= 1.0.0",
