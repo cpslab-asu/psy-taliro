@@ -42,7 +42,8 @@ dev = [
     { include-group = "lint" },
     { include-group = "types" },
     { include-group = "tests" },
-    { include-group = "examples" }
+    { include-group = "examples" },
+    { include-group = "docs" },
 ]
 lint = [
     "ruff >= 0.15",
