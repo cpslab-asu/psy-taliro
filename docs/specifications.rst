@@ -120,7 +120,7 @@ of the cost value returned, and ``E`` represents the type of the annotation data
     from staliro import Result, Trace
     from staliro.specifications import Specification
 
-    class Spec(Specification[list[float], float, None])
+    class Spec(Specification[list[float], float, None]):
         def evaluate(self, trace: Trace[list[float]]) -> Result[float, None]:
             ...
 

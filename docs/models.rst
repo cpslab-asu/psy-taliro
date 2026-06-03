@@ -256,7 +256,7 @@ You can construct an ``Ode`` model by annotating a Python function with the
     import staliro.models as models
 
     @models.ode()
-    def no_method(inputs: models.Ode.Inputs) -> dict[str, float]
+    def no_method(inputs: models.Ode.Inputs) -> dict[str, float]:
         ...
 
     @models.ode(method="Radau")
