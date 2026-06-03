@@ -141,7 +141,9 @@ def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
     :returns: A signal interpolated using PChip
     """
 
-    return Pchip(PchipInterpolator(list(times), list(control_points)))
+    return Pchip(
+        PchipInterpolator(np.array(times, dtype=float), np.array(control_points, dtype=float))
+    )
 
 
 class Piecewise(Signal):
@@ -168,7 +170,7 @@ def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) ->
     :returns: A piecewise linear interpolated signal
     """
 
-    return Piecewise(interp1d(list(times), list(control_points)))
+    return Piecewise(interp1d(np.array(times, dtype=float), np.array(control_points, dtype=float)))
 
 
 def piecewise_constant(times: Iterable[float], values: Iterable[float]) -> Piecewise:
@@ -181,7 +183,14 @@ def piecewise_constant(times: Iterable[float], values: Iterable[float]) -> Piece
     :returns: A piecewise constant interpolated signal
     """
 
-    return Piecewise(interp1d(list(times), list(values), kind="zero", fill_value="extrapolate"))
+    return Piecewise(
+        interp1d(
+            np.array(times, dtype=float),
+            np.array(values, dtype=float),
+            kind="zero",
+            fill_value="extrapolate",
+        )
+    )
 
 
 @define(slots=True)
