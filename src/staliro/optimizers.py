@@ -228,7 +228,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         self.min_cost = min_cost
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
-        def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
+        def listener(sample: object, cost: float, ctx: Literal[0, 1, 2]) -> bool:
             return self.min_cost is not None and cost < self.min_cost
 
         result = optimize.dual_annealing(
