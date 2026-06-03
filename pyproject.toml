@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "psy-taliro"
-dynamic = ["version"]
+version = "2.0.0"
 description = "Search-based test generation framework"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -38,9 +38,6 @@ paths = ["LICENSE"]
 Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
 Issues = "https://github.com/cpslab-asu/psy-taliro/issues"
 Source = "https://github.com/cpslab-asu/psy-taliro"
-
-[tool.hatch.version]
-path = "src/staliro/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
