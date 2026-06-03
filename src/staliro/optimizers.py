@@ -231,8 +231,11 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         def listener(sample: object, cost: float, ctx: Literal[0, 1, 2]) -> bool:
             return self.min_cost is not None and cost < self.min_cost
 
+        def wrapper(x: NDArray[float64]) -> float:
+            return func.eval_sample(x)
+
         result = optimize.dual_annealing(
-            func=lambda x: func.eval_sample(x),
+            func=wrapper,
             bounds=list(params.input_bounds),
             seed=params.seed,
             maxfun=params.budget,
