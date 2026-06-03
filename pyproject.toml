@@ -21,12 +21,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "attrs ~= 23.2",
-    "numpy ~= 1.26",
+    "attrs >= 24.1",
+    "numpy >= 2.0",
     "pathos ~= 0.3",
-    "scipy ~= 1.11",
+    "scipy >= 1.17",
     "sortedcontainers ~= 2.4",
-    "typing-extensions ~= 4.9",
+    "typing-extensions >= 4.15",
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
 ]
@@ -61,8 +61,8 @@ dependencies = [
     "pytest",
     "pandas ~= 2.0",
     "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
-    "kaleido ~= 0.2.1",
-    "plotly ~= 5.3",
+    "kaleido ~= 1.0",
+    "plotly ~= 6.7",
 ]
 
 [tool.hatch.envs.default.scripts]
