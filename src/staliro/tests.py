@@ -238,7 +238,7 @@ class _TestContexts(Iterable[_TestContext[R, C, E]], Generic[R, C, E]):
                 optimizer=self.optimizer,
                 options=self.options,
                 bounds=bounds,
-                seed=rng.integers(0, 2**32 - 1),
+                seed=rng.integers(0, 2**32 - 1, dtype=int),
                 parallelization=self.parallelization,
             )
 
