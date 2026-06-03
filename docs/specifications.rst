@@ -31,8 +31,8 @@ form :math:`\textbf{a} \cdot \textbf{x} \leq b` where the expression
 :math:`\textbf{a} \cdot \textbf{x}` is the first-order sum of variables representing the system
 state, and :math:`b` is a constant. The following is are some examples of predicates:
 
-.. code-block::
-    
+.. code-block:: python
+
     altitude >= 0.0
 
     flow_rate - drain_rate >= 1.0
