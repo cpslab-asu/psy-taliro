@@ -65,7 +65,7 @@ from collections.abc import Iterable, Sequence
 from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, overload
 
 from attrs import frozen
-from numpy import float_
+from numpy import float64
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
@@ -207,9 +207,9 @@ class DualAnnealingResult:
     :attribute hessian_evals: Number of times the hessian of the cost function was evaluated
     """
 
-    jacobian_value: NDArray[float_] | None
+    jacobian_value: NDArray[float64] | None
     jacobian_evals: int
-    hessian_value: NDArray[float_] | None
+    hessian_value: NDArray[float64] | None
     hessian_evals: int
 
 
@@ -241,14 +241,14 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         )
 
         try:
-            jac: NDArray[float_] | None = result.jac
+            jac: NDArray[float64] | None = result.jac
             njev = result.njev
         except AttributeError:
             jac = None
             njev = 0
 
         try:
-            hess: NDArray[float_] | None = result.hess
+            hess: NDArray[float64] | None = result.hess
             nhev = result.nhev
         except AttributeError:
             hess = None

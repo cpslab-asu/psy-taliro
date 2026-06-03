@@ -350,7 +350,7 @@ def clamped(
     return ClampedFactory(inner, lo, hi)
 
 
-IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float_]
+IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64]
 Interval: TypeAlias = tuple[float, float]
 
 

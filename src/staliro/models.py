@@ -80,7 +80,7 @@ from math import floor
 from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, cast, overload
 
 from attrs import frozen
-from numpy import array, float_, linspace
+from numpy import array, float64, linspace
 from numpy.typing import NDArray
 from scipy import integrate
 from sortedcontainers import SortedDict
@@ -285,7 +285,7 @@ class Ode(Model[list[float], None]):
 
         names = list(sample.static)
 
-        def integration_fn(time: float, state: NDArray[float_]) -> NDArray[float_]:
+        def integration_fn(time: float, state: NDArray[float64]) -> NDArray[float64]:
             static = {name: state[idx] for idx, name in enumerate(sample.static)}
             signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
             derivs = self.func(Ode.Inputs(time, static, signals))
