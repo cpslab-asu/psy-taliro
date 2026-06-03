@@ -98,7 +98,7 @@ class Signal(ABC):
 
         raise NotImplementedError()
 
-    def at_times(self, times: Sequence[float]) -> list[float]:
+    def at_times(self, times: Iterable[float]) -> list[float]:
         """Get the value of the signal at each specified time."""
 
         return [self.at_time(time) for time in times]
@@ -127,8 +127,8 @@ class Pchip(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> list[float]:
-        return cast(list[float], self.interp(ts).tolist())
+    def at_times(self, ts: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
 
 
 def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
@@ -153,8 +153,8 @@ class Piecewise(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> list[float]:
-        return cast(list[float], self.interp(ts).tolist())
+    def at_times(self, ts: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
 
 
 def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) -> Piecewise:
