@@ -62,14 +62,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import Generic, Literal, Protocol, TypeVar, overload
+from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, overload
 
 from attrs import frozen
-from numpy import float_
+from numpy import float64
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
-from typing_extensions import TypeAlias
 
 from .cost_func import SampleLike
 from .options import Interval
@@ -107,7 +106,7 @@ class ObjFunc(Protocol[R]):
 C = TypeVar("C", contravariant=True)
 
 
-class Optimizer(Generic[C, R], ABC):
+class Optimizer(ABC, Generic[C, R]):
     """An optimizer selects samples to be evaluated by the cost function.
 
     This class is parameterized by two type variables, ``C`` and ``R``. ``C`` is the type of the
@@ -149,7 +148,7 @@ Samples: TypeAlias = Iterable[SampleLike]
 
 class Comparable(Protocol):
     @abstractmethod
-    def __lt__(self: CT, other: CT) -> bool: ...
+    def __lt__(self: CT, other: CT, /) -> bool: ...
 
 
 CT = TypeVar("CT", bound=Comparable)
@@ -208,9 +207,9 @@ class DualAnnealingResult:
     :attribute hessian_evals: Number of times the hessian of the cost function was evaluated
     """
 
-    jacobian_value: NDArray[float_] | None
+    jacobian_value: NDArray[float64] | None
     jacobian_evals: int
-    hessian_value: NDArray[float_] | None
+    hessian_value: NDArray[float64] | None
     hessian_evals: int
 
 
@@ -229,30 +228,30 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
         self.min_cost = min_cost
 
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
-        def listener(sample: object, cost: float, ctx: Literal[-1, 0, 1]) -> bool:
-            if self.min_cost is not None and cost < self.min_cost:
-                return True
+        def listener(sample: object, cost: float, ctx: Literal[0, 1, 2]) -> bool:
+            return self.min_cost is not None and cost < self.min_cost
 
-            return False
+        def wrapper(x: NDArray[float64]) -> float:
+            return func.eval_sample(x)
 
         result = optimize.dual_annealing(
-            func=lambda x: func.eval_sample(x),
+            func=wrapper,
             bounds=list(params.input_bounds),
-            seed=params.seed,
+            rng=params.seed,
             maxfun=params.budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
             callback=listener,
         )
 
         try:
-            jac: NDArray[float_] | None = result.jac
+            jac: NDArray[float64] | None = result.jac
             njev = result.njev
         except AttributeError:
             jac = None
             njev = 0
 
         try:
-            hess: NDArray[float_] | None = result.hess
+            hess: NDArray[float64] | None = result.hess
             nhev = result.nhev
         except AttributeError:
             hess = None
@@ -262,7 +261,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
 
 class UserFunc(Protocol[C, R]):
-    def __call__(self, __func: ObjFunc[C], __params: Optimizer.Params) -> R: ...
+    def __call__(self, func: ObjFunc[C], params: Optimizer.Params, /) -> R: ...
 
 
 class UserOptimizer(Optimizer[C, R]):
@@ -274,7 +273,7 @@ class UserOptimizer(Optimizer[C, R]):
 
 
 class Decorator(Protocol):
-    def __call__(self, __f: UserFunc[C, R]) -> UserOptimizer[C, R]: ...
+    def __call__(self, f: UserFunc[C, R], /) -> UserOptimizer[C, R]: ...
 
 
 T = TypeVar("T", covariant=True)

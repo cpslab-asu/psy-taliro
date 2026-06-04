@@ -29,13 +29,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from collections.abc import Callable, Iterable, Iterator
-from typing import Any, Generic, TypeVar, Union, overload
+from collections.abc import Iterable, Iterator
+from typing import Any, Generic, TypeAlias, TypeVar
 
 from attrs import frozen
 from numpy import linspace, ndarray
 from numpy.typing import NDArray
-from typing_extensions import ParamSpec, TypeAlias
 
 from .options import TestOptions
 from .signals import Signal
@@ -127,7 +126,7 @@ class Signals:
         return self._tspan
 
 
-SampleLike: TypeAlias = Union[Iterable[float], NDArray[Any]]
+SampleLike: TypeAlias = Iterable[float] | NDArray[Any]
 
 
 class Sample:
@@ -173,50 +172,7 @@ class Sample:
         return self._signals
 
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-class FuncWrapper(Generic[P, R]):
-    def __init__(self, func: Callable[P, R]):
-        self.func = func
-
-    @overload
-    def __call__(
-        self: FuncWrapper[P, Result[C, E]],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Result[C, E]: ...
-
-    @overload
-    def __call__(self: FuncWrapper[P, R], *args: P.args, **kwargs: P.kwargs) -> Result[R, None]: ...
-
-    def __call__(
-        self: FuncWrapper[P, Result[C, E] | R],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Result[C, E] | Result[R, None]:
-        retval = self.func(*args, **kwargs)
-
-        if not isinstance(retval, Result):
-            return Result(retval, None)
-
-        return retval
-
-
-@overload
-def wrap_func(func: Callable[P, Result[C, E]]) -> Callable[P, Result[C, E]]: ...
-
-
-@overload
-def wrap_func(func: Callable[P, R]) -> Callable[P, Result[R, None]]: ...
-
-
-def wrap_func(func: Callable[P, Result[C, E] | R]) -> Callable[P, Result[C, E] | Result[R, None]]:
-    return FuncWrapper(func)
-
-
-class CostFunc(Generic[C, E], ABC):
+class CostFunc(ABC, Generic[C, E]):
     """The transformation from a `Sample` to a cost value.
 
     This class is parameterized by two type variables, ``C`` and ``E``. ``C`` is the type of the
@@ -231,79 +187,3 @@ class CostFunc(Generic[C, E], ABC):
         :param sample: The sample to evaluate
         :returns: The cost value associated with the sample and any provided annotation data
         """
-
-
-class Wrapper(CostFunc[C, E]):
-    """Wrapper to transform a raw python function into a `CostFunc`.
-
-    :param func: The user function to wrap
-    """
-
-    def __init__(self, func: Callable[[Sample], Result[C, E]]):
-        self.func = func
-
-    def evaluate(self, sample: Sample) -> Result[C, E]:
-        """Apply the provided function to evaluate the given `Sample`.
-
-        :param sample: The sample to evaluate with the user function
-        :returns: The cost value associated with the sample and any provided annotation data
-        """
-
-        return self.func(sample)
-
-
-class Decorator:
-    """Function decorator to create a function :py:class:`Wrapper`."""
-
-    @overload
-    def __call__(self, func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]: ...
-
-    @overload
-    def __call__(self, func: Callable[[Sample], R]) -> Wrapper[R, None]: ...
-
-    def __call__(
-        self, func: Callable[[Sample], Result[C, E] | R]
-    ) -> Wrapper[C, E] | Wrapper[C, None]:
-        """Create a :py:class:`Wrapper` from a Python function.
-
-        Before creating the ``Wrapper`` instance, the function is wrapped to ensure that it will
-        return a :py:class:`Result` value.
-
-        :param func: The Python function to decorate
-        :returns: A :py:class:`CostFunc` implementation using the provided function
-        """
-
-        return Wrapper(FuncWrapper(func))
-
-
-@overload
-def costfunc(func: Callable[[Sample], Result[C, E]]) -> Wrapper[C, E]: ...
-
-
-@overload
-def costfunc(func: Callable[[Sample], C]) -> Wrapper[C, None]: ...
-
-
-@overload
-def costfunc(func: None = ...) -> Decorator: ...
-
-
-def costfunc(
-    func: Callable[[Sample], Result[C, E]] | Callable[[Sample], R] | None = None,
-) -> Wrapper[C, E] | Wrapper[R, None] | Decorator:
-    """Transform a python function into a `CostFunc`.
-
-    If the provided function returns any value other than a `Result`, the value will
-    be wrapped in a ``Result`` with the ``extra`` field set to ``None``. This decorator can be
-    called with or without parentheses.
-
-    :param func: The function to transform
-    :returns: A cost function or a decorator
-    """
-
-    decorator = Decorator()
-
-    if func:
-        return decorator(func)
-
-    return decorator

@@ -81,13 +81,12 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping, Sequence
 from math import cos
-from typing import Protocol, SupportsFloat, Union, cast
+from typing import Protocol, SupportsFloat, TypeAlias, cast
 
 import numpy as np
 from attrs import Attribute, define, field, frozen, validators
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
-from typing_extensions import TypeAlias
 
 
 class Signal(ABC):
@@ -99,7 +98,7 @@ class Signal(ABC):
 
         raise NotImplementedError()
 
-    def at_times(self, times: Sequence[float]) -> list[float]:
+    def at_times(self, times: Iterable[float]) -> list[float]:
         """Get the value of the signal at each specified time."""
 
         return [self.at_time(time) for time in times]
@@ -108,7 +107,7 @@ class Signal(ABC):
 class SignalFactory(Protocol):
     """Factory interface for creating signals from a set of times and control points."""
 
-    def __call__(self, __times: Iterable[float], __control_points: Iterable[float]) -> Signal:
+    def __call__(self, times: Iterable[float], control_points: Iterable[float], /) -> Signal:
         """Create a `Signal` from a set of times and control points.
 
         The number of times and control points can be assumed to be equal.
@@ -128,8 +127,8 @@ class Pchip(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> list[float]:
-        return cast(list[float], self.interp(ts).tolist())
+    def at_times(self, ts: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
 
 
 def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
@@ -142,7 +141,9 @@ def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
     :returns: A signal interpolated using PChip
     """
 
-    return Pchip(PchipInterpolator(list(times), list(control_points)))
+    return Pchip(
+        PchipInterpolator(np.array(times, dtype=float), np.array(control_points, dtype=float))
+    )
 
 
 class Piecewise(Signal):
@@ -154,8 +155,8 @@ class Piecewise(Signal):
     def at_time(self, t: float) -> float:
         return float(self.interp(t))
 
-    def at_times(self, ts: Sequence[float]) -> list[float]:
-        return cast(list[float], self.interp(ts).tolist())
+    def at_times(self, ts: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
 
 
 def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) -> Piecewise:
@@ -169,7 +170,7 @@ def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) ->
     :returns: A piecewise linear interpolated signal
     """
 
-    return Piecewise(interp1d(list(times), list(control_points)))
+    return Piecewise(interp1d(np.array(times, dtype=float), np.array(control_points, dtype=float)))
 
 
 def piecewise_constant(times: Iterable[float], values: Iterable[float]) -> Piecewise:
@@ -182,7 +183,14 @@ def piecewise_constant(times: Iterable[float], values: Iterable[float]) -> Piece
     :returns: A piecewise constant interpolated signal
     """
 
-    return Piecewise(interp1d(list(times), list(values), kind="zero", fill_value="extrapolate"))
+    return Piecewise(
+        interp1d(
+            np.array(times, dtype=float),
+            np.array(values, dtype=float),
+            kind="zero",
+            fill_value="extrapolate",
+        )
+    )
 
 
 @define(slots=True)
@@ -243,7 +251,7 @@ class SequencedFactory(SignalFactory):
     t_switch: float
 
     def __call__(self, times: Iterable[float], control_points: Iterable[float]) -> Signal:
-        times_pts = zip(times, control_points)
+        times_pts = zip(times, control_points, strict=True)
         s1_data = [(time, value) for time, value in times_pts if time < self.t_switch]
         s1 = self.first((time for time, _ in s1_data), (value for _, value in s1_data))
 
@@ -351,7 +359,7 @@ def clamped(
     return ClampedFactory(inner, lo, hi)
 
 
-IntervalLike: TypeAlias = Union[Sequence[SupportsFloat], NDArray[np.float_]]
+IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64]
 Interval: TypeAlias = tuple[float, float]
 
 
@@ -378,8 +386,8 @@ def _to_interval(interval: IntervalLike) -> Interval:
     return float(interval[0]), float(interval[1])
 
 
-ControlPointsLike: TypeAlias = Union[Mapping[SupportsFloat, IntervalLike], Sequence[IntervalLike]]
-ControlPoints: TypeAlias = Union[list[Interval], dict[float, Interval]]
+ControlPointsLike: TypeAlias = Mapping[SupportsFloat, IntervalLike] | Sequence[IntervalLike]
+ControlPoints: TypeAlias = list[Interval] | dict[float, Interval]
 
 
 def _to_control_points(pts: ControlPointsLike) -> ControlPoints:

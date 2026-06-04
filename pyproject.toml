@@ -1,13 +1,14 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.11.18,<0.12"]
+build-backend = "uv_build"
 
 [project]
 name = "psy-taliro"
-dynamic = ["version"]
+version = "2.0.0"
 description = "Search-based test generation framework"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10,<3.13"
+license-files = ["LICENSE"]
 keywords = []
 authors = [
     { name = "Quinn Thibeault", email = "quinn.thibeault@asu.com" },
@@ -15,115 +16,72 @@ authors = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "attrs ~= 23.2",
-    "numpy ~= 1.26",
+    "attrs >= 24.1",
+    "numpy >= 2.0",
     "pathos ~= 0.3",
-    "scipy ~= 1.11",
+    "scipy >= 1.15",
     "sortedcontainers ~= 2.4",
-    "typing-extensions ~= 4.9",
+    "typing-extensions >= 4.15",
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
 ]
-
-[project.license-files]
-paths = ["LICENSE"]
 
 [project.urls]
 Documentation = "https://github.com/cpslab-asu/psy-taliro#readme"
 Issues = "https://github.com/cpslab-asu/psy-taliro/issues"
 Source = "https://github.com/cpslab-asu/psy-taliro"
 
-[tool.hatch.version]
-path = "src/staliro/__about__.py"
-
-[tool.hatch.build.targets.sdist]
-exclude = [
-    "/docs",
-    "/tests",
-    "/stubs",
-    "/examples"
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "types" },
+    { include-group = "tests" },
+    { include-group = "examples" },
+    { include-group = "docs" },
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/staliro"]
-
-[tool.hatch.envs.default]
-dependencies = [
+lint = [
+    "ruff >= 0.15",
+]
+types = [
     "mypy >= 1.0.0",
-    "ruff >= 0.2.0",
-    "pyarrow",
-    "pytest",
-    "pandas ~= 2.0",
-    "aerobench @ git+https://github.com/cpslab-asu/aerobenchvvpython.git",
-    "kaleido ~= 0.2.1",
-    "plotly ~= 5.3",
+    "pandas-stubs>=2.3.3.260113",
+    "plotly-stubs>=0.0.6",
+    "scipy-stubs>=1.15.3.0",
 ]
-
-[tool.hatch.envs.default.scripts]
-tests = "pytest {args:tests}"
-f16 = "python3 examples/f16.py"
-nonlinear = "python3 examples/nonlinear.py"
-bilevel = "python3 examples/bilevel.py"
-
-[tool.hatch.envs.style]
-detached = true
-dependencies = [
-    "ruff >= 0.2.0",
+tests = [
+    "pytest >= 8.0",
+    "pandas >= 2.0",
 ]
-
-[tool.hatch.envs.style.scripts]
-check = [
-    "ruff check {args:.}",
-    "ruff format --check {args:.}",
-]
-fix = [
-    "ruff check --select I --fix {args:.}",
-    "ruff format {args:.}",
-]
-
-[tool.hatch.envs.types]
-
-[tool.hatch.envs.types.scripts]
-check = "mypy --pretty {args:}"
-
-[tool.hatch.envs.docs]
-template = "docs"
-dependencies = [
-    "sphinx ~= 7.2",
-    "sphinx-autodocgen ~= 1.2",
-    "sphinx-autobuild >= 2021.3.14",
-    "furo >= 2022.4.7",
-    "rstcheck >= 5.0.0",
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "sphinx-build -b html docs docs/_build/html"
-check = "rstcheck {args:--recursive docs}"
-serve = "sphinx-autobuild --watch src/staliro/ docs docs/_build/html"
-
-[tool.hatch.envs.all]
-[tool.hatch.envs.all.scripts]
 examples = [
-    "f16",
-    "nonlinear",
+    "aerobench",
+    "kaleido >= 1.0",
+    "plotly >= 6.7",
+]
+docs = [
+    "sphinx >= 8.0",
+    "sphinx-autodocgen >= 1.2",
+    "sphinx-autobuild >= 2024.10",
+    "furo >= 2025.12",
 ]
 
-[[tool.hatch.envs.all.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
+[tool.uv.sources]
+aerobench = {  git = "https://github.com/cpslab-asu/aerobenchvvpython" }
+
+[tool.uv.build-backend]
+module-name = "staliro"
 
 [tool.pyright]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 stubPath = "stubs"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 mypy_path = "stubs"
 files = [
     "src/**/*.py",
@@ -134,7 +92,7 @@ files = [
 strict_equality = true
 strict_optional = true
 warn_no_return = true
-warn_return_any = true 
+warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
@@ -144,25 +102,7 @@ disallow_untyped_calls = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "staliro.parser.parser"
-disallow_untyped_calls = false
-
-[[tool.mypy.overrides]]
 module = [
-    "staliro.parser.stlLexer",
-    "staliro.parser.stlParser",
-    "staliro.parser.stlParserListener",
-    "staliro.parser.stlParserVisitor",
-    "staliro.parser.stlTptlParserVisitorTranslator",
-    "tests.parser.*",
-]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-    "antlr4.CommonTokenStream",
-    "antlr4.InputStream",
-    "plotly.*",
     "aerobench.*",
     "matlab.*"
 ]

@@ -18,14 +18,13 @@ from collections.abc import Iterable, Iterator
 from enum import IntEnum
 from logging import Logger, NullHandler, getLogger
 from os import cpu_count
-from typing import Generic, Literal, TypeVar, cast, overload
+from typing import Generic, Literal, TypeAlias, TypeVar, cast, overload
 from uuid import UUID, uuid4
 
 from attrs import define, field, frozen
 from numpy.random import default_rng
 from pathos import pools
 from pathos.abstract_launcher import AbstractWorkerPool
-from typing_extensions import TypeAlias
 
 from .cost_func import CostFunc, Result, Sample, SampleLike
 from .models import Model, Trace
@@ -73,7 +72,7 @@ def _cost_func_logger() -> Logger:
 
 
 @define(slots=True)
-class CostFuncWrapper(Generic[C, E], ObjFunc[C]):
+class CostFuncWrapper(ObjFunc[C], Generic[C, E]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
 
     :param func: The cost function to use for sample evaluation
@@ -218,7 +217,7 @@ def _make_bounds(options: TestOptions) -> list[Interval]:
 
 
 @define(slots=True)
-class _TestContexts(Generic[R, C, E], Iterable[_TestContext[R, C, E]]):
+class _TestContexts(Iterable[_TestContext[R, C, E]], Generic[R, C, E]):
     func: CostFunc[C, E]
     optimizer: Optimizer[C, R]
     options: TestOptions
@@ -239,7 +238,7 @@ class _TestContexts(Generic[R, C, E], Iterable[_TestContext[R, C, E]]):
                 optimizer=self.optimizer,
                 options=self.options,
                 bounds=bounds,
-                seed=rng.integers(0, 2**32 - 1),
+                seed=rng.integers(0, 2**32 - 1, dtype=int),
                 parallelization=self.parallelization,
             )
 
@@ -339,7 +338,7 @@ class ModelSpecExtra(Generic[S, E1, E2]):
 
 
 @define(slots=True)
-class ModelSpec(Generic[S, C, E1, E2], CostFunc[C, ModelSpecExtra[S, E1, E2]]):
+class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2]], Generic[S, C, E1, E2]):
     """Cost function created by composing a `Model and a `Specification`.
 
     The annotation data returned when evaluating a `Sample` is a composition of the annotations

@@ -61,7 +61,7 @@ def test_signals() -> None:
     assert len(sample.signals) == 2
 
     assert sample.signals.tspan == (0, 12)
-    assert list(sample.signals.names) == ["rho", "phi"]
+    assert list(sample.signals.names) == ["rho", "phi"]  # type: ignore[unreachable]
     assert sample.signals["rho"] == TestSignal([0, 4, 8], [1.0, 3.0, 2.0])
     assert sample.signals["phi"] == TestSignal([0, 3, 6, 9], [4.0, 3.1, 2.9, 4.1])
 

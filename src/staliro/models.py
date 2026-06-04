@@ -77,17 +77,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeVar, Union, cast, overload
+from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, cast, overload
 
 from attrs import frozen
-from numpy import array, float_, linspace
+from numpy import array, float64, linspace
 from numpy.typing import NDArray
 from scipy import integrate
 from sortedcontainers import SortedDict
-from typing_extensions import TypeAlias
 
-from .cost_func import FuncWrapper, Sample
 from .cost_func import Result as _Result
+from .cost_func import Sample
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -96,7 +95,7 @@ R = TypeVar("R", covariant=True)
 T = TypeVar("T", bound=SupportsFloat)
 
 
-class Trace(Generic[S], Iterable[tuple[float, S]]):
+class Trace(Iterable[tuple[float, S]], Generic[S]):
     """A time-annotated set of system states.
 
     This class can be iterated over to access each time, state pair in time-ascending order. This
@@ -127,7 +126,9 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
             if states is None:
                 raise ValueError("must provide states with times")
 
-            self.elements = SortedDict({float(time): state for time, state in zip(times, states)})
+            self.elements = SortedDict(
+                {float(time): state for time, state in zip(times, states, strict=True)}
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trace):
@@ -157,7 +158,7 @@ class Trace(Generic[S], Iterable[tuple[float, S]]):
         return self.elements.values()
 
 
-class Result(Generic[S, E], _Result[Trace[S], E]):
+class Result(_Result[Trace[S], E], Generic[S, E]):
     """Specialized version of `staliro.Result` that constructs a `Trace` as the value.
 
     :param states: The states of the system, either as a list or a dictionary where the keys are the associated times
@@ -188,7 +189,7 @@ class Result(Generic[S, E], _Result[Trace[S], E]):
         super().__init__(trace, extra)
 
 
-class Model(Generic[S, E], ABC):
+class Model(ABC, Generic[S, E]):
     """Representation of the simulation logic for the system under test (SUT)."""
 
     @abstractmethod
@@ -198,64 +199,6 @@ class Model(Generic[S, E], ABC):
         :param sample: The sample containing the system inputs
         :returns: A result containing the ``Trace`` of system states and additional annotation data
         """
-
-
-class ModelWrapper(Model[S, E]):
-    def __init__(self, func: Callable[[Sample], _Result[Trace[S], E]]):
-        self.func = func
-
-    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
-        return self.func(sample)
-
-
-ModelFunc: TypeAlias = Union[
-    Callable[[Sample], _Result[Trace[S], E]],
-    Callable[[Sample], Trace[R]],
-]
-
-
-class ModelDecorator:
-    @overload
-    def __call__(self, func: Callable[[Sample], _Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
-
-    @overload
-    def __call__(self, func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]: ...
-
-    def __call__(self, func: ModelFunc[S, E, R]) -> ModelWrapper[S, E] | ModelWrapper[R, None]:
-        return ModelWrapper(FuncWrapper(func))
-
-
-@overload
-def model(func: Callable[[Sample], _Result[Trace[S], E]]) -> ModelWrapper[S, E]: ...
-
-
-@overload
-def model(func: Callable[[Sample], Trace[R]]) -> ModelWrapper[R, None]: ...
-
-
-@overload
-def model(func: None = ...) -> ModelDecorator: ...
-
-
-def model(
-    func: ModelFunc[S, E, R] | None = None,
-) -> ModelWrapper[S, E] | ModelWrapper[R, None] | ModelDecorator:
-    """Create an `Model` from a function.
-
-    The function provided to this model must accept a `Sample` value and return either a
-    `Trace` value or a `staliro.Result` containing a ``Trace`` and additional annotation data. If no
-    function is provided a decorator is returned, which can be called with the function instead.
-
-    :param func: The function representing the system
-    :returns: A ``Model`` or a decorator to create a ``Model``
-    """
-
-    decorator = ModelDecorator()
-
-    if func:
-        return decorator(func)
-
-    return decorator
 
 
 class Blackbox(Model[S, E]):
@@ -305,74 +248,6 @@ class Blackbox(Model[S, E]):
         return self._func(self._create_inputs(sample))
 
 
-BlackboxFunc: TypeAlias = Union[
-    Callable[[Blackbox.Inputs], _Result[Trace[S], E]],
-    Callable[[Blackbox.Inputs], Trace[R]],
-]
-
-
-class BlackboxDecorator:
-    def __init__(self, step_size: float):
-        self.step_size = step_size
-
-    @overload
-    def __call__(
-        self, func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]]
-    ) -> Blackbox[S, E]: ...
-
-    @overload
-    def __call__(self, func: Callable[[Blackbox.Inputs], Trace[R]]) -> Blackbox[R, None]: ...
-
-    def __call__(self, func: BlackboxFunc[S, E, R]) -> Blackbox[S, E] | Blackbox[R, None]:
-        return Blackbox(FuncWrapper(func), self.step_size)
-
-
-@overload
-def blackbox(
-    func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]],
-    *,
-    step_size: float = ...,
-) -> Blackbox[S, E]: ...
-
-
-@overload
-def blackbox(
-    func: Callable[[Blackbox.Inputs], Trace[R]],
-    *,
-    step_size: float = ...,
-) -> Blackbox[R, None]: ...
-
-
-@overload
-def blackbox(func: None = ..., *, step_size: float = ...) -> BlackboxDecorator: ...
-
-
-def blackbox(
-    func: BlackboxFunc[S, E, R] | None = None,
-    *,
-    step_size: float = 0.1,
-) -> Blackbox[S, E] | Blackbox[R, None] | BlackboxDecorator:
-    """Create an `Blackbox` model from a function.
-
-    The function provided to this model must accept a `Blackbox.Inputs` value and return either a
-    `Trace` value or a `staliro.Result` containing a ``Trace`` and additional annotation data. If no
-    function is provided a decorator is returned, which can be called with the function instead.
-    The size of the time step for signal evaluation can be customized using the ``step_size``
-    parameter.
-
-    :param func: The function representing the system
-    :param step_size: Size of the time step for signal evaluation
-    :returns: A ``Blackbox`` model or a decorator to create a ``Blackbox``
-    """
-
-    decorator = BlackboxDecorator(step_size)
-
-    if func:
-        return decorator(func)
-
-    return decorator
-
-
 class Ode(Model[list[float], None]):
     """Model for systems that can be modeled by an Ordinary Differential Equation (ODE).
 
@@ -410,7 +285,7 @@ class Ode(Model[list[float], None]):
 
         names = list(sample.static)
 
-        def integration_fn(time: float, state: NDArray[float_]) -> NDArray[float_]:
+        def integration_fn(time: float, state: NDArray[float64]) -> NDArray[float64]:
             static = {name: state[idx] for idx, name in enumerate(sample.static)}
             signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
             derivs = self.func(Ode.Inputs(time, static, signals))
@@ -429,50 +304,3 @@ class Ode(Model[list[float], None]):
             states=integration.y.T.astype(dtype=float).tolist(),
             extra=None,
         )
-
-
-class OdeDecorator:
-    def __init__(self, method: Ode.Method):
-        self.method = method
-
-    def __call__(self, func: Callable[[Ode.Inputs], Mapping[str, float]]) -> Ode:
-        return Ode(func, self.method)
-
-
-@overload
-def ode(
-    func: Callable[[Ode.Inputs], Mapping[str, float]],
-    *,
-    method: Ode.Method = ...,
-) -> Ode: ...
-
-
-@overload
-def ode(func: None = ..., *, method: Ode.Method = ...) -> OdeDecorator:
-    pass
-
-
-def ode(
-    func: Callable[[Ode.Inputs], Mapping[str, float]] | None = None,
-    *,
-    method: Ode.Method = "RK45",
-) -> Ode | OdeDecorator:
-    """Create an `Ode` model from a function.
-
-    The function provided to this model must accept a `Ode.Inputs` value and return a dictionary
-    where each key is the name of a state variable the value is the derivative of that variable for
-    the given time. If no function is provided a decorator is returned, which can be called with
-    the function instead.
-
-    :param func: The function representing the system ODE
-    :param method: The integration method for the ODE solver.
-                   Valid options are: ``["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]``
-    :returns: An ``Ode`` model or a decorator to create an ``Ode`` model
-    """
-
-    decorator = OdeDecorator(method)
-
-    if func:
-        return decorator(func)
-
-    return decorator

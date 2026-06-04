@@ -5,7 +5,7 @@ Specifications
 .. autoclass:: staliro.specifications.Specification
     :members: evaluate
 
-.. autofunction:: staliro.specifications.specification
+.. autodecorator:: staliro.specification
 
 RTAMT
 -----

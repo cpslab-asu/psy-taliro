@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Union, cast, overload
+from typing import TypeAlias, cast, overload
 
 from rtamt import StlDenseTimeSpecification, StlDiscreteTimeSpecification
-from typing_extensions import TypeAlias
 
 from ..cost_func import Result
 from ..models import Trace
@@ -111,7 +110,7 @@ class DiscreteNamed(Specification[dict[str, float], float, None]):
         return Result(cost, None)
 
 
-Discrete: TypeAlias = Union[DiscreteMapped, DiscreteNamed]
+Discrete: TypeAlias = DiscreteMapped | DiscreteNamed
 
 
 @overload
@@ -153,7 +152,7 @@ def _evaluate_dense(phi: str, times: list[float], states: dict[str, list[float]]
 
     spec.parse()
 
-    traces = [(name, list(zip(times, states[name]))) for name in states]
+    traces = [(name, list(zip(times, states[name], strict=True))) for name in states]
     robustness = spec.evaluate(*traces)
 
     return robustness[0][1]
@@ -196,7 +195,7 @@ class DenseNamed(Specification[dict[str, float], float, None]):
         return Result(cost, None)
 
 
-Dense: TypeAlias = Union[DenseMapped, DenseNamed]
+Dense: TypeAlias = DenseMapped | DenseNamed
 
 
 @overload

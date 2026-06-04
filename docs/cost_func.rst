@@ -34,12 +34,12 @@ their own implementations. The type variable ``C`` represents the cost value com
 optimizer, and the type variable ``E`` represents the type of the annotation data in the
 return value. The only required method to implement is the
 :py:meth:`~staliro.cost_func.CostFunc.evaluate` method, which should take as a parameter a
-:py:class:`~staliro.Sample` and return a :py:class:`~staliro.Result` value. 
+:py:class:`~staliro.Sample` and return a :py:class:`~staliro.Result` value.
 
 .. code-block:: python
     :linenos:
 
-    from staliro import CostFunc, Sample, Result 
+    from staliro import CostFunc, Sample, Result
 
 
     class Foo(CostFunc[float, str]):
@@ -60,7 +60,7 @@ return value. The only required method to implement is the
 Decorator
 ---------
 
-A cost function can also be created by applying the :py:func:`~staliro.cost_func.costfunc` decorator
+A cost function can also be created by applying the :py:func:`~staliro.costfunc` decorator
 to a function that accepts a sample and returns a :py:class:`~staliro.Result` value.
 
 .. code-block:: python
@@ -86,4 +86,3 @@ attribute set to ``None``.
         return 0.0
 
     costfunc.evaluate(...)  # Result(0.0, None)
-

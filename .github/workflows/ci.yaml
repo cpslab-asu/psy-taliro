@@ -7,63 +7,46 @@ on:
   pull_request:
     branches: ["main"]
 
+env:
+  UV_NO_DEV: True # Disable dev dependency group in all jobs
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Install Hatch
-        run: pip install hatch
       - name: Run Tests
-        run: hatch run tests
+        run: uv run --group tests pytest
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
-          cache: 'pip'
-      - name: Install Hatch
-        run: pip install hatch
+          python-version: "3.12"
       - name: Run Tests
-        run: hatch run docs:build
+        run: uv run --group docs sphinx-build -b html docs docs/_build/html
 
-  f16:
+  examples:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Install Hatch
-        run: pip install hatch
-      - name: Run Tests
-        run: hatch run f16
-
-  nonlinear:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Install Hatch
-        run: pip install hatch
-      - name: Run Tests
-        run: hatch run nonlinear
+      - name: Setup environment
+        run: uv sync --group examples
+      - name: Run F16
+        run: uv run examples/f16.py
+      - name: Run Nonlinear
+        run: uv run examples/nonlinear.py

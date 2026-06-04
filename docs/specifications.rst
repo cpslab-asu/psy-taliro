@@ -31,8 +31,8 @@ form :math:`\textbf{a} \cdot \textbf{x} \leq b` where the expression
 :math:`\textbf{a} \cdot \textbf{x}` is the first-order sum of variables representing the system
 state, and :math:`b` is a constant. The following is are some examples of predicates:
 
-.. code-block::
-    
+.. code-block:: python
+
     altitude >= 0.0
 
     flow_rate - drain_rate >= 1.0
@@ -120,7 +120,7 @@ of the cost value returned, and ``E`` represents the type of the annotation data
     from staliro import Result, Trace
     from staliro.specifications import Specification
 
-    class Spec(Specification[list[float], float, None])
+    class Spec(Specification[list[float], float, None]):
         def evaluate(self, trace: Trace[list[float]]) -> Result[float, None]:
             ...
 

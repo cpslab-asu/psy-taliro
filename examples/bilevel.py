@@ -7,14 +7,14 @@ import numpy as np
 import staliro
 import staliro.models as models
 import staliro.optimizers as optimizers
-import staliro.specifications as specifications
+import staliro.specifications.rtamt as rtamt
 
 TSPAN = (0, 15)
 
 
-@staliro.costfunc()
+@staliro.costfunc
 def outer(sample: staliro.Sample) -> float:
-    @models.blackbox(step_size=0.1)
+    @staliro.blackbox(step_size=0.1)
     def inner(inputs: models.Blackbox.Inputs) -> models.Trace[list[float]]:
         power = 9
         alpha = np.deg2rad(2.1215)
@@ -41,7 +41,7 @@ def outer(sample: staliro.Sample) -> float:
 
         return models.Trace(times=result["times"], states=np.transpose(states).tolist())
 
-    spec = specifications.rtamt.parse_dense("always (alt >= 0)", {"alt": 0})
+    spec = rtamt.parse_dense("always (alt >= 0)", {"alt": 0})
     optimizer = optimizers.UniformRandom[float]()
     options = staliro.TestOptions(
         runs=1,

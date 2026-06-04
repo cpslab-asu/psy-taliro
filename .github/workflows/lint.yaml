@@ -4,29 +4,30 @@ on:
   workflow_call:
   push:
 
+env:
+  UV_NO_DEV: True # Disable dev dependency group in all jobs
+
 jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
-          cache: 'pip'
-      - name: Install ruff
-        run: pip install ruff
+          python-version: "3.12"
+      - name: Setup environment
+        run: uv sync --group lint
       - name: Lint
-        run: ruff check
+        run: uv run ruff check .
       - name: Format
-        run: ruff format --check
+        run: uv run ruff format --check .
 
   mypy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
-          cache: 'pip'
-      - name: Install hatch
-        run: pip install hatch
+          python-version: "3.10"
       - name: Check types
-        run: hatch env run --env types check
+        run: uv run --group types --group tests --group examples mypy

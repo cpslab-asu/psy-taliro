@@ -13,10 +13,8 @@ def test_interval_conversion() -> None:
 def test_static_inputs() -> None:
     options = TestOptions(static_inputs={"x": [0, 1], "y": (2, 4), "z": np.array([3, 7])})
 
-    print(options)
-
     assert options.static_inputs["x"] == (0, 1)
-    assert options.static_inputs["y"] == (2, 4)
+    assert options.static_inputs["y"] == (2, 4)  # type: ignore[unreachable]
     assert options.static_inputs["z"] == (3, 7)
 
 
