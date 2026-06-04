@@ -21,7 +21,7 @@ class Banquo(Specification[State, Cost, None]):
         self.formula = formula
 
     def evaluate(self, trace: Trace[State]) -> Result[Cost, None]:
-        bqtrace = banquo.Trace.from_timed_states(trace.times, trace.states) # Convert trace type
+        bqtrace = banquo.Trace.from_timed_states(trace.times, trace.states)  # Convert trace type
         rho = banquo.evaluate(self.formula, bqtrace)
 
         return Result(rho, None)

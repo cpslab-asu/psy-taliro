@@ -41,7 +41,7 @@ def f16_model(inputs: Blackbox.Inputs) -> Trace[dict[str, float]]:
             "alt": state[12],
         }
         for state in result["states"]
-     ]
+    ]
 
     return Trace(times=result["times"], states=states)
 
