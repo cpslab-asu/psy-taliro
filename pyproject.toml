@@ -30,6 +30,7 @@ dependencies = [
     "typing-extensions >= 4.15",
     "matplotlib ~= 3.8",
     "rtamt ~= 0.3",
+    "pybanquo>=0.1.0",
 ]
 
 [project.urls]
