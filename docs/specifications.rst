@@ -129,7 +129,7 @@ Decorator
 ---------
 
 For specifications that only depend on their inputs, you can also use the
-:py:func:`~staliro.specifications.specification` decorator to create a ``Specification`` from a
+:py:func:`~staliro.specification` decorator to create a ``Specification`` from a
 plain Python function.
 
 .. code-block:: python
