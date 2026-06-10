@@ -7,17 +7,19 @@ import numpy as np
 import plotly.graph_objects as go
 from aerobench.examples.gcas.gcas_autopilot import GcasAutopilot
 from aerobench.run_f16_sim import run_f16_sim
+from banquo import Predicate
+from banquo.operators import Always
 
 from staliro import TestOptions, Trace, blackbox, staliro
 from staliro.models import Blackbox
 from staliro.optimizers import DualAnnealing
-from staliro.specifications import rtamt
+from staliro.specifications import Banquo
 
 TSPAN: Final[tuple[float, float]] = (0, 15)
 
 
 @blackbox(step_size=0.1)
-def f16_model(inputs: Blackbox.Inputs) -> Trace[list[float]]:
+def f16_model(inputs: Blackbox.Inputs) -> Trace[dict[str, float]]:
     power = 9
     alpha = np.deg2rad(2.1215)
     beta = 0
@@ -31,20 +33,20 @@ def f16_model(inputs: Blackbox.Inputs) -> Trace[list[float]]:
     step = 1.0 / 30.0
     autopilot = GcasAutopilot(init_mode="roll", stdout=False)
     result = run_f16_sim(initial_state, TSPAN[1], autopilot, step, extended_states=True)
-    states = np.vstack(
-        (
-            np.array([0 if x == "standby" else 1 for x in result["modes"]]),
-            result["states"][:, 4],  # roll
-            result["states"][:, 5],  # pitch
-            result["states"][:, 6],  # yaw
-            result["states"][:, 12],  # altitude
-        )
-    )
+    states = [
+        {
+            "roll": state[4],
+            "pitch": state[5],
+            "yaw": state[6],
+            "alt": state[12],
+        }
+        for state in result["states"]
+    ]
 
-    return Trace(times=result["times"], states=np.transpose(states).tolist())
+    return Trace(times=result["times"], states=states)
 
 
-spec = rtamt.parse_dense("always (alt > 0)", {"alt": 4})
+spec = Always(Predicate({"alt": -1.0}, 0.0))
 optimizer = DualAnnealing()
 options = TestOptions(
     runs=1,
@@ -60,7 +62,7 @@ options = TestOptions(
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
-    runs = staliro(f16_model, spec, optimizer, options)
+    runs = staliro(f16_model, Banquo(spec), optimizer, options)
     run = runs[0]
     min_cost_eval = min(run.evaluations, key=lambda e: e.cost)
     min_cost_trace = min_cost_eval.extra.trace
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     figure.add_trace(
         go.Scatter(
             x=list(min_cost_trace.times),
-            y=[state[4] for state in min_cost_trace.states],
+            y=[state["alt"] for state in min_cost_trace.states],
             mode="lines",
             line_color="green",
             name="altitude",
