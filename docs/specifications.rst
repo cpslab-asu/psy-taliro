@@ -183,3 +183,35 @@ the specification to expect dictionaries containing each variable in the formula
     }
 
     specification.evaluate(Trace(states))
+
+Banquo
+------
+
+Another monitor supported by |psy-taliro| is called `Banquo`_, which is a general temporal logic monitor.
+Unlike RTAMT, Banquo uses classes to represent temporal operators and expressions, and formulas are built
+by nesting instances of these classes, like so:
+
+.. _`Banquo`: https://github.com/cpslab-asu/banquo-python
+
+.. code-block:: python
+
+    from banquo import Predicate
+    from banquo.operators import Always
+
+    phi = Always(None, Predicate("alt", 0.0))
+
+While this is not as convienent as expressing a formula as a string, this does provide the benefit of
+allowing users to define their own operator types to use in their formulas. This design also allows
+users to use their own metric values (such as tuples, or complex numbers), rather than being confined
+to only using floating-point values. Using a Banquo formula as a |psy-taliro|
+:ref:`specification <specifications>` is accomplished by using the :py:class:`staliro.specifications.Banquo`
+class as follows:
+
+.. code-block:: python
+
+    from banquo import Predicate
+    from banquo.operators import Always
+    from staliro.specifications import Banquo
+
+    phi = Always(Predicate("alt", 0.0))
+    spec = Banquo(phi)

@@ -17,3 +17,10 @@ RTAMT
 .. _rtamt-dense:
 
 .. autofunction:: staliro.specifications.rtamt.parse_dense
+
+Banquo
+------
+
+.. _banquo:
+
+.. autoclass:: staliro.specifications.Banquo

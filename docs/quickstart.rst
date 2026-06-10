@@ -157,20 +157,25 @@ cost value or a |result| value containing extra metadata as well as the cost val
         ...
 
 For users interested in expressing their requirements using
-:any:`Signal Temporal Logic <signal-temporal-logic>` (STL), |psy-taliro| provides two different
+:any:`Signal Temporal Logic <signal-temporal-logic>` (STL), |psy-taliro| provides three different
 specification implementations. The first is the :py:class:`~staliro.specifications.RTAMTDiscrete`
 specification, which requires input ``Trace`` values to have a constant time-step. The other is the
 :py:class:`~staliro.specifications.RTAMTDense` specification which does not require a constant time
 -step. Both implementations expect to evaluate traces with states of type
 :py:class:`Sequence[float] <collections.abc.Sequence>` and are constructed with an STL formula
 written as a string and a ``Mapping`` of variable names in the formula to columns in the state vector.
+The final implementation is the :py:class:`~staliro.specifications.Banquo` specification, which
+accepts a formula expressed using `Banquo`_ classes rather than a string.
 
 .. code-block:: python
 
+    from banquo import Predicate
+    from banquo.operators import Eventually, And
     from staliro import specifications
 
     dense = RTAMTDense("always (alt >= 0)", {"alt": 0})
     discrete = RTAMTDiscrete("eventually (rpm >= 3000 and speed >= 40)", {"rpm": 0, "speed": 1})
+    banquo = Banquo(Eventually(And(Predicate("rpm", -3000), Predicate("speed", -40))))
 
 Generating Samples
 ------------------
