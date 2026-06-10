@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "psy-taliro"
-version = "2.0.0"
+version = "2.1.0"
 description = "Search-based test generation framework"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
