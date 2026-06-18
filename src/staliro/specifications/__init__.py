@@ -49,6 +49,7 @@ omitted then the states are expected to be `dict[str, float]`.
 """
 
 from .banquo import Banquo
+from .rtamt import dense, discrete
 from .specification import Specification
 
-__all__ = ["Specification", "Banquo"]
+__all__ = ["Banquo", "dense", "discrete", "Specification"]

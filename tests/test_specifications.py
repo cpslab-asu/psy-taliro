@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from staliro import Trace
-from staliro.specifications import rtamt
+from staliro import Trace, specifications
 
 SIG_FIGS = 3
 PHI = "(not ((always[0.0, 4.0]((x1 <= 250.0) and (x1 >= 240.0))) and (eventually[3.5,4.0]((x1 <= 240.1) and (x1 >= 240.0)))))"
@@ -26,8 +25,8 @@ def trace() -> Trace[list[float]]:
 def test_rtamt_discrete(trace: Trace[list[float]]) -> None:
     print(list(trace.states))
 
-    pytest.approx(rtamt.parse_discrete(PHI, {"x1": 0}).evaluate(trace), EXPECTED, SIG_FIGS)
+    pytest.approx(specifications.discrete(PHI, columns={"x1": 0}).evaluate(trace), EXPECTED, SIG_FIGS)
 
 
 def test_rtamt_dense(trace: Trace[list[float]]) -> None:
-    pytest.approx(rtamt.parse_dense(PHI, {"x1": 0}).evaluate(trace), EXPECTED, SIG_FIGS)
+    pytest.approx(specifications.dense(PHI, columns={"x1": 0}).evaluate(trace), EXPECTED, SIG_FIGS)
