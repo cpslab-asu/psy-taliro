@@ -84,9 +84,11 @@ from numpy import array, float64, linspace
 from numpy.typing import NDArray
 from scipy import integrate
 from sortedcontainers import SortedDict
+from typing_extensions import override
 
+from .cost_func import Inputs
 from .cost_func import Result as _Result
-from .cost_func import Sample
+from .optimizers import SampleT
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -189,11 +191,11 @@ class Result(_Result[Trace[S], E], Generic[S, E]):
         super().__init__(trace, extra)
 
 
-class Model(ABC, Generic[S, E]):
+class Model(ABC, Generic[S, E, SampleT]):
     """Representation of the simulation logic for the system under test (SUT)."""
 
     @abstractmethod
-    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
+    def simulate(self, inputs: Inputs[SampleT]) -> _Result[Trace[S], E]:
         """Simulate a system and return a `staliro.Result` containing a `Trace`.
 
         :param sample: The sample containing the system inputs
