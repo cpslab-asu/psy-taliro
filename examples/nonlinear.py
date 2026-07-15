@@ -11,7 +11,7 @@ import staliro.specifications.rtamt as rtamt
 
 
 @staliro.ode(method="RK45")
-def nonlinear_model(inputs: models.Ode.Inputs) -> dict[str, float]:
+def nonlinear_model(inputs: models.OdeInputs) -> dict[str, float]:
     x1 = inputs.state["x1"]
     x2 = inputs.state["x2"]
 
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     figure.add_trace(
         go.Scatter(
             name="Samples",
-            x=[evaluation.sample.static["x1"] for evaluation in run.evaluations],
-            y=[evaluation.sample.static["x2"] for evaluation in run.evaluations],
+            x=[evaluation.inputs.static["x1"] for evaluation in run.evaluations],
+            y=[evaluation.inputs.static["x2"] for evaluation in run.evaluations],
             mode="markers",
             marker=go.scatter.Marker(color="lightblue", symbol="circle"),
         )

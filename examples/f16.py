@@ -10,8 +10,7 @@ from aerobench.run_f16_sim import run_f16_sim
 from banquo import Predicate
 from banquo.operators import Always
 
-from staliro import TestOptions, Trace, blackbox, staliro
-from staliro.models import Blackbox
+from staliro import BlackboxInputs, TestOptions, Trace, blackbox, staliro
 from staliro.optimizers import DualAnnealing
 from staliro.specifications import Banquo
 
@@ -19,7 +18,7 @@ TSPAN: Final[tuple[float, float]] = (0, 15)
 
 
 @blackbox(step_size=0.1)
-def f16_model(inputs: Blackbox.Inputs) -> Trace[dict[str, float]]:
+def f16_model(inputs: BlackboxInputs) -> Trace[dict[str, float]]:
     power = 9
     alpha = np.deg2rad(2.1215)
     beta = 0
