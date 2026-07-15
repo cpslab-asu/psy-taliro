@@ -8,9 +8,9 @@ if typing.TYPE_CHECKING:
 import attrs
 import typing_extensions
 
-from .cost_func import CostFunc, Result
-from .models import Blackbox, Model, Ode, Trace
-from .optimizers import Sample
+from .cost_func import CostFunc, Inputs, Result
+from .models import Blackbox, BlackboxInputs, Model, Ode, OdeInputs, Trace
+from .optimizers import Sample, SampleT
 from .specifications import Specification
 
 P = typing_extensions.ParamSpec("P")
@@ -26,24 +26,27 @@ def ensure_result(value: Result[T, E] | T) -> Result[T, E | None]:
 
 
 @attrs.define()
-class UserCostFunc(CostFunc[T, E]):
-    f: Callable[[Sample], Result[T, E]]
+class UserCostFunc(CostFunc[T, E, SampleT]):
+    f: Callable[[Inputs[SampleT]], Result[T, E]]
 
     @typing_extensions.override
-    def evaluate(self, sample: Sample) -> Result[T, E]:
-        return self.f(sample)
+    def evaluate(self, inputs: Inputs[SampleT]) -> Result[T, E]:
+        return self.f(inputs)
+
+
+S = typing_extensions.TypeVar("S", bound=Sample)
 
 
 @typing_extensions.overload
-def costfunc(f: Callable[[Sample], Result[T, E]]) -> CostFunc[T, E]:  # type: ignore[overload-overlap] # pyright: ignore[reportOverlappingOverload],
+def costfunc(f: Callable[[Inputs[S]], Result[T, E]]) -> CostFunc[T, E, S]:  # type: ignore[overload-overlap] # pyright: ignore[reportOverlappingOverload],
     ...
 
 
 @typing_extensions.overload
-def costfunc(f: Callable[[Sample], T]) -> CostFunc[T, None]: ...
+def costfunc(f: Callable[[Inputs[S]], T]) -> CostFunc[T, None, S]: ...
 
 
-def costfunc(f: Callable[[Sample], Result[T, E] | T]) -> CostFunc[T, E | None]:
+def costfunc(f: Callable[[Inputs[S]], Result[T, E] | T]) -> CostFunc[T, E | None, S]:
     """Transform a python function into a `CostFunc`.
 
     If the provided function returns any value other than a `Result`, the value will
@@ -58,23 +61,23 @@ def costfunc(f: Callable[[Sample], Result[T, E] | T]) -> CostFunc[T, E | None]:
 
 
 @attrs.define()
-class UserModel(Model[T, E]):
-    f: Callable[[Sample], Result[Trace[T], E]]
+class UserModel(Model[T, E, SampleT]):
+    f: Callable[[Inputs[SampleT]], Result[Trace[T], E]]
 
     @typing_extensions.override
-    def simulate(self, sample: Sample) -> Result[Trace[T], E]:
-        return self.f(sample)
+    def simulate(self, inputs: Inputs[SampleT]) -> Result[Trace[T], E]:
+        return self.f(inputs)
 
 
 @typing_extensions.overload
-def model(f: Callable[[Sample], Trace[T]]) -> Model[T, None]: ...
+def model(f: Callable[[Inputs[S]], Trace[T]]) -> Model[T, None, S]: ...
 
 
 @typing_extensions.overload
-def model(f: Callable[[Sample], Result[Trace[T], E]]) -> Model[T, E]: ...
+def model(f: Callable[[Inputs[S]], Result[Trace[T], E]]) -> Model[T, E, S]: ...
 
 
-def model(f: Callable[[Sample], Trace[T] | Result[Trace[T], E]]) -> Model[T, E | None]:
+def model(f: Callable[[Inputs[S]], Trace[T] | Result[Trace[T], E]]) -> Model[T, E | None, S]:
     """Create an `Model` from a function.
 
     The function provided to this model must accept a `Sample` value and return either a
@@ -92,14 +95,14 @@ class BlackboxDecorator:
     step_size: float
 
     @typing_extensions.overload
-    def __call__(self, f: Callable[[Blackbox.Inputs], Trace[T]]) -> Blackbox[T, None]: ...
+    def __call__(self, f: Callable[[BlackboxInputs[S]], Trace[T]]) -> Blackbox[T, None, S]: ...
 
     @typing_extensions.overload
-    def __call__(self, f: Callable[[Blackbox.Inputs], Result[Trace[T], E]]) -> Blackbox[T, E]: ...
+    def __call__(self, f: Callable[[BlackboxInputs[S]], Result[Trace[T], E]]) -> Blackbox[T, E, S]: ...
 
     def __call__(
-        self, f: Callable[[Blackbox.Inputs], Trace[T] | Result[Trace[T], E]]
-    ) -> Blackbox[T, E | None]:
+        self, f: Callable[[BlackboxInputs[S]], Trace[T] | Result[Trace[T], E]]
+    ) -> Blackbox[T, E | None, S]:
         return Blackbox(lambda x: ensure_result(f(x)), self.step_size)
 
 
@@ -120,7 +123,7 @@ def blackbox(*, step_size: float) -> BlackboxDecorator:
 
 
 if typing.TYPE_CHECKING:
-    OdeFunc: typing_extensions.TypeAlias = Callable[[Ode.Inputs], Mapping[str, float]]
+    OdeFunc: typing_extensions.TypeAlias = Callable[[OdeInputs], Mapping[str, float]]
 
 
 def ode(method: Ode.Method) -> Callable[[OdeFunc], Ode]:
