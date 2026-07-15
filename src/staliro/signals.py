@@ -368,9 +368,6 @@ def clamped(
     return ClampedFactory(inner, lo, hi)
 
 
-IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64]
-
-
 @frozen()
 class Interval(Iterable[float]):
     start: float
@@ -390,6 +387,9 @@ class UnboundInterval(Interval):
         super().__init__(-math.inf, math.inf)
 
 
+IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64] | Interval
+
+
 def _to_interval(interval: IntervalLike) -> Interval:
     """Convert a value to an interval.
 
@@ -403,6 +403,9 @@ def _to_interval(interval: IntervalLike) -> Interval:
     Returns:
         An instance of Interval using the values provided in the ordered collection
     """
+
+    if isinstance(interval, Interval):
+        return interval
 
     if isinstance(interval, np.ndarray):
         interval = interval.astype(dtype=float)
