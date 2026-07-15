@@ -35,7 +35,7 @@ from numpy.typing import NDArray
 
 from .cost_func import Inputs, Signals
 from .optimizers import SampleT
-from .signals import Interval, IntervalLike, Signal, SignalInput, _to_interval
+from .signals import Interval, IntervalLike, Signal, SignalInput, UnboundInterval, _to_interval
 
 if TYPE_CHECKING:
     AnyAttr: TypeAlias = Attribute[Any]
@@ -139,8 +139,8 @@ class TestOptions:
     :param threads: Number of threads to use to parallelize sample evaluation
     """
 
-    tspan: Interval | None = field(
-        default=None,
+    tspan: Interval = field(
+        factory=UnboundInterval,
         converter=converters.optional(_to_interval),
         validator=_tspan,
     )
@@ -204,13 +204,6 @@ class TestOptions:
 
         n_static = len(self.static_inputs)
         static = _parse_static(sample.values[:n_static], self.static_inputs)
-
-        if len(self.signals) > 0:
-            if self.tspan is None:
-                raise ValueError("Must define tspan if using signal inputs")
-
-            signals = _parse_signals(sample.values[n_static:], self.tspan, self.signals)
-        else:
-            signals: _Signals = {}
+        signals = _parse_signals(sample.values[n_static:], self.tspan, self.signals)
 
         return Inputs(sample, static, signals)
