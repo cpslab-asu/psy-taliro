@@ -216,8 +216,8 @@ class UniformRandom(Optimizer[CT, None]):
     """
 
     def __init__(self, min_cost: CT | None = None, max_cost: CT | None = None):
-        self.min_cost = min_cost
-        self.max_cost = max_cost
+        self.min_cost: CT | None = min_cost
+        self.max_cost: CT | None = max_cost
 
     @override
     def optimize(self, func: ObjFunc[CT], params: Optimizer.Params) -> None:
@@ -258,7 +258,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
     """
 
     def __init__(self, min_cost: float | None = None):
-        self.min_cost = min_cost
+        self.min_cost: float | None = min_cost
 
     @override
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
@@ -300,7 +300,7 @@ class UserFunc(Protocol[C, R]):
 
 class UserOptimizer(Optimizer[C, R]):
     def __init__(self, func: UserFunc[C, R]):
-        self.func = func
+        self.func: UserFunc[C, R] = func
 
     @override
     def optimize(self, func: ObjFunc[C], params: Optimizer.Params) -> R:
