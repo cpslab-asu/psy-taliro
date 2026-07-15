@@ -25,7 +25,7 @@ from attrs import define, field, frozen
 from numpy.random import default_rng
 from pathos import pools
 from pathos.abstract_launcher import AbstractWorkerPool
-from typing_extensions import TypeVar
+from typing_extensions import TypeVar, override
 
 from .cost_func import CostFunc, Inputs, Result
 from .models import Model, Trace
@@ -355,8 +355,9 @@ class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2], SampleT], Generic[S, C, E
     model: Model[S, E1, SampleT]
     spec: Specification[S, C, E2]
 
-    def evaluate(self, sample: Sample) -> Result[C, ModelSpecExtra[S, E1, E2]]:
-        model_result = self.model.simulate(sample)
+    @override
+    def evaluate(self, inputs: Inputs[SampleT]) -> Result[C, ModelSpecExtra[S, E1, E2]]:
+        model_result = self.model.simulate(inputs)
 
         if not isinstance(model_result, Result):
             raise TypeError("Model must return value of type Result")
