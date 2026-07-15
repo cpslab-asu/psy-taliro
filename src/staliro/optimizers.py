@@ -191,12 +191,13 @@ def _sample_uniform(bounds: Iterable[Interval], rng: Generator) -> list[float]:
 
 
 def _minimize(samples: Samples, func: ObjFunc[object]) -> None:
-    func.eval_samples(samples)
+    # Exhaust sample budget
+    func.eval_samples(Sample(s) for s in samples)  # pyright: ignore[reportUnusedCallResult]
 
 
 def _falsify(samples: Samples, func: ObjFunc[CT], min_cost: CT | None, max_cost: CT | None) -> None:
     for sample in samples:
-        cost = func.eval_sample(sample)
+        cost = func.eval_sample(Sample(sample))
 
         if min_cost is not None and cost < min_cost:
             break
@@ -264,7 +265,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
             return self.min_cost is not None and cost < self.min_cost
 
         def wrapper(x: NDArray[float64]) -> float:
-            return func.eval_sample(x)
+            return func.eval_sample(Sample(x))
 
         result = optimize.dual_annealing(
             func=wrapper,
