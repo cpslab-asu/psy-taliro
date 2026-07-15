@@ -32,10 +32,11 @@ from collections import OrderedDict
 from collections.abc import Iterable, Iterator
 from typing import Any, Generic, TypeAlias, TypeVar
 
-from attrs import frozen
+from attrs import field, frozen
 from numpy import linspace, ndarray
 from numpy.typing import NDArray
 
+from .optimizers import SampleT
 from .options import TestOptions
 from .signals import Signal
 
@@ -170,6 +171,17 @@ class Sample:
         """The signal inputs to the system as defined by in the `TestOptions`."""
 
         return self._signals
+
+
+Static_: TypeAlias = dict[str, float]
+Signals_: TypeAlias = dict[str, Signal]
+
+
+@frozen(slots=True)
+class Inputs(Generic[SampleT]):
+    sample: SampleT = field()
+    static: Static_ = field()
+    signals: Signals_ = field()
 
 
 class CostFunc(ABC, Generic[C, E]):
