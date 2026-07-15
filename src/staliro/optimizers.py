@@ -94,9 +94,9 @@ class Sample:
     def __getitem__(self, index: int) -> float: ...
 
     @overload
-    def __getitem__(self, index: range) -> list[float]: ...
+    def __getitem__(self, index: slice) -> list[float]: ...
 
-    def __getitem__(self, index: int | range) -> float | list[float]:
+    def __getitem__(self, index: int | slice) -> float | list[float]:
         if isinstance(index, int):
             return cast(float, self.values[index])
 
