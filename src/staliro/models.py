@@ -89,6 +89,7 @@ from typing_extensions import override
 from .cost_func import Inputs
 from .cost_func import Result as _Result
 from .optimizers import SampleT
+from .signals import UnboundInterval
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -203,6 +204,23 @@ class Model(ABC, Generic[S, E, SampleT]):
         """
 
 
+@frozen(slots=True)
+class BlackboxInputs(Generic[SampleT]):
+    """Interpolated inputs to a Blackbox model.
+
+    The times attributes will always contain as keys all of the interpolation times for the
+    given ``tspan`` in the `TestOptions`. If no ``signals`` are defined in the ``TestOptions``,
+    then the value for each time will be empty.
+
+    :attribute static: The static (time-invariant) inputs to the system
+    :attribute times: Mapping from each interpolation time to the values of each signal at that time
+    """
+
+    sample: SampleT
+    static: dict[str, float]
+    times: dict[float, dict[str, float]]
+
+
 class Blackbox(Model[S, E]):
     """General system model which does not make assumptions about the underlying system.
 
@@ -211,46 +229,48 @@ class Blackbox(Model[S, E]):
     :param step_size: Time-step to use for interpolating signal values over the simulation interval
     """
 
-    @frozen(slots=True)
-    class Inputs:
-        """Interpolated inputs to a Blackbox model.
-
-        The times attributes will always contain as keys all of the interpolation times for the
-        given ``tspan`` in the `TestOptions`. If no ``signals`` are defined in the ``TestOptions``,
-        then the value for each time will be empty.
-
-        :attribute static: The static (time-invariant) inputs to the system
-        :attribute times: Mapping from each interpolation time to the values of each signal at that time
-        """
-
-        static: dict[str, float]
-        times: dict[float, dict[str, float]]
-
-    def __init__(self, func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]], step_size: float):
+    def __init__(self, func: Callable[[BlackboxInputs], _Result[Trace[S], E]], step_size: float):
         self._func = func
         self.step_size = step_size
 
-    def _create_inputs(self, sample: Sample) -> Blackbox.Inputs:
-        if sample.signals.tspan:
-            tstart, tend = sample.signals.tspan
+    def _create_inputs(self, inputs: Inputs[SampleT]) -> BlackboxInputs:
+        if isinstance(inputs.signals.tspan, UnboundInterval):
+            signals: dict[float, dict[str, float]] = {}
+        else:
+            tstart, tend = inputs.signals.tspan
             duration = tend - tstart
             step_count = floor(duration / self.step_size) + 1
 
             times: list[float] = linspace(tstart, tend, num=step_count, dtype=float).tolist()
             signals = {
-                time: {name: sample.signals[name].at_time(time) for name in sample.signals.names}
+                time: {name: inputs.signals[name].at_time(time) for name in inputs.signals}
                 for time in times
             }
         else:
             signals = {}
 
-        return Blackbox.Inputs(sample.static, signals)
+        return BlackboxInputs(inputs.sample, inputs.static, signals)
 
-    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
-        return self._func(self._create_inputs(sample))
+    @override
+    def simulate(self, inputs: Inputs[SampleT]) -> _Result[Trace[S], E]:
+        return self._func(self._create_inputs(inputs))
 
 
-class Ode(Model[list[float], None]):
+@frozen(slots=True)
+class OdeInputs:
+    """Set of inputs to an ODE model function.
+
+    :attribute time: The current time of the integration
+    :attribute state: Name-value map containing the state variables for the current time
+    :attribute signals: Name-value map containing the signal values for the current time
+    """
+
+    time: float
+    state: dict[str, float]
+    signals: dict[str, float]
+
+
+class Ode(Model[list[float], None, SampleT]):
     """Model for systems that can be modeled by an Ordinary Differential Equation (ODE).
 
     This model is simulated by integration the state derivatives returned by the function. The
@@ -264,40 +284,28 @@ class Ode(Model[list[float], None]):
 
     Method: TypeAlias = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]
 
-    @frozen(slots=True)
-    class Inputs:
-        """Set of inputs to an ODE model function.
-
-        :attribute time: The current time of the integration
-        :attribute state: Name-value map containing the state variables for the current time
-        :attribute signals: Name-value map containing the signal values for the current time
-        """
-
-        time: float
-        state: dict[str, float]
-        signals: dict[str, float]
-
-    def __init__(self, func: Callable[[Ode.Inputs], Mapping[str, float]], method: Ode.Method):
+    def __init__(self, func: Callable[[OdeInputs], Mapping[str, float]], method: Ode.Method):
         self.func = func
         self.method = method
 
-    def simulate(self, sample: Sample) -> Result[list[float], None]:
-        if sample.signals.tspan is None:
+    @override
+    def simulate(self, inputs: Inputs[SampleT]) -> Result[list[float], None]:
+        if isinstance(inputs.signals.tspan, UnboundInterval):
             raise RuntimeError("ODE model requires tspan to be defined in TestOptions")
 
         names = list(sample.static)
 
         def integration_fn(time: float, state: NDArray[float64]) -> NDArray[float64]:
-            static = {name: state[idx] for idx, name in enumerate(sample.static)}
-            signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
-            derivs = self.func(Ode.Inputs(time, static, signals))
+            static = {name: state[idx] for idx, name in enumerate(inputs.static)}
+            signals = {name: inputs.signals[name].at_time(time) for name in inputs.signals}
+            derivs = self.func(OdeInputs(time, static, signals))
 
-            return array([derivs[name] for name in names])
+            return array([derivs[name] for name in inputs.static])
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
-            t_span=sample.signals.tspan,
-            y0=[sample.static[name] for name in names],
+            t_span=inputs.signals.tspan.as_tuple(),
+            y0=[inputs.static[name] for name in inputs.static],
             method=self.method,
         )
 
