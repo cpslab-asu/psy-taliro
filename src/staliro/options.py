@@ -84,9 +84,7 @@ def _parse_static(values: Iterable[float], variables: Iterable[str]) -> dict[str
     return dict(zip(variables, values, strict=True))
 
 
-_TSpan: TypeAlias = tuple[float, float]
 _SignalInputs = dict[str, SignalInput]
-_Signals = dict[str, Signal]
 
 
 def _parse_signals(values: NDArray[float64], tspan: Interval, inputs: _SignalInputs) -> Signals:
