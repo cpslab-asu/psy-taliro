@@ -62,17 +62,49 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, overload
+from typing import Generic, Literal, Protocol, TypeAlias, cast, overload
 
-from attrs import frozen
-from numpy import float64
+from attrs import field, frozen
+from numpy import array, float64
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
+from typing_extensions import TypeVar
 
-from .cost_func import SampleLike
 from .options import Interval
 
+
+def _sample_values(obj: SampleLike) -> NDArray[float64]:
+    if isinstance(obj, Sample):
+        return array(obj.values)
+
+    converted = array(obj, dtype=float64)
+
+    if converted.ndim > 1:
+        raise ValueError("Sample values can only be one-dimensional")
+
+    return converted
+
+
+@frozen(slots=True)
+class Sample:
+    values: NDArray[float64] = field(converter=_sample_values)
+
+    @overload
+    def __getitem__(self, index: int) -> float: ...
+
+    @overload
+    def __getitem__(self, index: range) -> list[float]: ...
+
+    def __getitem__(self, index: int | range) -> float | list[float]:
+        if isinstance(index, int):
+            return cast(float, self.values[index])
+
+        return cast(list[float], self.values[index].tolist())
+
+
+SampleLike: TypeAlias = NDArray[float64] | Sequence[float] | Sample
+SampleT = TypeVar("SampleT", contravariant=True, bound=Sample, default=Sample)
 R = TypeVar("R", covariant=True)
 
 
