@@ -1,6 +1,6 @@
-from .cost_func import CostFunc, Result
+from .cost_func import CostFunc, Inputs, Result
 from .decorators import blackbox, costfunc, model, ode, specification
-from .models import Trace
+from .models import BlackboxInputs, OdeInputs, Trace
 from .optimizers import Sample, SampleLike
 from .options import TestOptions
 from .signals import Signal, SignalInput
@@ -10,8 +10,11 @@ from .tests import Evaluation, Run, staliro
 test = staliro
 
 __all__ = [
-    "Evaluation",
+    "BlackboxInputs",
     "CostFunc",
+    "Evaluation",
+    "Inputs",
+    "OdeInputs",
     "Result",
     "Run",
     "Sample",
