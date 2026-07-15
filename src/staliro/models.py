@@ -221,7 +221,7 @@ class BlackboxInputs(Generic[SampleT]):
     times: dict[float, dict[str, float]]
 
 
-class Blackbox(Model[S, E]):
+class Blackbox(Model[S, E, SampleT]):
     """General system model which does not make assumptions about the underlying system.
 
     :param func: User-defined function to evaluate given ``Blackbox.Inputs`` into a `Trace`
@@ -229,7 +229,7 @@ class Blackbox(Model[S, E]):
     :param step_size: Time-step to use for interpolating signal values over the simulation interval
     """
 
-    def __init__(self, func: Callable[[BlackboxInputs], _Result[Trace[S], E]], step_size: float):
+    def __init__(self, func: Callable[[BlackboxInputs[SampleT]], _Result[Trace[S], E]], step_size: float):
         self._func = func
         self.step_size = step_size
 
