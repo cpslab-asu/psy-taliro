@@ -71,7 +71,7 @@ from numpy.typing import NDArray
 from scipy import optimize
 from typing_extensions import Self, TypeVar, override
 
-from .options import Interval
+from .signals import Interval
 
 
 def _sample_values(obj: SampleLike) -> NDArray[float64]:
