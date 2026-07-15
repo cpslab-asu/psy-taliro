@@ -28,12 +28,13 @@ Examples
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import UserDict
 from typing import Generic, TypeAlias, TypeVar
 
 from attrs import field, frozen
 
 from .optimizers import SampleT
-from .signals import Signal
+from .signals import Interval, Signal
 
 C = TypeVar("C", covariant=True)
 E = TypeVar("E", covariant=True)
@@ -55,7 +56,12 @@ class Result(Generic[C, E]):
 
 
 Static: TypeAlias = dict[str, float]
-Signals: TypeAlias = dict[str, Signal]
+
+
+class Signals(UserDict[str, Signal]):
+    def __init__(self, signals: dict[str, Signal], tspan: Interval):
+        super().__init__(signals)
+        self.tspan: Interval = tspan
 
 
 @frozen(slots=True)
