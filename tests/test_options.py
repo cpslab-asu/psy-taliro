@@ -1,7 +1,11 @@
+import attrs
 import numpy as np
 import pytest
+import typing_extensions as te
 
+from staliro.optimizers import Sample
 from staliro.options import SignalInput, TestOptions, _to_interval
+from staliro.signals import Signal
 
 
 def test_interval_conversion() -> None:
@@ -61,3 +65,49 @@ def test_control_points() -> None:
 
     without_times = SignalInput(control_points=[[8, 12.5], (0, 2.1)])
     assert without_times.control_points == [(8, 12.5), (0, 2.1)]
+
+
+@attrs.define()
+class DummySignal(Signal):
+    times: list[float] = attrs.field(converter=list)
+    values: list[float] = attrs.field(converter=list)
+
+    @te.override
+    def at_time(self, time: float) -> float:
+        raise NotImplementedError()
+
+
+def test_parse_sample() -> None:
+    options = TestOptions(
+        tspan=(0.0, 100.0),
+        static_inputs={
+            "foo": (0, 1),
+            "bar": (3, 4),
+        },
+        signals={
+            "spam": SignalInput(
+                control_points=[(0.0, 1.0), (1.0, 2.0)],
+                factory=DummySignal,
+            ),
+            "eggs": SignalInput(
+                control_points={33.0: (0.0, 1.0), 66.0: (1.0, 2.0)},
+                factory=DummySignal,
+            ),
+        }
+    )
+
+    sample = Sample([0.0, 3.8, 0.5, 1.2, 0.2, 1.8])
+    inputs = options.parse_sample(sample)
+
+    assert inputs.static["foo"] == 0.0
+    assert inputs.static["bar"] == 3.8
+
+    spam = inputs.signals["spam"]
+    assert isinstance(spam, DummySignal)
+    assert spam.times == [0.0, 50.0]
+    assert spam.values == [0.5, 1.2]
+
+    eggs = inputs.signals["eggs"]
+    assert isinstance(eggs, DummySignal)
+    assert eggs.times == [33.0, 66.0]
+    assert eggs.values == [0.2, 1.8]
