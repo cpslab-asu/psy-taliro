@@ -5,21 +5,22 @@ import typing_extensions as te
 
 from staliro.optimizers import Sample
 from staliro.options import SignalInput, TestOptions, _to_interval
-from staliro.signals import Signal
+from staliro.signals import Interval, Signal
 
 
 def test_interval_conversion() -> None:
-    assert _to_interval([1, 2]) == (1, 2)
-    assert _to_interval((1, 2)) == (1, 2)
-    assert _to_interval(np.array([1, 2])) == (1, 2)
+    assert _to_interval([1, 2]) == Interval(1, 2)
+    assert _to_interval((1, 2)) == Interval(1, 2)
+    assert _to_interval(np.array([1, 2])) == Interval(1, 2)
+    assert _to_interval(Interval(1, 2)) == Interval(1, 2)
 
 
 def test_static_inputs() -> None:
     options = TestOptions(static_inputs={"x": [0, 1], "y": (2, 4), "z": np.array([3, 7])})
 
-    assert options.static_inputs["x"] == (0, 1)
-    assert options.static_inputs["y"] == (2, 4)  # type: ignore[unreachable]
-    assert options.static_inputs["z"] == (3, 7)
+    assert options.static_inputs["x"] == Interval(0, 1)
+    assert options.static_inputs["y"] == Interval(2, 4)  # type: ignore[unreachable]
+    assert options.static_inputs["z"] == Interval(3, 7)
 
 
 def test_seed() -> None:
@@ -61,10 +62,10 @@ def test_threads() -> None:
 
 def test_control_points() -> None:
     with_times = SignalInput(control_points={0.1: [8, 12.5], 3.2: (0, 2.1)})
-    assert with_times.control_points == {0.1: (8, 12.5), 3.2: (0, 2.1)}
+    assert with_times.control_points == {0.1: Interval(8, 12.5), 3.2: Interval(0, 2.1)}
 
     without_times = SignalInput(control_points=[[8, 12.5], (0, 2.1)])
-    assert without_times.control_points == [(8, 12.5), (0, 2.1)]
+    assert without_times.control_points == [Interval(8, 12.5), Interval(0, 2.1)]
 
 
 @attrs.define()
