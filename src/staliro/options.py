@@ -90,6 +90,9 @@ _Signals = dict[str, Signal]
 
 
 def _parse_signals(values: NDArray[float64], tspan: Interval, inputs: _SignalInputs) -> Signals:
+    if len(inputs) > 0 and isinstance(tspan, UnboundInterval):
+        raise ValueError("Must provide tspan value if defining signal inputs")
+
     def _accumulate_idx(prev_idx: int, s_input: SignalInput) -> int:
         return prev_idx + len(s_input.control_points)
 
