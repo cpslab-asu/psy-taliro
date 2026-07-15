@@ -179,8 +179,7 @@ Samples: TypeAlias = Iterable[SampleLike]
 
 
 class Comparable(Protocol):
-    @abstractmethod
-    def __lt__(self: CT, other: CT, /) -> bool: ...
+    def __lt__(self: Self, other: Self, /) -> bool: ...
 
 
 CT = TypeVar("CT", bound=Comparable)
