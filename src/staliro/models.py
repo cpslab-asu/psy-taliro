@@ -247,8 +247,6 @@ class Blackbox(Model[S, E, SampleT]):
                 time: {name: inputs.signals[name].at_time(time) for name in inputs.signals}
                 for time in times
             }
-        else:
-            signals = {}
 
         return BlackboxInputs(inputs.sample, inputs.static, signals)
 
@@ -293,8 +291,6 @@ class Ode(Model[list[float], None, SampleT]):
     def simulate(self, inputs: Inputs[SampleT]) -> Result[list[float], None]:
         if isinstance(inputs.signals.tspan, UnboundInterval):
             raise RuntimeError("ODE model requires tspan to be defined in TestOptions")
-
-        names = list(sample.static)
 
         def integration_fn(time: float, state: NDArray[float64]) -> NDArray[float64]:
             static = {name: state[idx] for idx, name in enumerate(inputs.static)}
