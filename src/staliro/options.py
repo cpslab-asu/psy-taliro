@@ -33,7 +33,7 @@ from attrs import Attribute, converters, define, field, validators
 from numpy import float64, linspace
 from numpy.typing import NDArray
 
-from .cost_func import Inputs
+from .cost_func import Inputs, Signals
 from .optimizers import SampleT
 from .signals import Interval, IntervalLike, Signal, SignalInput, _to_interval
 
@@ -89,7 +89,7 @@ _SignalInputs = dict[str, SignalInput]
 _Signals = dict[str, Signal]
 
 
-def _parse_signals(values: NDArray[float64], tspan: _TSpan, inputs: _SignalInputs) -> _Signals:
+def _parse_signals(values: NDArray[float64], tspan: Interval, inputs: _SignalInputs) -> Signals:
     def _accumulate_idx(prev_idx: int, s_input: SignalInput) -> int:
         return prev_idx + len(s_input.control_points)
 
@@ -105,8 +105,8 @@ def _parse_signals(values: NDArray[float64], tspan: _TSpan, inputs: _SignalInput
 
         if isinstance(s_input.control_points, list):
             t_arr = linspace(
-                start=tspan[0],
-                stop=tspan[1],
+                start=tspan.start,
+                stop=tspan.end,
                 endpoint=False,
                 num=len(control_values),
                 dtype=float,
@@ -117,10 +117,12 @@ def _parse_signals(values: NDArray[float64], tspan: _TSpan, inputs: _SignalInput
 
         return s_input.factory(times, control_values)
 
-    return {
+    signals = {
         name: _create_signal(ipair, s_input)
         for (name, s_input), ipair in zip(inputs.items(), idx_pairs, strict=True)
     }
+
+    return Signals(signals, tspan)
 
 
 @define(kw_only=True)
