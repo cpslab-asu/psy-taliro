@@ -65,13 +65,13 @@ def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -
 
 
 def _tspan(_: Any, a: AnyAttr, tspan: Interval) -> None:
-    if tspan and tspan[0] >= tspan[1]:
+    if tspan.start >= tspan.end:
         raise ValueError("Interval lower bound must be less than upper bound")
 
 
 def _static_inputs(_: Any, a: AnyAttr, inputs: dict[str, Interval]) -> None:
     for interval in inputs.values():
-        if interval[0] >= interval[1]:
+        if interval.start >= interval.end:
             raise ValueError("Interval lower bound must be less than upper bound")
 
 def _signals(_: Any, a: AnyAttr, signals: dict[str, SignalInput]) -> None:

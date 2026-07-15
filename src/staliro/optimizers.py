@@ -186,7 +186,7 @@ CT = TypeVar("CT", bound=Comparable)
 
 
 def _sample_uniform(bounds: Iterable[Interval], rng: Generator) -> list[float]:
-    return [rng.uniform(bound[0], bound[1]) for bound in bounds]
+    return [rng.uniform(bound.start, bound.end) for bound in bounds]
 
 
 def _minimize(samples: Samples, func: ObjFunc[object]) -> None:
@@ -270,7 +270,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
 
         result = optimize.dual_annealing(
             func=wrapper,
-            bounds=list(params.input_bounds),
+            bounds=[bound.as_tuple() for bound in params.input_bounds],
             rng=params.seed,
             maxfun=params.budget,
             no_local_search=True,  # Disable local search, use only traditional generalized SA
