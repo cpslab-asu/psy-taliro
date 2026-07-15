@@ -81,7 +81,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from math import cos
-from typing import Protocol, SupportsFloat, TypeAlias, cast
+from typing import Any, Protocol, SupportsFloat, TypeAlias, cast
 
 import numpy as np
 from attrs import Attribute, define, field, frozen, validators
@@ -431,6 +431,15 @@ def _iter_pts(pts: list[Interval] | dict[float, Interval]) -> Iterable[Interval]
     return pts
 
 
+def _control_points(_: Any, a: Attribute[Any], pts: ControlPoints) -> None:
+    if len(pts) < 1:
+        raise ValueError("Must provide at least 1 control point to signal")
+
+    for pt in _iter_pts(pts):
+        if pt.start >= pt.end:
+            raise ValueError("Interval lower bound must be less than upper bound.")
+
+
 @define(kw_only=True)
 class SignalInput:
     """Options for signal generation.
@@ -444,7 +453,7 @@ class SignalInput:
 
     control_points: list[Interval] | dict[float, Interval] = field(
         converter=_to_control_points,
-        validator=validators.min_len(1),
+        validator=_control_points,
     )
 
     factory: SignalFactory = field(
@@ -453,15 +462,6 @@ class SignalInput:
     )
 
     time_varying: bool = field(default=False)
-
-    @control_points.validator
-    def _control_pts(self, _: Attribute[object], pts: ControlPoints) -> None:
-        if len(pts) < 1:
-            raise ValueError("Must provide at least 1 control point to signal")
-
-        for pt in _iter_pts(pts):
-            if pt[0] >= pt[1]:
-                raise ValueError("Interval lower bound must be less than upper bound.")
 
 
 __all__ = [
