@@ -18,17 +18,18 @@ from collections.abc import Iterable, Iterator
 from enum import IntEnum
 from logging import Logger, NullHandler, getLogger
 from os import cpu_count
-from typing import Generic, Literal, TypeAlias, TypeVar, cast, overload
+from typing import Generic, Literal, TypeAlias, cast, overload
 from uuid import UUID, uuid4
 
 from attrs import define, field, frozen
 from numpy.random import default_rng
 from pathos import pools
 from pathos.abstract_launcher import AbstractWorkerPool
+from typing_extensions import TypeVar
 
-from .cost_func import CostFunc, Result, Sample, SampleLike
+from .cost_func import CostFunc, Inputs, Result
 from .models import Model, Trace
-from .optimizers import ObjFunc, Optimizer
+from .optimizers import ObjFunc, Optimizer, Sample
 from .options import Interval, TestOptions
 from .specifications import Specification
 
@@ -44,6 +45,7 @@ R = TypeVar("R")
 E = TypeVar("E")
 E1 = TypeVar("E1")
 E2 = TypeVar("E2")
+SampleT = TypeVar("SampleT", bound=Sample)
 
 
 class TestError(Exception):
@@ -51,7 +53,7 @@ class TestError(Exception):
 
 
 @frozen(slots=True)
-class Evaluation(Generic[C, E]):
+class Evaluation(Generic[C, E, SampleT]):
     """The result of an evaluation of a `Sample` using a `CostFunc`.
 
     :param sample: The sample that was evaluated
@@ -59,7 +61,7 @@ class Evaluation(Generic[C, E]):
     :param extra: The annotation data if it was provided
     """
 
-    sample: Sample
+    inputs: Inputs[SampleT]
     cost: C
     extra: E
 
@@ -72,16 +74,16 @@ def _cost_func_logger() -> Logger:
 
 
 @define(slots=True)
-class CostFuncWrapper(ObjFunc[C], Generic[C, E]):
+class CostFuncWrapper(ObjFunc[C, SampleT], Generic[C, E, SampleT]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
 
     :param func: The cost function to use for sample evaluation
     :param options: Options for decomposing the values generated into the static and signal inputs
     """
 
-    _func: CostFunc[C, E] = field()
+    _func: CostFunc[C, E, SampleT] = field()
     _options: TestOptions = field()
-    _evaluations: list[Evaluation[C, E]] = field(init=False, factory=list)
+    _evaluations: list[Evaluation[C, E, SampleT]] = field(init=False, factory=list)
 
     def eval_sample(self, sample: SampleLike) -> C:
         s = Sample(sample, self._options)
@@ -99,7 +101,7 @@ class CostFuncWrapper(ObjFunc[C], Generic[C, E]):
 
 
 @define(slots=True)
-class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
+class ParallelCostFuncWrapper(CostFuncWrapper[C, E, SampleT]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
 
     This wrapper will use an `concurrent.futures.Executor` to evaluate sample batches in parallel.
@@ -128,7 +130,7 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E]):
 
 
 @frozen(slots=True)
-class Run(Generic[R, C, E]):
+class Run(Generic[R, C, E, SampleT]):
     """The result of an optimization attempt.
 
     :param result: The value returned by the optimizer at exit
@@ -136,10 +138,10 @@ class Run(Generic[R, C, E]):
     """
 
     result: R
-    evaluations: list[Evaluation[C, E]]
+    evaluations: list[Evaluation[C, E, SampleT]]
 
 
-Runs: TypeAlias = list[Run[R, C, E]]
+Runs: TypeAlias = list[Run[R, C, E, SampleT]]
 
 
 @define(slots=True)
@@ -167,16 +169,16 @@ class _Parallelization:
 
 
 @frozen(slots=True)
-class _TestContext(Generic[R, C, E]):
-    func: CostFunc[C, E] = field()
-    optimizer: Optimizer[C, R] = field()
+class _TestContext(Generic[R, C, E, SampleT]):
+    func: CostFunc[C, E, SampleT] = field()
+    optimizer: Optimizer[C, R, SampleT] = field()
     options: TestOptions = field()
     bounds: list[Interval] = field()
     seed: int = field()
     parallelization: _Parallelization | None = field(default=None)
     id: UUID = field(init=False, factory=uuid4)
 
-    def make_wrapper(self) -> CostFuncWrapper[C, E]:
+    def make_wrapper(self) -> CostFuncWrapper[C, E, SampleT]:
         if not self.parallelization:
             return CostFuncWrapper(self.func, self.options)
 
@@ -191,7 +193,7 @@ class _TestContext(Generic[R, C, E]):
         )
 
 
-def _run_context(ctx: _TestContext[R, C, E]) -> Run[R, C, E]:
+def _run_context(ctx: _TestContext[R, C, E, SampleT]) -> Run[R, C, E, SampleT]:
     _test_logger.debug(f"Beginning run {ctx.id}")
 
     wrapper = ctx.make_wrapper()
@@ -217,13 +219,13 @@ def _make_bounds(options: TestOptions) -> list[Interval]:
 
 
 @define(slots=True)
-class _TestContexts(Iterable[_TestContext[R, C, E]], Generic[R, C, E]):
-    func: CostFunc[C, E]
-    optimizer: Optimizer[C, R]
+class _TestContexts(Iterable[_TestContext[R, C, E, SampleT]], Generic[R, C, E, SampleT]):
+    func: CostFunc[C, E, SampleT]
+    optimizer: Optimizer[C, R, SampleT]
     options: TestOptions
     parallelization: _Parallelization | None
 
-    def __iter__(self) -> Iterator[_TestContext[R, C, E]]:
+    def __iter__(self) -> Iterator[_TestContext[R, C, E, SampleT]]:
         rng = default_rng(self.options.seed)
         bounds = _make_bounds(self.options)
 
@@ -244,7 +246,7 @@ class _TestContexts(Iterable[_TestContext[R, C, E]], Generic[R, C, E]):
 
 
 @define(slots=True)
-class Test(Generic[R, C, E]):
+class Test(Generic[R, C, E, SampleT]):
     """Class representing a test for a system.
 
     :param func: The cost function to use to evaluate samples
@@ -252,14 +254,14 @@ class Test(Generic[R, C, E]):
     :param options: The options to customize the behavior of the test
     """
 
-    func: CostFunc[C, E]
-    optimizer: Optimizer[C, R]
+    func: CostFunc[C, E, SampleT]
+    optimizer: Optimizer[C, R, SampleT]
     options: TestOptions
 
-    def _contexts(self, parallelization: _Parallelization | None) -> _TestContexts[R, C, E]:
+    def _contexts(self, parallelization: _Parallelization | None) -> _TestContexts[R, C, E, SampleT]:
         return _TestContexts(self.func, self.optimizer, self.options, parallelization)
 
-    def _run_sequential(self) -> Runs[R, C, E]:
+    def _run_sequential(self) -> Runs[R, C, E, SampleT]:
         parallelization: _Parallelization | None = None
         processes = self.options.processes
         threads = self.options.threads
@@ -275,7 +277,7 @@ class Test(Generic[R, C, E]):
 
         return [_run_context(ctx) for ctx in self._contexts(parallelization)]
 
-    def _run_parallel(self, nprocs: int) -> Runs[R, C, E]:
+    def _run_parallel(self, nprocs: int) -> Runs[R, C, E, SampleT]:
         if self.options.processes:
             _test_logger.warning(
                 "Using processes for both runs and sample evaluations is supported"
@@ -295,7 +297,7 @@ class Test(Generic[R, C, E]):
 
         return list(runs)
 
-    def run(self, *, processes: Literal["cores", "all"] | int | None = None) -> list[Run[R, C, E]]:
+    def run(self, *, processes: Literal["cores", "all"] | int | None = None) -> list[Run[R, C, E, SampleT]]:
         """Execute the test and a return a `Run` for each optimization attempt.
 
         If ``processes`` is set to ``'cores'`` and the number of cores for the CPU cannot be
@@ -338,7 +340,7 @@ class ModelSpecExtra(Generic[S, E1, E2]):
 
 
 @define(slots=True)
-class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2]], Generic[S, C, E1, E2]):
+class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2], SampleT], Generic[S, C, E1, E2, SampleT]):
     """Cost function created by composing a `Model and a `Specification`.
 
     The annotation data returned when evaluating a `Sample` is a composition of the annotations
@@ -350,7 +352,7 @@ class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2]], Generic[S, C, E1, E2]):
     :param spec: The specification to use to evaluate the trace into a cost value
     """
 
-    model: Model[S, E1]
+    model: Model[S, E1, SampleT]
     spec: Specification[S, C, E2]
 
     def evaluate(self, sample: Sample) -> Result[C, ModelSpecExtra[S, E1, E2]]:
@@ -373,28 +375,28 @@ class ModelSpec(CostFunc[C, ModelSpecExtra[S, E1, E2]], Generic[S, C, E1, E2]):
 
 @overload
 def setup(
-    model: Model[S, E1],
+    model: Model[S, E1, SampleT],
     specification: Specification[S, C, E2],
-    optimizer: Optimizer[C, R],
+    optimizer: Optimizer[C, R, SampleT],
     options: TestOptions,
-) -> Test[R, C, ModelSpecExtra[S, E1, E2]]: ...
+) -> Test[R, C, ModelSpecExtra[S, E1, E2], SampleT]: ...
 
 
 @overload
 def setup(
-    cost_fn: CostFunc[C, E],
-    optimizer: Optimizer[C, R],
+    cost_fn: CostFunc[C, E, SampleT],
+    optimizer: Optimizer[C, R, SampleT],
     options: TestOptions,
     /,
-) -> Test[R, C, E]: ...
+) -> Test[R, C, E, SampleT]: ...
 
 
 def setup(
-    model: Model[S, E1] | CostFunc[C, E],
-    specification: Specification[S, C, E2] | Optimizer[C, R],
-    optimizer: Optimizer[C, R] | TestOptions,
+    model: Model[S, E1, SampleT] | CostFunc[C, E, SampleT],
+    specification: Specification[S, C, E2] | Optimizer[C, R, SampleT],
+    optimizer: Optimizer[C, R, SampleT] | TestOptions,
     options: TestOptions | None = None,
-) -> Test[R, C, ModelSpecExtra[S, E1, E2]] | Test[R, C, E]:
+) -> Test[R, C, ModelSpecExtra[S, E1, E2], SampleT] | Test[R, C, E, SampleT]:
     """Create a test using either a `CostFunc`, or a `Model` and `Specification`.
 
     :param model: The model or cost function to use to evaluate samples.
@@ -421,34 +423,34 @@ def setup(
 
 @overload
 def staliro(
-    model: Model[S, E1],
+    model: Model[S, E1, SampleT],
     specification: Specification[S, C, E2],
-    optimizer: Optimizer[C, R],
+    optimizer: Optimizer[C, R, SampleT],
     options: TestOptions,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]]: ...
+) -> list[Run[R, C, ModelSpecExtra[S, E1, E2], SampleT]]: ...
 
 
 @overload
 def staliro(
-    cost_fn: CostFunc[C, E],
-    optimizer: Optimizer[C, R],
+    cost_fn: CostFunc[C, E, SampleT],
+    optimizer: Optimizer[C, R, SampleT],
     options: TestOptions,
     /,
     *,
     processes: Literal["cores", "all"] | int | None = ...,
-) -> list[Run[R, C, E]]: ...
+) -> list[Run[R, C, E, SampleT]]: ...
 
 
 def staliro(
-    model: Model[S, E1] | CostFunc[C, E],
-    specification: Specification[S, C, E2] | Optimizer[C, R],
-    optimizer: Optimizer[C, R] | TestOptions,
+    model: Model[S, E1, SampleT] | CostFunc[C, E, SampleT],
+    specification: Specification[S, C, E2] | Optimizer[C, R, SampleT],
+    optimizer: Optimizer[C, R, SampleT] | TestOptions,
     options: TestOptions | None = None,
     *,
     processes: Literal["cores", "all"] | int | None = None,
-) -> list[Run[R, C, ModelSpecExtra[S, E1, E2]]] | list[Run[R, C, E]]:
+) -> list[Run[R, C, ModelSpecExtra[S, E1, E2], SampleT]] | list[Run[R, C, E, SampleT]]:
     """Run a test using either a `CostFunc`, or a `Model` and `Specification`.
 
     :param model: The model or cost function to use to evaluate samples.
@@ -461,7 +463,7 @@ def staliro(
 
     if options:
         ms_test = setup(
-            cast(Model[S, E1], model),
+            cast(Model[S, E1, SampleT], model),
             cast(Specification[S, C, E2], specification),
             cast(Optimizer[C, R], optimizer),
             options,
@@ -470,7 +472,7 @@ def staliro(
         return ms_test.run(processes=processes)
 
     cf_test = setup(
-        cast(CostFunc[C, E], model),
+        cast(CostFunc[C, E, SampleT], model),
         cast(Optimizer[C, R], specification),
         cast(TestOptions, optimizer),
     )
