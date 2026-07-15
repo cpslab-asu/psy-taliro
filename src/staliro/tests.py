@@ -66,13 +66,6 @@ class Evaluation(Generic[C, E, SampleT]):
     extra: E
 
 
-def _cost_func_logger() -> Logger:
-    logger = getLogger("staliro.evaluations")
-    logger.addHandler(NullHandler())
-
-    return logger
-
-
 @define(slots=True)
 class CostFuncWrapper(ObjFunc[C, SampleT], Generic[C, E, SampleT]):
     """Wrapper to transform a `CostFunc` into an `ObjFunc`.
