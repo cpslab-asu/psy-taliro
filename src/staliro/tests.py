@@ -85,16 +85,16 @@ class CostFuncWrapper(ObjFunc[C, SampleT], Generic[C, E, SampleT]):
     _options: TestOptions = field()
     _evaluations: list[Evaluation[C, E, SampleT]] = field(init=False, factory=list)
 
-    def eval_sample(self, sample: SampleLike) -> C:
-        s = Sample(sample, self._options)
-
-        _eval_logger.debug(f"Evaluating sample: {s.values}")
-        result = self._func.evaluate(s)
+    @override
+    def eval_sample(self, sample: SampleT) -> C:
+        _eval_logger.debug(f"Evaluating sample: {sample.values}")
+        inputs = self._options.parse_sample(sample)
+        result = self._func.evaluate(inputs)
 
         if not isinstance(result, Result):
             raise TypeError("Cost function must return value of type Result")
 
-        evaluation = Evaluation(s, result.value, result.extra)
+        evaluation = Evaluation(inputs, result.value, result.extra)
         self._evaluations.append(evaluation)
 
         return evaluation.cost
@@ -113,16 +113,18 @@ class ParallelCostFuncWrapper(CostFuncWrapper[C, E, SampleT]):
 
     _pool: AbstractWorkerPool = field()
 
-    def eval_samples(self, samples: Iterable[SampleLike]) -> list[C]:
-        def eval_sample(sample: Sample) -> Evaluation[C, E]:
-            result = self._func.evaluate(sample)
+    @override
+    def eval_samples(self, samples: Iterable[SampleT]) -> list[C]:
+        def eval_sample(sample: SampleT) -> Evaluation[C, E, SampleT]:
+            inputs = self._options.parse_sample(sample)
+            result = self._func.evaluate(inputs)
 
             if not isinstance(result, Result):
                 raise TypeError("Cost function must return value of type Result")
 
-            return Evaluation(sample, result.value, result.extra)
+            return Evaluation(inputs, result.value, result.extra)
 
-        futures = self._pool.map(eval_sample, [Sample(s, self._options) for s in samples])
+        futures = self._pool.map(eval_sample, samples)
         evaluations = list(futures)
         self._evaluations.extend(evaluations)
 
