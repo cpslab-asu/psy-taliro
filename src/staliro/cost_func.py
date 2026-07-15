@@ -184,7 +184,7 @@ class Inputs(Generic[SampleT]):
     signals: Signals_ = field()
 
 
-class CostFunc(ABC, Generic[C, E]):
+class CostFunc(ABC, Generic[C, E, SampleT]):
     """The transformation from a `Sample` to a cost value.
 
     This class is parameterized by two type variables, ``C`` and ``E``. ``C`` is the type of the
@@ -193,7 +193,7 @@ class CostFunc(ABC, Generic[C, E]):
     """
 
     @abstractmethod
-    def evaluate(self, sample: Sample) -> Result[C, E]:
+    def evaluate(self, inputs: Inputs[SampleT]) -> Result[C, E]:
         """Evaluate the given `Sample` into a cost value.
 
         :param sample: The sample to evaluate
