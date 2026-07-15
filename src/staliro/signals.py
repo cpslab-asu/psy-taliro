@@ -79,7 +79,7 @@ from __future__ import annotations
 import math
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from math import cos
 from typing import Protocol, SupportsFloat, TypeAlias, cast
 
@@ -87,6 +87,7 @@ import numpy as np
 from attrs import Attribute, define, field, frozen, validators
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
+from typing_extensions import override
 
 
 class Signal(ABC):
@@ -360,7 +361,25 @@ def clamped(
 
 
 IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64]
-Interval: TypeAlias = tuple[float, float]
+
+
+@frozen()
+class Interval(Iterable[float]):
+    start: float
+    end: float
+
+    @override
+    def __iter__(self) -> Iterator[float]:
+        return iter(self.as_tuple())
+
+    def as_tuple(self) -> tuple[float, float]:
+        return self.start, self.end
+
+
+@frozen()
+class UnboundInterval(Interval):
+    def __init__(self):
+        super().__init__(-math.inf, math.inf)
 
 
 def _to_interval(interval: IntervalLike) -> Interval:
@@ -383,7 +402,7 @@ def _to_interval(interval: IntervalLike) -> Interval:
     if len(interval) > 2:
         warnings.warn("Interval endpoints past 2 will be ignored.", stacklevel=2)
 
-    return float(interval[0]), float(interval[1])
+    return Interval(float(interval[0]), float(interval[1]))
 
 
 ControlPointsLike: TypeAlias = Mapping[SupportsFloat, IntervalLike] | Sequence[IntervalLike]
