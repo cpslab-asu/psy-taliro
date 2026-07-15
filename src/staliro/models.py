@@ -142,6 +142,7 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     def __len__(self) -> int:
         return len(self.elements)
 
+    @override
     def __iter__(self) -> Iterator[tuple[float, S]]:
         return iter(self.elements.items())
 

@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from typing import TypeAlias, cast, overload
 
 from rtamt import StlDenseTimeSpecification, StlDiscreteTimeSpecification
+from typing_extensions import override
 
 from ..cost_func import Result
 from ..models import Trace
@@ -82,6 +83,7 @@ class DiscreteMapped(Specification[Sequence[float], float, None]):
         self.requirement = requirement
         self.columns = columns
 
+    @override
     def evaluate(self, trace: Trace[Sequence[float]]) -> Result[float, None]:
         times, states = _parse_trace(trace, self.columns)
         cost = _evaluate_discrete(self.requirement, times, states)
@@ -103,6 +105,7 @@ class DiscreteNamed(Specification[dict[str, float], float, None]):
     def __init__(self, requirement: str):
         self.requirement = requirement
 
+    @override
     def evaluate(self, trace: Trace[dict[str, float]]) -> Result[float, None]:
         times, states = _parse_trace(trace)
         cost = _evaluate_discrete(self.requirement, times, states)
@@ -172,6 +175,7 @@ class DenseMapped(Specification[Sequence[float], float, None]):
         self.requirement = requirement
         self.columns = columns
 
+    @override
     def evaluate(self, trace: Trace[Sequence[float]]) -> Result[float, None]:
         times, states = _parse_trace(trace, self.columns)
         cost = _evaluate_dense(self.requirement, times, states)
@@ -188,6 +192,7 @@ class DenseNamed(Specification[dict[str, float], float, None]):
     def __init__(self, requirement: str):
         self.requirement = requirement
 
+    @override
     def evaluate(self, trace: Trace[dict[str, float]]) -> Result[float, None]:
         times, states = _parse_trace(trace)
         cost = _evaluate_dense(self.requirement, times, states)

@@ -220,6 +220,7 @@ class _TestContexts(Iterable[_TestContext[R, C, E, SampleT]], Generic[R, C, E, S
     options: TestOptions
     parallelization: _Parallelization | None
 
+    @override
     def __iter__(self) -> Iterator[_TestContext[R, C, E, SampleT]]:
         rng = default_rng(self.options.seed)
         bounds = _make_bounds(self.options)

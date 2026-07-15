@@ -125,11 +125,13 @@ class Pchip(Signal):
     def __init__(self, interp: PchipInterpolator):
         self.interp = interp
 
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
+    @override
+    def at_time(self, time: float) -> float:
+        return float(self.interp(time))
 
-    def at_times(self, ts: Iterable[float]) -> list[float]:
-        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
+    @override
+    def at_times(self, times: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(times, dtype=float)).tolist())
 
 
 def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
@@ -153,11 +155,13 @@ class Piecewise(Signal):
     def __init__(self, interp: interp1d):
         self.interp = interp
 
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
+    @override
+    def at_time(self, time: float) -> float:
+        return float(self.interp(time))
 
-    def at_times(self, ts: Iterable[float]) -> list[float]:
-        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
+    @override
+    def at_times(self, times: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(times, dtype=float)).tolist())
 
 
 def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) -> Piecewise:
@@ -201,11 +205,12 @@ class Delayed(Signal):
     signal: Signal
     cutoff: float
 
-    def at_time(self, t: float) -> float:
-        if t < self.cutoff:
+    @override
+    def at_time(self, time: float) -> float:
+        if time < self.cutoff:
             return 0.0
 
-        return self.signal.at_time(t)
+        return self.signal.at_time(time)
 
 
 @frozen(slots=True)
@@ -241,8 +246,9 @@ class Sequenced(Signal):
     s2: Signal
     t_switch: float
 
-    def at_time(self, t: float) -> float:
-        return self.s1.at_time(t) if t < self.t_switch else self.s2.at_time(t)
+    @override
+    def at_time(self, time: float) -> float:
+        return self.s1.at_time(time) if time < self.t_switch else self.s2.at_time(time)
 
 
 @frozen(slots=True)
@@ -290,6 +296,7 @@ class Harmonic(Signal):
         self.bias = bias
         self.components = tuple(components)
 
+    @override
     def at_time(self, time: float) -> float:
         return self.bias + sum(component.at_time(time) for component in self.components)
 
@@ -328,6 +335,7 @@ class Clamped(Signal):
     lo: float
     hi: float
 
+    @override
     def at_time(self, time: float) -> float:
         return min(self.hi, max(self.lo, self.signal.at_time(time)))
 

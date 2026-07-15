@@ -69,7 +69,7 @@ from numpy import array, float64
 from numpy.random import Generator, default_rng
 from numpy.typing import NDArray
 from scipy import optimize
-from typing_extensions import TypeVar
+from typing_extensions import Self, TypeVar, override
 
 from .options import Interval
 
@@ -220,6 +220,7 @@ class UniformRandom(Optimizer[CT, None]):
         self.min_cost = min_cost
         self.max_cost = max_cost
 
+    @override
     def optimize(self, func: ObjFunc[CT], params: Optimizer.Params) -> None:
         rng = default_rng(params.seed)
         samples = [_sample_uniform(params.input_bounds, rng) for _ in range(params.budget)]
@@ -260,6 +261,7 @@ class DualAnnealing(Optimizer[float, DualAnnealingResult]):
     def __init__(self, min_cost: float | None = None):
         self.min_cost = min_cost
 
+    @override
     def optimize(self, func: ObjFunc[float], params: Optimizer.Params) -> DualAnnealingResult:
         def listener(sample: object, cost: float, ctx: Literal[0, 1, 2]) -> bool:
             return self.min_cost is not None and cost < self.min_cost
@@ -301,6 +303,7 @@ class UserOptimizer(Optimizer[C, R]):
     def __init__(self, func: UserFunc[C, R]):
         self.func = func
 
+    @override
     def optimize(self, func: ObjFunc[C], params: Optimizer.Params) -> R:
         return self.func(func, params)
 

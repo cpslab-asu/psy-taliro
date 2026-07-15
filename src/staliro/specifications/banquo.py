@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from typing import TypeVar
 
 import banquo
+import typing_extensions
 
 from ..cost_func import Result
 from ..models import Trace
@@ -20,6 +23,7 @@ class Banquo(Specification[State, Cost, None]):
     def __init__(self, formula: banquo.Formula[State, Cost]):
         self.formula = formula
 
+    @typing_extensions.override
     def evaluate(self, trace: Trace[State]) -> Result[Cost, None]:
         bqtrace = banquo.Trace.from_timed_states(trace.times, trace.states)  # Convert trace type
         rho = banquo.evaluate(self.formula, bqtrace)
