@@ -8,8 +8,9 @@ if typing.TYPE_CHECKING:
 import attrs
 import typing_extensions
 
-from .cost_func import CostFunc, Result, Sample
+from .cost_func import CostFunc, Result
 from .models import Blackbox, Model, Ode, Trace
+from .optimizers import Sample
 from .specifications import Specification
 
 P = typing_extensions.ParamSpec("P")

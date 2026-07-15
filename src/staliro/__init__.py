@@ -1,6 +1,7 @@
-from .cost_func import CostFunc, Result, Sample, SampleLike
+from .cost_func import CostFunc, Result
 from .decorators import blackbox, costfunc, model, ode, specification
 from .models import Trace
+from .optimizers import Sample, SampleLike
 from .options import TestOptions
 from .signals import Signal, SignalInput
 from .specifications import Specification
