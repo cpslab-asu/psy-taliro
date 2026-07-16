@@ -95,8 +95,6 @@ S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
 R = TypeVar("R", covariant=True)
 
-T = TypeVar("T", bound=SupportsFloat)
-
 
 class Trace(Iterable[tuple[float, S]], Generic[S]):
     """A time-annotated set of system states.
@@ -113,21 +111,29 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     """
 
     @overload
-    def __init__(self, elements: Mapping[T, S], /): ...
+    def __init__(self, elements: Mapping[SupportsFloat, S], /): ...
 
     @overload
-    def __init__(self, *, times: Iterable[T], states: Iterable[S]): ...
+    def __init__(self, /, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
 
     def __init__(
         self,
-        times: Mapping[T, S] | Iterable[T],
+        elements: Mapping[SupportsFloat, S] | None = None,
+        /,
+        *,
+        times: Iterable[SupportsFloat] | None = None,
         states: Iterable[S] | None = None,
     ):
-        if isinstance(times, Mapping):
-            self.elements = SortedDict({float(time): state for time, state in times.items()})
+        if elements is not None:
+            if times is not None or states is not None:
+                raise ValueError("Cannot provide both elements and times/states to Trace")
+
+            self.elements: SortedDict[float, S] = SortedDict(
+                {float(time): state for time, state in elements.items()}
+            )
         else:
-            if states is None:
-                raise ValueError("must provide states with times")
+            if times is None or states is None:
+                raise ValueError("Must provide times and states when not providing mapping")
 
             self.elements = SortedDict(
                 {float(time): state for time, state in zip(times, states, strict=True)}
@@ -171,24 +177,30 @@ class Result(_Result[Trace[S], E], Generic[S, E]):
     """
 
     @overload
-    def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E): ...
+    def __init__(self, elements: Mapping[SupportsFloat, S], /, *, extra: E): ...
 
     @overload
-    def __init__(self, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
+    def __init__(self, /, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
 
     def __init__(
         self,
-        states: Mapping[SupportsFloat, S] | Iterable[S],
+        elements: Trace[S] | Mapping[SupportsFloat, S] | None = None,
+        /,
+        *,
         extra: E,
         times: Iterable[SupportsFloat] | None = None,
+        states: Iterable[S] | None = None,
     ):
-        if isinstance(states, Mapping):
-            trace = Trace(states)
-        else:
-            if times is None:
-                raise ValueError("Must provide times if states is not a dict")
+        if elements is not None:
+            if times is not None or states is not None:
+                raise ValueError("Cannot provide both elements and times/states to Trace")
 
-            trace = Trace(states=states, times=times)
+            trace = elements if isinstance(elements, Trace) else Trace(elements)
+        else:
+            if times is None or states is None:
+                raise ValueError("Must provide times and states when not providing mapping")
+
+            trace = Trace(times=times, states=states)
 
         super().__init__(trace, extra)
 
