@@ -74,6 +74,7 @@ def _static_inputs(_: Any, a: AnyAttr, inputs: dict[str, Interval]) -> None:
         if interval.start >= interval.end:
             raise ValueError("Interval lower bound must be less than upper bound")
 
+
 def _signals(_: Any, a: AnyAttr, signals: dict[str, SignalInput]) -> None:
     for signal in signals.values():
         if not isinstance(signal, SignalInput):

@@ -100,7 +100,7 @@ def test_parse_sample() -> None:
                 control_points={33.0: (0.0, 1.0), 66.0: (1.0, 2.0)},
                 factory=dummy,
             ),
-        }
+        },
     )
 
     sample = Sample([0.0, 3.8, 0.5, 1.2, 0.2, 1.8])

@@ -98,7 +98,9 @@ class BlackboxDecorator:
     def __call__(self, f: Callable[[BlackboxInputs[S]], Trace[T]]) -> Blackbox[T, None, S]: ...
 
     @typing_extensions.overload
-    def __call__(self, f: Callable[[BlackboxInputs[S]], Result[Trace[T], E]]) -> Blackbox[T, E, S]: ...
+    def __call__(
+        self, f: Callable[[BlackboxInputs[S]], Result[Trace[T], E]]
+    ) -> Blackbox[T, E, S]: ...
 
     def __call__(
         self, f: Callable[[BlackboxInputs[S]], Trace[T] | Result[Trace[T], E]]

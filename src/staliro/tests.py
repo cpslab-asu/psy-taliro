@@ -231,7 +231,9 @@ class Test(Generic[R, C, E, SampleT]):
     optimizer: Optimizer[C, R, SampleT]
     options: TestOptions
 
-    def _contexts(self, parallelization: _Parallelization | None) -> _TestContexts[R, C, E, SampleT]:
+    def _contexts(
+        self, parallelization: _Parallelization | None
+    ) -> _TestContexts[R, C, E, SampleT]:
         return _TestContexts(self.func, self.optimizer, self.options, parallelization)
 
     def _run_sequential(self) -> Runs[R, C, E, SampleT]:
@@ -270,7 +272,9 @@ class Test(Generic[R, C, E, SampleT]):
 
         return list(runs)
 
-    def run(self, *, processes: Literal["cores", "all"] | int | None = None) -> list[Run[R, C, E, SampleT]]:
+    def run(
+        self, *, processes: Literal["cores", "all"] | int | None = None
+    ) -> list[Run[R, C, E, SampleT]]:
         """Execute the test and a return a `Run` for each optimization attempt.
 
         If ``processes`` is set to ``'cores'`` and the number of cores for the CPU cannot be

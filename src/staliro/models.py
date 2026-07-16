@@ -245,7 +245,9 @@ class Blackbox(Model[S, E, SampleT]):
     :param step_size: Time-step to use for interpolating signal values over the simulation interval
     """
 
-    def __init__(self, func: Callable[[BlackboxInputs[SampleT]], _Result[Trace[S], E]], step_size: float):
+    def __init__(
+        self, func: Callable[[BlackboxInputs[SampleT]], _Result[Trace[S], E]], step_size: float
+    ):
         self._func = func
         self.step_size = step_size
 
