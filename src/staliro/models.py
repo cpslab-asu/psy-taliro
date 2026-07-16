@@ -128,6 +128,9 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
             if times is not None or states is not None:
                 raise ValueError("Cannot provide both elements and times/states to Trace")
 
+            if not isinstance(elements, Mapping):
+                raise ValueError("Elements must be provided as a Mapping instance")
+
             self.elements: SortedDict[float, S] = SortedDict(
                 {float(time): state for time, state in elements.items()}
             )
