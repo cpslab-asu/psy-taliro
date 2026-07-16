@@ -77,7 +77,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, cast, overload
+from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, overload
 
 from attrs import frozen
 from numpy import array, float64, linspace
@@ -153,7 +153,7 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
         return iter(self.elements.items())
 
     def __getitem__(self, time: float) -> S:
-        return cast(S, self.elements[time])
+        return self.elements[time]
 
     @property
     def times(self) -> Iterable[float]:
