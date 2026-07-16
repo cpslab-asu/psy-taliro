@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from enum import IntEnum
-from logging import Logger, NullHandler, getLogger
+from logging import NullHandler, getLogger
 from os import cpu_count
 from typing import Generic, Literal, TypeAlias, cast, overload
 from uuid import UUID, uuid4
@@ -30,7 +30,7 @@ from typing_extensions import TypeVar, override
 from .cost_func import CostFunc, Inputs, Result
 from .models import Model, Trace
 from .optimizers import ObjFunc, Optimizer, Sample
-from .options import Interval, TestOptions
+from .options import TestOptions
 from .specifications import Specification
 
 _test_logger = getLogger("staliro.test")
