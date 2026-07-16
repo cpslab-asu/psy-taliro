@@ -383,8 +383,8 @@ class Interval(Iterable[float]):
 
 @frozen()
 class UnboundInterval(Interval):
-    def __init__(self):
-        super().__init__(-math.inf, math.inf)
+    start: float = field(default=-math.inf, init=False)
+    end: float = field(default=math.inf, init=False)
 
 
 IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64] | Interval
