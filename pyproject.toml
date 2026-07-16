@@ -90,6 +90,7 @@ files = [
     "tests/**/*.py",
     "examples/*.py",
 ]
+pretty = true
 strict_equality = true
 strict_optional = true
 warn_no_return = true
