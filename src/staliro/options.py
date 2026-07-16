@@ -190,12 +190,12 @@ class TestOptions:
                 yield self.static_inputs[name]
 
             for name in self.signals:
-                control_points = self.signals[name].control_points
+                points = self.signals[name].control_points
 
-                if not isinstance(control_points, list):
-                    control_points = control_points.values()
-
-                yield from control_points
+                if isinstance(points, Mapping):
+                    yield from points.values()
+                else:
+                    yield from points
 
         return list(_intervals())
 
