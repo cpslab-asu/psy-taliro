@@ -246,7 +246,7 @@ class Blackbox(Model[S, E, SampleT]):
         self._func = func
         self.step_size = step_size
 
-    def _create_inputs(self, inputs: Inputs[SampleT]) -> BlackboxInputs:
+    def _create_inputs(self, inputs: Inputs[SampleT]) -> BlackboxInputs[SampleT]:
         if isinstance(inputs.signals.tspan, UnboundInterval):
             signals: dict[float, dict[str, float]] = {}
         else:
