@@ -168,7 +168,6 @@ class _TestContext(Generic[R, C, E, SampleT]):
     func: CostFunc[C, E, SampleT] = field()
     optimizer: Optimizer[C, R, SampleT] = field()
     options: TestOptions = field()
-    bounds: list[Interval] = field()
     seed: int = field()
     parallelization: _Parallelization | None = field(default=None)
     id: UUID = field(init=False, factory=uuid4)
@@ -184,7 +183,7 @@ class _TestContext(Generic[R, C, E, SampleT]):
         return Optimizer.Params(
             seed=self.seed,
             budget=self.options.iterations,
-            input_bounds=self.bounds,
+            input_bounds=self.options.intervals(),
         )
 
 
@@ -199,20 +198,6 @@ def _run_context(ctx: _TestContext[R, C, E, SampleT]) -> Run[R, C, E, SampleT]:
     return Run(result, wrapper._evaluations)
 
 
-def _make_bounds(options: TestOptions) -> list[Interval]:
-    bounds = list(options.static_inputs.values())
-
-    for name in options.signals:
-        control_points = options.signals[name].control_points
-
-        if isinstance(control_points, dict):
-            bounds.extend(control_points.values())
-        else:
-            bounds.extend(control_points)
-
-    return bounds
-
-
 @define(slots=True)
 class _TestContexts(Iterable[_TestContext[R, C, E, SampleT]], Generic[R, C, E, SampleT]):
     func: CostFunc[C, E, SampleT]
@@ -223,19 +208,11 @@ class _TestContexts(Iterable[_TestContext[R, C, E, SampleT]], Generic[R, C, E, S
     @override
     def __iter__(self) -> Iterator[_TestContext[R, C, E, SampleT]]:
         rng = default_rng(self.options.seed)
-        bounds = _make_bounds(self.options)
-
-        if len(bounds) == 0:
-            raise ValueError(
-                "Must provide at least one static input or at least one signal with at one or more control points"
-            )
-
         for _ in range(self.options.runs):
             yield _TestContext(
                 func=self.func,
                 optimizer=self.optimizer,
                 options=self.options,
-                bounds=bounds,
                 seed=rng.integers(0, 2**32 - 1, dtype=int),
                 parallelization=self.parallelization,
             )
