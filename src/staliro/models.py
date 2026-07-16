@@ -309,7 +309,7 @@ class Ode(Model[list[float], None, SampleT]):
             signals = {name: inputs.signals[name].at_time(time) for name in inputs.signals}
             derivs = self.func(OdeInputs(time, static, signals))
 
-            return array([derivs[name] for name in inputs.static])
+            return array([derivs[name] for name in inputs.static], dtype=float64)
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
