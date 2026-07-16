@@ -21,7 +21,7 @@ def test_static_inputs() -> None:
     options = TestOptions(static_inputs={"x": [0, 1], "y": (2, 4), "z": np.array([3, 7])})
 
     assert options.static_inputs["x"] == Interval(0, 1)
-    assert options.static_inputs["y"] == Interval(2, 4)  # type: ignore[unreachable]
+    assert options.static_inputs["y"] == Interval(2, 4)
     assert options.static_inputs["z"] == Interval(3, 7)
 
 
