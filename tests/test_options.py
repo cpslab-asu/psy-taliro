@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import attrs
 import numpy as np
 import pytest
@@ -70,12 +72,16 @@ def test_control_points() -> None:
 
 @attrs.define()
 class DummySignal(Signal):
-    times: list[float] = attrs.field(converter=list)
-    values: list[float] = attrs.field(converter=list)
+    times: list[float]
+    values: list[float]
 
     @te.override
     def at_time(self, time: float) -> float:
         raise NotImplementedError()
+
+
+def dummy(times: Iterable[float], values: Iterable[float]) -> DummySignal:
+    return DummySignal(list(times), list(values))
 
 
 def test_parse_sample() -> None:
@@ -88,11 +94,11 @@ def test_parse_sample() -> None:
         signals={
             "spam": SignalInput(
                 control_points=[(0.0, 1.0), (1.0, 2.0)],
-                factory=DummySignal,
+                factory=dummy,
             ),
             "eggs": SignalInput(
                 control_points={33.0: (0.0, 1.0), 66.0: (1.0, 2.0)},
-                factory=DummySignal,
+                factory=dummy,
             ),
         }
     )
