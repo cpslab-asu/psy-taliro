@@ -38,7 +38,7 @@ S = typing_extensions.TypeVar("S", bound=Sample)
 
 
 @typing_extensions.overload
-def costfunc(f: Callable[[Inputs[S]], Result[T, E]]) -> CostFunc[T, E, S]:  # type: ignore[overload-overlap] # pyright: ignore[reportOverlappingOverload],
+def costfunc(f: Callable[[Inputs[S]], Result[T, E]]) -> CostFunc[T, E, S]:  # type: ignore[overload-overlap]
     ...
 
 
