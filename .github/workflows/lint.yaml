@@ -22,7 +22,7 @@ jobs:
       - name: Format
         run: uv run ruff format --check .
 
-  mypy:
+  pyrefly:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -30,4 +30,4 @@ jobs:
         with:
           python-version: "3.10"
       - name: Check types
-        run: uv run --group types --group tests --group examples mypy
+        run: uv run --group types --group tests --group examples pyrefly check --output-format=github
