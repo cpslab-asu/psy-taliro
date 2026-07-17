@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TypeVar
 
 import banquo
+import banquo.stl
 import typing_extensions
 
 from ..cost_func import Result
@@ -29,3 +30,7 @@ class Banquo(Specification[State, Cost, None]):
         rho = banquo.evaluate(self.formula, bqtrace)
 
         return Result(rho, None)
+
+    @classmethod
+    def parse_stl(cls, formula: str) -> Banquo[dict[str, float], float]:
+        return cls(banquo.stl.parse(formula))
