@@ -6,8 +6,9 @@ import matlab.engine
 import numpy as np
 import plotly.graph_objects as go
 import plotly.subplots as sp
+import typing_extensions as te
 
-from staliro import Sample, SignalInput, TestOptions, staliro
+from staliro import Inputs, SignalInput, TestOptions, staliro
 from staliro.models import Model, Result
 from staliro.optimizers import DualAnnealing
 from staliro.specifications import rtamt
@@ -26,16 +27,15 @@ class AutotransModel(Model[list[float], None]):
         model_opts = self.engine.simget(AutotransModel.MODEL_NAME)
         self.model_opts = self.engine.simset(model_opts, "SaveFormat", "Array")
 
-    def simulate(self, sample: Sample) -> Result[list[float], None]:
-        assert sample.signals.tspan is not None
-
-        tstart, tend = sample.signals.tspan
+    @te.override
+    def simulate(self, inputs: Inputs) -> Result[list[float], None]:
+        tstart, tend = inputs.signals.tspan
         duration = tend - tstart
         sim_t = matlab.double([0, tend])
         n_times = duration // self.sampling_step
         signal_times = np.linspace(tstart, tend, num=int(n_times))
         signal_values = np.array(
-            [[signal.at_time(t) for t in signal_times] for signal in sample.signals]
+            [[signal.at_time(t) for t in signal_times] for signal in inputs.signals.values()]
         )
 
         model_input = matlab.double(np.row_stack((signal_times, signal_values)).T.tolist())

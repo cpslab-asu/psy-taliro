@@ -13,17 +13,17 @@ TSPAN = (0, 15)
 
 
 @staliro.costfunc
-def outer(sample: staliro.Sample) -> float:
+def outer(outer_inputs: staliro.Inputs) -> float:
     @staliro.blackbox(step_size=0.1)
-    def inner(inputs: models.Blackbox.Inputs) -> models.Trace[list[float]]:
+    def inner(inner_inputs: staliro.BlackboxInputs) -> models.Trace[list[float]]:
         power = 9
         alpha = np.deg2rad(2.1215)
         beta = 0
-        alt = sample.static["alt"]
+        alt = outer_inputs.static["alt"]
         vel = 540
-        phi = inputs.static["phi"]
-        theta = inputs.static["theta"]
-        psi = inputs.static["psi"]
+        phi = inner_inputs.static["phi"]
+        theta = inner_inputs.static["theta"]
+        psi = inner_inputs.static["psi"]
 
         initial_state = [vel, alpha, beta, phi, theta, psi, 0, 0, 0, 0, 0, 0, alt, power]
         step = 1.0 / 30.0

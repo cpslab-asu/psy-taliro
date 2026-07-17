@@ -77,22 +77,23 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, cast, overload
+from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, overload
 
 from attrs import frozen
 from numpy import array, float64, linspace
 from numpy.typing import NDArray
 from scipy import integrate
 from sortedcontainers import SortedDict
+from typing_extensions import override
 
+from .cost_func import Inputs
 from .cost_func import Result as _Result
-from .cost_func import Sample
+from .optimizers import SampleT
+from .signals import UnboundInterval
 
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
 R = TypeVar("R", covariant=True)
-
-T = TypeVar("T", bound=SupportsFloat)
 
 
 class Trace(Iterable[tuple[float, S]], Generic[S]):
@@ -110,21 +111,32 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     """
 
     @overload
-    def __init__(self, elements: Mapping[T, S], /): ...
+    def __init__(self, elements: Mapping[SupportsFloat, S], /): ...
 
     @overload
-    def __init__(self, *, times: Iterable[T], states: Iterable[S]): ...
+    def __init__(self, /, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
 
     def __init__(
         self,
-        times: Mapping[T, S] | Iterable[T],
+        elements: Mapping[SupportsFloat, S] | None = None,
+        /,
+        *,
+        times: Iterable[SupportsFloat] | None = None,
         states: Iterable[S] | None = None,
     ):
-        if isinstance(times, Mapping):
-            self.elements = SortedDict({float(time): state for time, state in times.items()})
+        if elements is not None:
+            if times is not None or states is not None:
+                raise ValueError("Cannot provide both elements and times/states to Trace")
+
+            if not isinstance(elements, Mapping):
+                raise ValueError("Elements must be provided as a Mapping instance")
+
+            self.elements: SortedDict[float, S] = SortedDict(
+                {float(time): state for time, state in elements.items()}
+            )
         else:
-            if states is None:
-                raise ValueError("must provide states with times")
+            if times is None or states is None:
+                raise ValueError("Must provide times and states when not providing mapping")
 
             self.elements = SortedDict(
                 {float(time): state for time, state in zip(times, states, strict=True)}
@@ -139,11 +151,12 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     def __len__(self) -> int:
         return len(self.elements)
 
+    @override
     def __iter__(self) -> Iterator[tuple[float, S]]:
         return iter(self.elements.items())
 
     def __getitem__(self, time: float) -> S:
-        return cast(S, self.elements[time])
+        return self.elements[time]
 
     @property
     def times(self) -> Iterable[float]:
@@ -167,33 +180,39 @@ class Result(_Result[Trace[S], E], Generic[S, E]):
     """
 
     @overload
-    def __init__(self, trace: Mapping[SupportsFloat, S], /, extra: E): ...
+    def __init__(self, elements: Mapping[SupportsFloat, S], /, *, extra: E): ...
 
     @overload
-    def __init__(self, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
+    def __init__(self, /, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
 
     def __init__(
         self,
-        states: Mapping[SupportsFloat, S] | Iterable[S],
+        elements: Trace[S] | Mapping[SupportsFloat, S] | None = None,
+        /,
+        *,
         extra: E,
         times: Iterable[SupportsFloat] | None = None,
+        states: Iterable[S] | None = None,
     ):
-        if isinstance(states, Mapping):
-            trace = Trace(states)
-        else:
-            if times is None:
-                raise ValueError("Must provide times if states is not a dict")
+        if elements is not None:
+            if times is not None or states is not None:
+                raise ValueError("Cannot provide both elements and times/states to Trace")
 
-            trace = Trace(states=states, times=times)
+            trace = elements if isinstance(elements, Trace) else Trace(elements)
+        else:
+            if times is None or states is None:
+                raise ValueError("Must provide times and states when not providing mapping")
+
+            trace = Trace(times=times, states=states)
 
         super().__init__(trace, extra)
 
 
-class Model(ABC, Generic[S, E]):
+class Model(ABC, Generic[S, E, SampleT]):
     """Representation of the simulation logic for the system under test (SUT)."""
 
     @abstractmethod
-    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
+    def simulate(self, inputs: Inputs[SampleT]) -> _Result[Trace[S], E]:
         """Simulate a system and return a `staliro.Result` containing a `Trace`.
 
         :param sample: The sample containing the system inputs
@@ -201,7 +220,24 @@ class Model(ABC, Generic[S, E]):
         """
 
 
-class Blackbox(Model[S, E]):
+@frozen(slots=True)
+class BlackboxInputs(Generic[SampleT]):
+    """Interpolated inputs to a Blackbox model.
+
+    The times attributes will always contain as keys all of the interpolation times for the
+    given ``tspan`` in the `TestOptions`. If no ``signals`` are defined in the ``TestOptions``,
+    then the value for each time will be empty.
+
+    :attribute static: The static (time-invariant) inputs to the system
+    :attribute times: Mapping from each interpolation time to the values of each signal at that time
+    """
+
+    sample: SampleT
+    static: dict[str, float]
+    times: dict[float, dict[str, float]]
+
+
+class Blackbox(Model[S, E, SampleT]):
     """General system model which does not make assumptions about the underlying system.
 
     :param func: User-defined function to evaluate given ``Blackbox.Inputs`` into a `Trace`
@@ -209,46 +245,48 @@ class Blackbox(Model[S, E]):
     :param step_size: Time-step to use for interpolating signal values over the simulation interval
     """
 
-    @frozen(slots=True)
-    class Inputs:
-        """Interpolated inputs to a Blackbox model.
-
-        The times attributes will always contain as keys all of the interpolation times for the
-        given ``tspan`` in the `TestOptions`. If no ``signals`` are defined in the ``TestOptions``,
-        then the value for each time will be empty.
-
-        :attribute static: The static (time-invariant) inputs to the system
-        :attribute times: Mapping from each interpolation time to the values of each signal at that time
-        """
-
-        static: dict[str, float]
-        times: dict[float, dict[str, float]]
-
-    def __init__(self, func: Callable[[Blackbox.Inputs], _Result[Trace[S], E]], step_size: float):
+    def __init__(
+        self, func: Callable[[BlackboxInputs[SampleT]], _Result[Trace[S], E]], step_size: float
+    ):
         self._func = func
         self.step_size = step_size
 
-    def _create_inputs(self, sample: Sample) -> Blackbox.Inputs:
-        if sample.signals.tspan:
-            tstart, tend = sample.signals.tspan
+    def _create_inputs(self, inputs: Inputs[SampleT]) -> BlackboxInputs[SampleT]:
+        if isinstance(inputs.signals.tspan, UnboundInterval):
+            signals: dict[float, dict[str, float]] = {}
+        else:
+            tstart, tend = inputs.signals.tspan
             duration = tend - tstart
             step_count = floor(duration / self.step_size) + 1
 
             times: list[float] = linspace(tstart, tend, num=step_count, dtype=float).tolist()
             signals = {
-                time: {name: sample.signals[name].at_time(time) for name in sample.signals.names}
+                time: {name: inputs.signals[name].at_time(time) for name in inputs.signals}
                 for time in times
             }
-        else:
-            signals = {}
 
-        return Blackbox.Inputs(sample.static, signals)
+        return BlackboxInputs(inputs.sample, inputs.static, signals)
 
-    def simulate(self, sample: Sample) -> _Result[Trace[S], E]:
-        return self._func(self._create_inputs(sample))
+    @override
+    def simulate(self, inputs: Inputs[SampleT]) -> _Result[Trace[S], E]:
+        return self._func(self._create_inputs(inputs))
 
 
-class Ode(Model[list[float], None]):
+@frozen(slots=True)
+class OdeInputs:
+    """Set of inputs to an ODE model function.
+
+    :attribute time: The current time of the integration
+    :attribute state: Name-value map containing the state variables for the current time
+    :attribute signals: Name-value map containing the signal values for the current time
+    """
+
+    time: float
+    state: dict[str, float]
+    signals: dict[str, float]
+
+
+class Ode(Model[list[float], None, SampleT]):
     """Model for systems that can be modeled by an Ordinary Differential Equation (ODE).
 
     This model is simulated by integration the state derivatives returned by the function. The
@@ -262,40 +300,26 @@ class Ode(Model[list[float], None]):
 
     Method: TypeAlias = Literal["RK45", "RK23", "DOP853", "Radau", "BDF", "LSODA"]
 
-    @frozen(slots=True)
-    class Inputs:
-        """Set of inputs to an ODE model function.
-
-        :attribute time: The current time of the integration
-        :attribute state: Name-value map containing the state variables for the current time
-        :attribute signals: Name-value map containing the signal values for the current time
-        """
-
-        time: float
-        state: dict[str, float]
-        signals: dict[str, float]
-
-    def __init__(self, func: Callable[[Ode.Inputs], Mapping[str, float]], method: Ode.Method):
+    def __init__(self, func: Callable[[OdeInputs], Mapping[str, float]], method: Ode.Method):
         self.func = func
         self.method = method
 
-    def simulate(self, sample: Sample) -> Result[list[float], None]:
-        if sample.signals.tspan is None:
+    @override
+    def simulate(self, inputs: Inputs[SampleT]) -> Result[list[float], None]:
+        if isinstance(inputs.signals.tspan, UnboundInterval):
             raise RuntimeError("ODE model requires tspan to be defined in TestOptions")
 
-        names = list(sample.static)
-
         def integration_fn(time: float, state: NDArray[float64]) -> NDArray[float64]:
-            static = {name: state[idx] for idx, name in enumerate(sample.static)}
-            signals = {name: sample.signals[name].at_time(time) for name in sample.signals.names}
-            derivs = self.func(Ode.Inputs(time, static, signals))
+            static = {name: state[idx] for idx, name in enumerate(inputs.static)}
+            signals = {name: inputs.signals[name].at_time(time) for name in inputs.signals}
+            derivs = self.func(OdeInputs(time, static, signals))
 
-            return array([derivs[name] for name in names])
+            return array([derivs[name] for name in inputs.static], dtype=float64)
 
         integration = integrate.solve_ivp(
             fun=integration_fn,
-            t_span=sample.signals.tspan,
-            y0=[sample.static[name] for name in names],
+            t_span=inputs.signals.tspan.as_tuple(),
+            y0=[inputs.static[name] for name in inputs.static],
             method=self.method,
         )
 

@@ -79,14 +79,15 @@ from __future__ import annotations
 import math
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from math import cos
-from typing import Protocol, SupportsFloat, TypeAlias, cast
+from typing import Any, Protocol, SupportsFloat, TypeAlias, cast
 
 import numpy as np
 from attrs import Attribute, define, field, frozen, validators
 from numpy.typing import NDArray
 from scipy.interpolate import PchipInterpolator, interp1d
+from typing_extensions import override
 
 
 class Signal(ABC):
@@ -124,11 +125,13 @@ class Pchip(Signal):
     def __init__(self, interp: PchipInterpolator):
         self.interp = interp
 
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
+    @override
+    def at_time(self, time: float) -> float:
+        return float(self.interp(time))
 
-    def at_times(self, ts: Iterable[float]) -> list[float]:
-        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
+    @override
+    def at_times(self, times: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(times, dtype=float)).tolist())
 
 
 def pchip(times: Iterable[float], control_points: Iterable[float]) -> Pchip:
@@ -152,11 +155,13 @@ class Piecewise(Signal):
     def __init__(self, interp: interp1d):
         self.interp = interp
 
-    def at_time(self, t: float) -> float:
-        return float(self.interp(t))
+    @override
+    def at_time(self, time: float) -> float:
+        return float(self.interp(time))
 
-    def at_times(self, ts: Iterable[float]) -> list[float]:
-        return cast(list[float], self.interp(np.array(ts, dtype=float)).tolist())
+    @override
+    def at_times(self, times: Iterable[float]) -> list[float]:
+        return cast(list[float], self.interp(np.array(times, dtype=float)).tolist())
 
 
 def piecewise_linear(times: Iterable[float], control_points: Iterable[float]) -> Piecewise:
@@ -200,11 +205,12 @@ class Delayed(Signal):
     signal: Signal
     cutoff: float
 
-    def at_time(self, t: float) -> float:
-        if t < self.cutoff:
+    @override
+    def at_time(self, time: float) -> float:
+        if time < self.cutoff:
             return 0.0
 
-        return self.signal.at_time(t)
+        return self.signal.at_time(time)
 
 
 @frozen(slots=True)
@@ -240,8 +246,9 @@ class Sequenced(Signal):
     s2: Signal
     t_switch: float
 
-    def at_time(self, t: float) -> float:
-        return self.s1.at_time(t) if t < self.t_switch else self.s2.at_time(t)
+    @override
+    def at_time(self, time: float) -> float:
+        return self.s1.at_time(time) if time < self.t_switch else self.s2.at_time(time)
 
 
 @frozen(slots=True)
@@ -289,6 +296,7 @@ class Harmonic(Signal):
         self.bias = bias
         self.components = tuple(components)
 
+    @override
     def at_time(self, time: float) -> float:
         return self.bias + sum(component.at_time(time) for component in self.components)
 
@@ -327,6 +335,7 @@ class Clamped(Signal):
     lo: float
     hi: float
 
+    @override
     def at_time(self, time: float) -> float:
         return min(self.hi, max(self.lo, self.signal.at_time(time)))
 
@@ -359,8 +368,26 @@ def clamped(
     return ClampedFactory(inner, lo, hi)
 
 
-IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64]
-Interval: TypeAlias = tuple[float, float]
+@frozen()
+class Interval(Iterable[float]):
+    start: float
+    end: float
+
+    @override
+    def __iter__(self) -> Iterator[float]:
+        return iter(self.as_tuple())
+
+    def as_tuple(self) -> tuple[float, float]:
+        return self.start, self.end
+
+
+@frozen()
+class UnboundInterval(Interval):
+    start: float = field(default=-math.inf, init=False)
+    end: float = field(default=math.inf, init=False)
+
+
+IntervalLike: TypeAlias = Sequence[SupportsFloat] | NDArray[np.float64] | Interval
 
 
 def _to_interval(interval: IntervalLike) -> Interval:
@@ -377,13 +404,16 @@ def _to_interval(interval: IntervalLike) -> Interval:
         An instance of Interval using the values provided in the ordered collection
     """
 
+    if isinstance(interval, Interval):
+        return interval
+
     if isinstance(interval, np.ndarray):
         interval = interval.astype(dtype=float)
 
     if len(interval) > 2:
         warnings.warn("Interval endpoints past 2 will be ignored.", stacklevel=2)
 
-    return float(interval[0]), float(interval[1])
+    return Interval(float(interval[0]), float(interval[1]))
 
 
 ControlPointsLike: TypeAlias = Mapping[SupportsFloat, IntervalLike] | Sequence[IntervalLike]
@@ -404,6 +434,15 @@ def _iter_pts(pts: list[Interval] | dict[float, Interval]) -> Iterable[Interval]
     return pts
 
 
+def _control_points(_: Any, a: Attribute[Any], pts: ControlPoints) -> None:
+    if len(pts) < 1:
+        raise ValueError("Must provide at least 1 control point to signal")
+
+    for pt in _iter_pts(pts):
+        if pt.start >= pt.end:
+            raise ValueError("Interval lower bound must be less than upper bound.")
+
+
 @define(kw_only=True)
 class SignalInput:
     """Options for signal generation.
@@ -417,7 +456,7 @@ class SignalInput:
 
     control_points: list[Interval] | dict[float, Interval] = field(
         converter=_to_control_points,
-        validator=validators.min_len(1),
+        validator=_control_points,
     )
 
     factory: SignalFactory = field(
@@ -426,15 +465,6 @@ class SignalInput:
     )
 
     time_varying: bool = field(default=False)
-
-    @control_points.validator
-    def _control_pts(self, _: Attribute[object], pts: ControlPoints) -> None:
-        if len(pts) < 1:
-            raise ValueError("Must provide at least 1 control point to signal")
-
-        for pt in _iter_pts(pts):
-            if pt[0] >= pt[1]:
-                raise ValueError("Interval lower bound must be less than upper bound.")
 
 
 __all__ = [

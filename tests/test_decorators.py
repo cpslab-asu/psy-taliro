@@ -3,15 +3,16 @@ from __future__ import annotations
 import pytest
 import typing_extensions
 
-from staliro import Result, Sample, TestOptions, Trace, decorators
-from staliro.cost_func import CostFunc
-from staliro.models import Blackbox, Model
+from staliro import Result, Sample, Trace, decorators
+from staliro.cost_func import CostFunc, Inputs, Signals
+from staliro.models import Blackbox, BlackboxInputs, Model
+from staliro.signals import UnboundInterval
 from staliro.specifications import Specification
 
 
 @pytest.fixture
-def s() -> Sample:
-    return Sample([], TestOptions())
+def i() -> Inputs:
+    return Inputs(Sample([]), {}, Signals({}, UnboundInterval()))
 
 
 @pytest.fixture
@@ -35,80 +36,80 @@ def test_ensure_result() -> None:
     assert r2.extra == "foo"
 
 
-def test_costfunc(s: Sample) -> None:
+def test_costfunc(i: Inputs) -> None:
     @decorators.costfunc
-    def cf1(s: Sample) -> int:
+    def cf1(s: Inputs) -> int:
         return 0
 
     assert isinstance(cf1, CostFunc)
 
     @decorators.costfunc
-    def cf2(s: Sample) -> Result[int, str]:
+    def cf2(s: Inputs) -> Result[int, str]:
         return Result(0, "foo")
 
     assert isinstance(cf2, CostFunc)
 
-    r1 = typing_extensions.assert_type(cf1.evaluate(s), Result[int, None])
+    r1 = typing_extensions.assert_type(cf1.evaluate(i), Result[int, None])
 
     assert isinstance(r1, Result)
     assert isinstance(r1.value, int)
     assert r1.extra is None
 
-    r2 = typing_extensions.assert_type(cf2.evaluate(s), Result[int, str])
+    r2 = typing_extensions.assert_type(cf2.evaluate(i), Result[int, str])
 
     assert isinstance(r2, Result)
     assert isinstance(r2.value, int)
     assert r2.extra == "foo"
 
 
-def test_model(s: Sample) -> None:
+def test_model(i: Inputs) -> None:
     @decorators.model
-    def m1(s: Sample) -> Trace[int]:
+    def m1(s: Inputs) -> Trace[int]:
         return Trace(times=[], states=[])
 
     assert isinstance(m1, Model)
 
     @decorators.model
-    def m2(s: Sample) -> Result[Trace[int], str]:
+    def m2(s: Inputs) -> Result[Trace[int], str]:
         return Result(Trace[int](times=[], states=[]), "foo")
 
     assert isinstance(m2, Model)
 
-    t1 = typing_extensions.assert_type(m1.simulate(s), Result[Trace[int], None])
+    t1 = typing_extensions.assert_type(m1.simulate(i), Result[Trace[int], None])
 
     assert isinstance(t1, Result)
     assert isinstance(t1.value, Trace)
     assert t1.extra is None
 
-    t2 = typing_extensions.assert_type(m2.simulate(s), Result[Trace[int], str])
+    t2 = typing_extensions.assert_type(m2.simulate(i), Result[Trace[int], str])
 
     assert isinstance(t2, Result)
     assert isinstance(t2.value, Trace)
     assert t2.extra == "foo"
 
 
-def test_blackbox(s: Sample) -> None:
+def test_blackbox(i: Inputs) -> None:
     @decorators.blackbox(step_size=0.1)
-    def bb1(s: Blackbox.Inputs) -> Trace[int]:
+    def bb1(s: BlackboxInputs) -> Trace[int]:
         return Trace(times=[], states=[])
 
     assert isinstance(bb1, Blackbox)
     assert bb1.step_size == 0.1
 
     @decorators.blackbox(step_size=0.01)
-    def bb2(s: Blackbox.Inputs) -> Result[Trace[int], str]:
+    def bb2(s: BlackboxInputs) -> Result[Trace[int], str]:
         return Result(Trace[int](times=[], states=[]), "foo")
 
     assert isinstance(bb2, Blackbox)
     assert bb2.step_size == 0.01
 
-    t1 = typing_extensions.assert_type(bb1.simulate(s), Result[Trace[int], None])
+    t1 = typing_extensions.assert_type(bb1.simulate(i), Result[Trace[int], None])
 
     assert isinstance(t1, Result)
     assert isinstance(t1.value, Trace)
     assert t1.extra is None
 
-    t2 = typing_extensions.assert_type(bb2.simulate(s), Result[Trace[int], str])
+    t2 = typing_extensions.assert_type(bb2.simulate(i), Result[Trace[int], str])
 
     assert isinstance(t2, Result)
     assert isinstance(t2.value, Trace)
