@@ -7,7 +7,7 @@ name = "psy-taliro"
 version = "3.1.0"
 description = "Search-based test generation framework"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10"
 license-files = ["LICENSE"]
 keywords = []
 authors = [
