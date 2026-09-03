@@ -67,6 +67,7 @@ def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -
                 f"Setting {a.name} to 1 will create a worker pool with only a single worker, "
                 "which will not improve performance and is probably not the intended configuration."
                 f"Leave {a.name} unset or set to None to avoid this problem.",
+                stacklevel=2,
             )
 
     if isinstance(value, str) and value != "cores":
