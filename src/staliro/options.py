@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import itertools
 import random
+import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias
@@ -57,8 +58,16 @@ def _parallelization(_: Any, a: AnyAttr, value: Literal["cores"] | int | None) -
     if value is None:
         return
 
-    if isinstance(value, int) and value < 1:
-        raise ValueError(f"{a.name} must be greater than 0")
+    if isinstance(value, int):
+        if value < 1:
+            raise ValueError(f"{a.name} must be greater than 0")
+
+        if value == 1:
+            warnings.warn(
+                f"Setting {a.name} to 1 will create a worker pool with only a single worker, "
+                "which will not improve performance and is probably not the intended configuration."
+                f"Leave {a.name} unset or set to None to avoid this problem.",
+            )
 
     if isinstance(value, str) and value != "cores":
         raise ValueError(f"{a.name} only supports literal option 'cores'")
