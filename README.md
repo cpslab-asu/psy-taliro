@@ -97,9 +97,13 @@ def aircraft_model(X, T, U):
     ...
 
 
+# Requirement that the aircraft does not crash
+requirement = "[] (alt > 0.0)"
+
+# The altitude value is in the first column of the aircraft trace states
+specification = specifications.RTAMTDense(requirements, {"alt": 0})
+
 optimizer = optimizers.UniformRandom()
-requirement = "[] (alt > 0.0)"  # Requirement that the aircraft does not crash
-specification = specifications.RTAMTDense(requirements, {"alt": 0})  # The altitude value is in the first column of the aircraft trace states
 options = Options(
     runs=10,  # 10 independent optimization attempts
     iterations=100,  # Generate 100 samples per optimization attempt
@@ -108,8 +112,8 @@ options = Options(
         (-pi / 4, pi / 4),  # Roll
         (-pi / 4, pi / 4),  # Pitch
         (-pi / 4, pi / 4),  # Yaw
-        (0, 100),           # Thrust
-    ]
+        (0, 100),  # Thrust
+    ],
 )
 
 result = staliro(aircraft_model, specification, optimizer, options)
@@ -137,4 +141,3 @@ bibliography
   copyright = {arXiv.org perpetual, non-exclusive license}
 }
 ```
-
