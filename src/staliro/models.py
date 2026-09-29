@@ -94,6 +94,7 @@ from .signals import UnboundInterval
 S = TypeVar("S", covariant=True)
 E = TypeVar("E", covariant=True)
 R = TypeVar("R", covariant=True)
+TimeT = TypeVar("TimeT", bound=SupportsFloat)
 
 
 class Trace(Iterable[tuple[float, S]], Generic[S]):
@@ -111,17 +112,17 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     """
 
     @overload
-    def __init__(self, elements: Mapping[SupportsFloat, S], /): ...
+    def __init__(self, elements: Mapping[TimeT, S], /): ...
 
     @overload
-    def __init__(self, /, *, times: Iterable[SupportsFloat], states: Iterable[S]): ...
+    def __init__(self, *, times: Iterable[TimeT], states: Iterable[S]): ...
 
     def __init__(
         self,
-        elements: Mapping[SupportsFloat, S] | None = None,
+        elements: Mapping[TimeT, S] | None = None,
         /,
         *,
-        times: Iterable[SupportsFloat] | None = None,
+        times: Iterable[TimeT] | None = None,
         states: Iterable[S] | None = None,
     ):
         if elements is not None:
@@ -180,18 +181,18 @@ class Result(_Result[Trace[S], E], Generic[S, E]):
     """
 
     @overload
-    def __init__(self, elements: Mapping[SupportsFloat, S], /, *, extra: E): ...
+    def __init__(self, elements: Mapping[TimeT, S], /, *, extra: E): ...
 
     @overload
-    def __init__(self, /, *, states: Iterable[S], times: Iterable[SupportsFloat], extra: E): ...
+    def __init__(self, *, states: Iterable[S], times: Iterable[TimeT], extra: E): ...
 
     def __init__(
         self,
-        elements: Trace[S] | Mapping[SupportsFloat, S] | None = None,
+        elements: Trace[S] | Mapping[TimeT, S] | None = None,
         /,
         *,
         extra: E,
-        times: Iterable[SupportsFloat] | None = None,
+        times: Iterable[TimeT] | None = None,
         states: Iterable[S] | None = None,
     ):
         if elements is not None:
