@@ -76,8 +76,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from math import floor
-from typing import Generic, Literal, SupportsFloat, TypeAlias, TypeVar, overload
+from math import floor, inf
+from typing import Any, Generic, Literal, SupportsFloat, TypeAlias, TypeVar, overload
 
 from attrs import frozen
 from numpy import array, float64, linspace
@@ -156,8 +156,23 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
     def __iter__(self) -> Iterator[tuple[float, S]]:
         return iter(self.elements.items())
 
+    @overload
+    def __getitem__(self, time: slice[float | None, float | None, Any]) -> Trace[S]:
+        ...
+
+    @overload
     def __getitem__(self, time: float) -> S:
-        return self.elements[time]
+        ...
+
+    def __getitem__(self, time: slice[float | None, float | None, Any] | float) -> Trace[S] | S:
+        if isinstance(time, float):
+            return self.elements[time]
+
+        start = time.start or -inf
+        stop = time.stop  or inf
+
+        return Trace({t: s for t, s in self.elements.items() if start <= t <= stop})
+
 
     @property
     def times(self) -> Iterable[float]:
