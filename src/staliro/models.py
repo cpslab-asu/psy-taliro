@@ -157,22 +157,19 @@ class Trace(Iterable[tuple[float, S]], Generic[S]):
         return iter(self.elements.items())
 
     @overload
-    def __getitem__(self, time: slice[float | None, float | None, Any]) -> Trace[S]:
-        ...
+    def __getitem__(self, time: slice[float | None, float | None, Any]) -> Trace[S]: ...
 
     @overload
-    def __getitem__(self, time: float) -> S:
-        ...
+    def __getitem__(self, time: float) -> S: ...
 
     def __getitem__(self, time: slice[float | None, float | None, Any] | float) -> Trace[S] | S:
         if isinstance(time, float):
             return self.elements[time]
 
         start = time.start or -inf
-        stop = time.stop  or inf
+        stop = time.stop or inf
 
         return Trace({t: s for t, s in self.elements.items() if start <= t <= stop})
-
 
     @property
     def times(self) -> Iterable[float]:
