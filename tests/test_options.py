@@ -45,6 +45,9 @@ def test_processes() -> None:
     with pytest.raises(ValueError):
         TestOptions(processes="foo")  # type: ignore
 
+    with pytest.warns():
+        TestOptions(processes=1)
+
 
 def test_threads() -> None:
     none = TestOptions()
@@ -60,6 +63,9 @@ def test_threads() -> None:
 
     with pytest.raises(ValueError):
         TestOptions(threads="foo")  # type: ignore
+
+    with pytest.warns():
+        TestOptions(processes=1)
 
 
 def test_control_points() -> None:
