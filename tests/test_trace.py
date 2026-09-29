@@ -74,3 +74,9 @@ def test_idx() -> None:
 
     with pytest.raises(KeyError):
         t[5.0]
+
+    assert t[:] == t
+    assert t[0.0:5.0] == t
+    assert t[2.0:3.0] == Trace({2.0: "b", 3.0: "c"})
+    assert t[2.0:] == Trace({2.0: "b", 3.0: "c", 4.0: "d"})
+    assert t[:3.0] == Trace({1.0: "a", 2.0: "b", 3.0: "c"})
