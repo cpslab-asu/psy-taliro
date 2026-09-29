@@ -20,8 +20,17 @@ def test_from_states() -> None:
     t = Trace({1.0: "a", 2.0: "b", 3.0: "c"})
     assert t.elements == SortedDict({1.0: "a", 2.0: "b", 3.0: "c"})
 
+    e = {1.0: "a", 2.0: "b", 3.0: "c"}
+    t = Trace(e)
+    assert t.elements == SortedDict({1.0: "a", 2.0: "b", 3.0: "c"})
+
     with pytest.raises(ValueError):
         Trace([1.0, 2.0, 3.0])  # type: ignore
+
+
+def test_no_args() -> None:
+    with pytest.raises(ValueError):
+        Trace()  # pyrefly: ignore[no-matching-overload]
 
 
 def test_states() -> None:
@@ -65,3 +74,9 @@ def test_idx() -> None:
 
     with pytest.raises(KeyError):
         t[5.0]
+
+    assert t[:] == t
+    assert t[0.0:5.0] == t
+    assert t[2.0:3.0] == Trace({2.0: "b", 3.0: "c"})
+    assert t[2.0:] == Trace({2.0: "b", 3.0: "c", 4.0: "d"})
+    assert t[:3.0] == Trace({1.0: "a", 2.0: "b", 3.0: "c"})
