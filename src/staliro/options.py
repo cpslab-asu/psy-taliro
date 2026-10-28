@@ -103,6 +103,11 @@ def _assign_signals(
     tspan: Interval,
     x: NDArray[float64],
 ) -> dict[str, dict[float, float]]:
+    # If there are no signals, do nothing
+    if len(signals) == 0:
+        return {}
+
+    # Ignore last signal input because we are computing the cuts, which will be one less than the number of inputs
     *inputs, _ = signals.values()
     signal_split_points = accumulate(len(i.control_points) for i in inputs)
     signal_groups = split(x, list(signal_split_points))
