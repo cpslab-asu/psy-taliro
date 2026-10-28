@@ -92,10 +92,7 @@ def _signals(_: Any, a: AnyAttr, signals: dict[str, SignalInput]) -> None:
 
 
 def _assign_static(static_inputs: Mapping[str, Interval], x: NDArray[float64]) -> dict[str, float]:
-    return {
-        name: cast(float, value)
-        for name, value in zip(static_inputs.keys(), x, strict=True)
-    }
+    return {name: cast(float, value) for name, value in zip(static_inputs.keys(), x, strict=True)}
 
 
 def _assign_signals(
@@ -197,7 +194,7 @@ class TestOptions:
                         inputs specified in the `TestOptions`.
         """
 
-        return _assign_static(self.static_inputs, x[:len(self.static_inputs)])
+        return _assign_static(self.static_inputs, x[: len(self.static_inputs)])
 
     def assign_signals(self, x: NDArray[float64]) -> dict[str, dict[float, float]]:
         """Assign each signal input its control point values in the given sample.
@@ -215,7 +212,7 @@ class TestOptions:
                         points specified across all signals in the `TestOptions`.
         """
 
-        return _assign_signals(self.signals, self.tspan, x[len(self.static_inputs):])
+        return _assign_signals(self.signals, self.tspan, x[len(self.static_inputs) :])
 
     def assign(self, x: NDArray[float64]) -> tuple[dict[str, float], dict[str, dict[float, float]]]:
         """Assign each value in the given sample to its associated variable or signal.

@@ -486,7 +486,6 @@ class SignalInput:
 
             times = self.control_points.keys()
 
-
         return dict(zip(times, x, strict=True))
 
     def intervals(self) -> Iterable[Interval]:
