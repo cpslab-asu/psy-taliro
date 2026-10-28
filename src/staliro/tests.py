@@ -183,7 +183,7 @@ class _TestContext(Generic[R, C, E, SampleT]):
         return Optimizer.Params(
             seed=self.seed,
             budget=self.options.iterations,
-            input_bounds=self.options.intervals(),
+            input_bounds=list(self.options.intervals()),
         )
 
 
