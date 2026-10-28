@@ -377,6 +377,9 @@ class Interval(Iterable[float]):
     def __iter__(self) -> Iterator[float]:
         return iter(self.as_tuple())
 
+    def __contains__(self, x: float) -> bool:
+        return self.start <= x <= self.end
+
     def as_tuple(self) -> tuple[float, float]:
         return self.start, self.end
 
