@@ -23,20 +23,20 @@ Examples
 
 from __future__ import annotations
 
-import itertools
 import random
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from itertools import accumulate
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from attrs import Attribute, converters, define, field, validators
-from numpy import float64, linspace
+from numpy import array, float64, split
 from numpy.typing import NDArray
 
 from .cost_func import Inputs, Signals
 from .optimizers import SampleT
-from .signals import Interval, IntervalLike, Signal, SignalInput, UnboundInterval, _to_interval
+from .signals import Interval, IntervalLike, SignalInput, UnboundInterval, _to_interval
 
 if TYPE_CHECKING:
     AnyAttr: TypeAlias = Attribute[Any]
@@ -89,52 +89,6 @@ def _signals(_: Any, a: AnyAttr, signals: dict[str, SignalInput]) -> None:
     for signal in signals.values():
         if not isinstance(signal, SignalInput):
             raise TypeError("Signal inputs must be values of type SignalInput")
-
-
-def _parse_static(values: Iterable[float], variables: Iterable[str]) -> dict[str, float]:
-    return dict(zip(variables, values, strict=True))
-
-
-_SignalInputs = dict[str, SignalInput]
-
-
-def _parse_signals(values: NDArray[float64], tspan: Interval, inputs: _SignalInputs) -> Signals:
-    if len(inputs) > 0 and isinstance(tspan, UnboundInterval):
-        raise ValueError("Must provide tspan value if defining signal inputs")
-
-    def _accumulate_idx(prev_idx: int, s_input: SignalInput) -> int:
-        return prev_idx + len(s_input.control_points)
-
-    idxs = itertools.accumulate(inputs.values(), _accumulate_idx, initial=0)
-    idx_pairs = itertools.pairwise(idxs)
-
-    def _create_signal(ipair: tuple[int, int], s_input: SignalInput) -> Signal:
-        istart, istop = ipair
-        control_values = values[istart:istop]
-
-        if len(control_values) != len(s_input.control_points):
-            raise ValueError("Incorrect number of points assigned to signal input")
-
-        if isinstance(s_input.control_points, list):
-            t_arr = linspace(
-                start=tspan.start,
-                stop=tspan.end,
-                endpoint=False,
-                num=len(control_values),
-                dtype=float,
-            )
-            times: list[float] = t_arr.tolist()
-        else:
-            times = list(s_input.control_points.keys())
-
-        return s_input.factory(times, control_values)
-
-    signals = {
-        name: _create_signal(ipair, s_input)
-        for (name, s_input), ipair in zip(inputs.items(), idx_pairs, strict=True)
-    }
-
-    return Signals(signals, tspan)
 
 
 @define(kw_only=True)
@@ -195,27 +149,41 @@ class TestOptions:
         validator=_parallelization,
     )
 
-    def intervals(self) -> list[Interval]:
-        def _intervals() -> Iterable[Interval]:
-            for name in self.static_inputs:
-                yield self.static_inputs[name]
+    def intervals(self) -> Iterable[Interval]:
+        yield from self.static_inputs.values()
 
-            for name in self.signals:
-                points = self.signals[name].control_points
+        for signal in self.signals.values():
+            yield from signal.intervals()
 
-                if isinstance(points, Mapping):
-                    yield from points.values()
-                else:
-                    yield from points
-
-        return list(_intervals())
-
-    def parse_sample(self, sample: SampleT) -> Inputs[SampleT]:
+    def assign(self, x: NDArray[float64]) -> tuple[dict[str, float], dict[str, dict[float, float]]]:
         if len(self.static_inputs) == 0 and len(self.signals) == 0:
             raise ValueError("Must provide at least one signal or static input")
 
-        n_static = len(self.static_inputs)
-        static = _parse_static(sample.values[:n_static], self.static_inputs)
-        signals = _parse_signals(sample.values[n_static:], self.tspan, self.signals)
+        values = array(x, dtype=float64)
 
-        return Inputs(sample, static, signals)
+        split_point = len(self.static_inputs)
+        static_values, signal_values = split(values, [split_point])
+        static = {
+            name: cast(float, value)
+            for name, value in zip(self.static_inputs.keys(), static_values, strict=True)
+        }
+
+        *signals, _ = self.signals.values()
+        signal_split_points = accumulate(len(s.control_points) for s in signals)
+        signal_groups = split(signal_values, list(signal_split_points))
+
+        signals = {
+            name: signal.assign(self.tspan, group)
+            for (name, signal), group in zip(self.signals.items(), signal_groups, strict=True)
+        }
+
+        return static, signals
+
+    def parse_sample(self, sample: SampleT) -> Inputs[SampleT]:
+        static, signal_values = self.assign(sample.values)
+        signals = {
+            name: self.signals[name].factory(s.keys(), s.values())
+            for name, s in signal_values.items()
+        }
+
+        return Inputs(sample, static, Signals(signals, self.tspan))

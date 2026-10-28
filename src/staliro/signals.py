@@ -466,6 +466,32 @@ class SignalInput:
 
     time_varying: bool = field(default=False)
 
+    def assign(self, tspan: Interval, x: NDArray[np.float64]) -> dict[float, float]:
+        if not isinstance(self.control_points, Mapping):
+            times_arr = np.linspace(
+                tspan.start,
+                tspan.end,
+                num=len(self.control_points),
+                endpoint=False,
+                dtype=np.float64,
+            )
+            times: Iterable[float] = times_arr.tolist()
+        else:
+            for time in self.control_points:
+                if time not in tspan:
+                    raise ValueError(f"Control point time {time} is not in tspan {tspan}")
+
+            times = self.control_points.keys()
+
+
+        return dict(zip(times, x, strict=True))
+
+    def intervals(self) -> Iterable[Interval]:
+        if isinstance(self.control_points, Mapping):
+            yield from self.control_points.values()
+        else:
+            yield from self.control_points
+
 
 __all__ = [
     "Signal",
