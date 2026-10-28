@@ -31,7 +31,7 @@ from itertools import accumulate
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from attrs import Attribute, converters, define, field, validators
-from numpy import array, float64, split
+from numpy import float64, split
 from numpy.typing import NDArray
 
 from .cost_func import Inputs, Signals
